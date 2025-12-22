@@ -13,7 +13,6 @@
 
                 "CORE_ASSERT_ENABLED": "ON",
                 "CORE_LIBRARY_SHARED": "OFF",
-                "CORE_LOGGING_LEVEL": "DEBUG",
 
                 "HOT_SWAP": "OFF",
                 "USE_ANSI_LOGGING": "ON"
@@ -31,7 +30,6 @@
 
                 "CORE_ASSERT_ENABLED": "ON",
                 "CORE_LIBRARY_SHARED": "ON",
-                "CORE_LOGGING_LEVEL": "DEBUG",
 
                 "HOT_SWAP": "ON",
                 "USE_ANSI_LOGGING": "ON"

@@ -13,7 +13,6 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON) # Generates compile_commands.json
 
 option(CORE_LIBRARY_SHARED "Build core as a shared library." OFF)
 option(CORE_ASSERT_ENABLED "Enable Asserts in corelib" OFF)
-set(CORE_LOGGING_LEVEL "DEBUG" CACHE STRING "Logging level" FORCE)
 add_subdirectory(lib/core)
 
 # Include cmake modules from:
@@ -49,7 +48,6 @@ log_info("Compiler:          ${CMAKE_CXX_COMPILER_ID}")
 log_info("Debug:             ${RENDERING_TECHNIQUES_DEBUG}")
 log_info("Hotswap:           ${HOT_SWAP}")
 log_info("Use ANSI logging:  ${USE_ANSI_LOGGING}")
-log_info("Logging level:     ${CORE_LOGGING_LEVEL}")
 log_info("---------------------------------------------")
 
 # ---------------------------------------- End Options -----------------------------------------------------------------
@@ -73,6 +71,7 @@ macro(common_target_setup target)
     target_compile_definitions(${target} PUBLIC
         "USE_ANSI_LOGGING=$<BOOL:${USE_ANSI_LOGGING}>"
         "RENDERING_TECHNIQUES_DEBUG=$<BOOL:${RENDERING_TECHNIQUES_DEBUG}>"
+        "ASSETS_DIRECTORY=\"${CMAKE_CURRENT_SOURCE_DIR}/assets\""
     )
     rendering_techniques_target_set_default_flags(${target} ${RENDERING_TECHNIQUES_DEBUG} false)
 endmacro()
