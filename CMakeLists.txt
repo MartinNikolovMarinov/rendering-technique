@@ -60,6 +60,7 @@ set(src_sandbox
     src/core_init.cpp
     src/tga_files.cpp
     src/log_utils.cpp
+    src/surface.cpp
 )
 
 # ---------------------------------------- End Declare Source Files ----------------------------------------------------

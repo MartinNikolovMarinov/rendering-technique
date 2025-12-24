@@ -22,6 +22,7 @@ const char* errorToCstr(TGAError err) {
         case TGAError::FailedToReadFile:  return "Failed to read file";
         case TGAError::InvalidFileFormat: return "Invalid file format";
         case TGAError::OldFormat:         return "Old format";
+        case TGAError::ApplicationBug:    return "User code has a bug";
 
         case TGAError::Undefined: [[fallthrough]];
         case TGAError::SENTINEL: [[fallthrough]];
@@ -29,28 +30,14 @@ const char* errorToCstr(TGAError err) {
     }
 }
 
-// core::expected<Footer, TGAError> parseFooter(u8* buffer, addr_size size) {
-//     if (size < sizeof(Footer)) {
-//         return core::unexpected(TGAError::InvalidFileFormat);
-//     }
-
-//     Footer* footerPtr = reinterpret_cast<Footer*>(buffer + (size - sizeof(Footer)));
-//     if (!hasSignature(footerPtr->signature)) {
-//         return core::unexpected(TGAError::OldFormat);
-//     }
-
-//     Footer footer = *footerPtr;
-//     return footer;
-// }
-
-core::expected<TGAFile, TGAError> loadTgaFile(const char* path, const core::AllocatorContext& actx) {
+core::expected<TGAFile, TGAError> loadFile(const char* path, const core::AllocatorContext& actx) {
     TGAFile tgaFile;
     tgaFile.actx = &actx;
 
     {
         // Just in case set them all to -1 initially
-        tgaFile.fileHeaderOff = -1;
-        tgaFile.imageColorDataOff = -1;
+        tgaFile.fileHeaderOff = 0;
+        tgaFile.imageColorDataOff = sizeof(Header);
         tgaFile.footerOff = -1;
         tgaFile.developerAreaOff = -1;
         tgaFile.extAreaOff = -1;
@@ -60,7 +47,7 @@ core::expected<TGAFile, TGAError> loadTgaFile(const char* path, const core::Allo
     core::FileStat stat;
     {
         if (auto res = core::fileStat(path, stat); res.hasErr()) {
-            logPltErrorCode(res.err());
+            logErr_PltErrorCode(res.err());
             return core::unexpected(TGAError::FailedToStatFile);
         }
         tgaFile.memory.length = stat.size;
@@ -73,7 +60,7 @@ core::expected<TGAFile, TGAError> loadTgaFile(const char* path, const core::Allo
     auto& memory = tgaFile.memory;
     {
         if (auto res = core::fileReadEntire(path, memory); res.hasErr()) {
-            logPltErrorCode(res.err());
+            logErr_PltErrorCode(res.err());
             return core::unexpected(TGAError::FailedToReadFile);
         }
     }
@@ -88,8 +75,17 @@ core::expected<TGAFile, TGAError> loadTgaFile(const char* path, const core::Allo
     return tgaFile;
 }
 
+core::expected<TGAError> TGAFile::header(Header*& out) {
+    if (fileHeaderOff < 0) {
+        return core::unexpected(TGAError::ApplicationBug);
+    }
+
+    out = reinterpret_cast<Header*>(memory.data() + fileHeaderOff);
+    return {};
+}
+
 core::expected<TGAError> TGAFile::footer(Footer*& out) {
-    if (footerOff == -1) {
+    if (footerOff < 0) {
         return core::unexpected(TGAError::OldFormat);
     }
 
@@ -118,6 +114,7 @@ constexpr bool isFatalError(TGAError err) {
         case TGAError::FailedToReadFile:  return true;
         case TGAError::InvalidFileFormat: return true;
         case TGAError::OldFormat:         return false;
+        case TGAError::ApplicationBug:    return true;
 
         case TGAError::Undefined: [[fallthrough]];
         case TGAError::SENTINEL: [[fallthrough]];

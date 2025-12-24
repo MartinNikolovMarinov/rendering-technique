@@ -1,3 +1,7 @@
 #include "core_init.h"
 
-void logPltErrorCode(core::PltErrCode pltErrCode);
+struct Surface;
+
+void logErr_PltErrorCode(core::PltErrCode pltErrCode);
+
+void logInfo_Surface(const Surface& surface);
