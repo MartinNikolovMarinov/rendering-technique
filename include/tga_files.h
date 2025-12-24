@@ -27,11 +27,14 @@ struct PACKED Header {
     // for this field.
     //  * 0 - color map is NOT included.
     //  * 1 - color map IS included.
+    //
     // True-Color images do not normally make use of the color map field, but some current applications store palette
     // information or developer-defined information in this field. It is best to check Field 3, Image Type, to make sure
-    // you have a file which can use the data stored in the Color Map Field. Otherwise ignore the information. When
-    // saving or creating files for True-Color images do not use this field and set it to Zero to ensure compatibility.
-    // Please refer to the Developer Area specification for methods of storing developer defined information.
+    // you have a file which can use the data stored in the Color Map Field. Otherwise ignore the information.
+    //
+    // IMPORTANT: When saving or creating files for True-Color images do not use this field and set it to Zero to ensure
+    // compatibility. Please refer to the Developer Area specification for methods of storing developer defined
+    // information.
     TGAByte colorMapType;
 
     // The TGA File Format can be used to store Pseudo-Color, True-Color and Direct-Color images of various pixel
@@ -108,14 +111,40 @@ struct PACKED Header {
     //      * Bits 7 & 6: Must be zero to insure future compatibility.
     //
     TGAByte imageSpecification[10];
+
+    constexpr inline i32 colorMapFirstEntryIdx() const {
+        return i32(colorMapSpecification[0]) | (i32(colorMapSpecification[1]) << core::BYTE_SIZE);
+    }
+    constexpr inline i32 colorMapLength() const {
+        return i32(colorMapSpecification[2]) | (i32(colorMapSpecification[3]) << core::BYTE_SIZE);
+    }
+    constexpr inline i32 colorMapEntrySize() const {
+        return i32(colorMapSpecification[4]);
+    }
+
+    constexpr inline i32 offsetX() const {
+        return i32(imageSpecification[0]) | (i32(imageSpecification[1]) << core::BYTE_SIZE);
+    }
+    constexpr inline i32 offsetY() const {
+        return i32(imageSpecification[2]) | (i32(imageSpecification[3]) << core::BYTE_SIZE);
+    }
+    constexpr inline i32 width() const {
+        return i32(imageSpecification[4]) | (i32(imageSpecification[5]) << core::BYTE_SIZE);
+    }
+    constexpr inline i32 height() const {
+        return i32(imageSpecification[6]) | (i32(imageSpecification[7]) << core::BYTE_SIZE);
+    }
+    constexpr inline i32 pixelDepth() const {
+        return i32(imageSpecification[8]);
+    }
+    constexpr inline i32 alphaBits() const {
+        return i32(0b1111 & imageSpecification[9]);
+    }
+    constexpr inline i32 origin() const {
+        return i32(0b110000 & imageSpecification[9]) >> 4;
+    }
 };
 PACK_POP
-
-struct ImageColorMapData {};
-
-struct DeveloperArea {};
-
-struct ExtensionArea {};
 
 PACK_PUSH
 struct PACKED Footer {
@@ -127,6 +156,12 @@ struct PACKED Footer {
 };
 PACK_POP
 
+struct ImageColorMapData {};
+
+struct DeveloperArea {};
+
+struct ExtensionArea {};
+
 enum struct FileType {
     Unknown,
     Original,
@@ -134,28 +169,32 @@ enum struct FileType {
 };
 
 struct TGAFile {
-    const core::AllocatorContext* actx;
+    core::AllocatorContext* actx;
 
     core::Memory<u8> memory;
-    addr_off fileHeaderOff;
-    addr_off imageColorDataOff;
-    addr_off footerOff;
-    addr_off developerAreaOff;
-    addr_off extAreaOff;
 
-    core::expected<TGAError> header(Header*& out);
-    core::expected<TGAError> imageColorMapData(ImageColorMapData*& out);
-    core::expected<TGAError> footer(Footer*& out);
-    core::expected<TGAError> developerArea(DeveloperArea*& out);
-    core::expected<TGAError> extArea(ExtensionArea*& out);
+    constexpr static addr_off fileHeaderOff = 0;
 
-    FileType fileType();
+    constexpr static addr_off imageColorMapDataAreaOff = sizeof(Header);
+    addr_off imageIdOff = -1;
+    addr_off colorMapDataOff = -1;
+    addr_off imageDataOff = -1;
+
+    addr_off developerAreaOff = -1;
+    addr_off extAreaOff = -1;
+    addr_off footerOff = -1;
+
+    core::expected<TGAError> header(const Header*& out) const;
+    core::expected<TGAError> footer(const Footer*& out) const;
+
+    FileType fileType() const;
+    bool isValid() const;
 
     void free();
 };
 
 const char* errorToCstr(TGAError err);
 
-core::expected<TGAFile, TGAError> loadFile(const char* path, const core::AllocatorContext& actx = DEF_ALLOC);
+core::expected<TGAFile, TGAError> loadFile(const char* path, core::AllocatorContext& actx = DEF_ALLOC);
 
 } // namespace TGA

@@ -10,11 +10,17 @@ enum struct PixelFormat {
 };
 
 struct Surface {
+    core::AllocatorContext* actx;
+
     PixelFormat pixelFormat;
     i32 width;
     i32 height;
     i32 pitch;
     u8* data;
+
+    constexpr i32 size() { return height * pitch; }
+    void free();
 };
 
-core::expected<Surface, Error> createSurfaceFromTgaFile(TGA::TGAFile& tgaFile);
+core::expected<Surface, Error> createSurfaceFromTgaFile(const TGA::TGAFile& tgaFile,
+                                                        core::AllocatorContext& actx = DEF_ALLOC);

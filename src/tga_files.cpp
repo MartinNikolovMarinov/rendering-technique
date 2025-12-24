@@ -30,18 +30,9 @@ const char* errorToCstr(TGAError err) {
     }
 }
 
-core::expected<TGAFile, TGAError> loadFile(const char* path, const core::AllocatorContext& actx) {
+core::expected<TGAFile, TGAError> loadFile(const char* path, core::AllocatorContext& actx) {
     TGAFile tgaFile;
     tgaFile.actx = &actx;
-
-    {
-        // Just in case set them all to -1 initially
-        tgaFile.fileHeaderOff = 0;
-        tgaFile.imageColorDataOff = sizeof(Header);
-        tgaFile.footerOff = -1;
-        tgaFile.developerAreaOff = -1;
-        tgaFile.extAreaOff = -1;
-    }
 
     // Stat the file
     core::FileStat stat;
@@ -52,7 +43,7 @@ core::expected<TGAFile, TGAError> loadFile(const char* path, const core::Allocat
         }
         tgaFile.memory.length = stat.size;
         tgaFile.memory.ptr = reinterpret_cast<u8*>(
-            actx.allocFn(actx.allocatorData, tgaFile.memory.length, sizeof(u8))
+            tgaFile.actx->alloc(tgaFile.memory.length, sizeof(u8))
         );
     }
 
@@ -72,34 +63,74 @@ core::expected<TGAFile, TGAError> loadFile(const char* path, const core::Allocat
         tgaFile.footerOff = res.hasValue() ? res.value() : -1;
     }
 
+    const Header* h;
+    if (auto res = tgaFile.header(h); res.hasErr()) {
+        return core::unexpected(res.err());
+    }
+
+    // Parse the image/color map data area
+    {
+        addr_off curr = tgaFile.imageColorMapDataAreaOff;
+
+        if (h->idLength > 0) {
+            tgaFile.imageIdOff = curr;
+            curr += h->idLength;
+        }
+        else {
+            tgaFile.imageIdOff = -1;
+        }
+
+        if (h->colorMapType == 1) {
+            tgaFile.colorMapDataOff = curr;
+            [[maybe_unused]] i32 firstEntryIdx = h->colorMapFirstEntryIdx();
+            i32 colorMapCount = h->colorMapLength();
+            i32 colorMapEntrySize = h->colorMapEntrySize();
+            curr += colorMapCount * colorMapEntrySize;
+        }
+        else {
+            tgaFile.colorMapDataOff = -1;
+        }
+
+        tgaFile.imageDataOff = curr;
+    }
+
+    if (!tgaFile.isValid()) {
+        return core::unexpected(TGAError::InvalidFileFormat);
+    }
+
     return tgaFile;
 }
 
-core::expected<TGAError> TGAFile::header(Header*& out) {
+core::expected<TGAError> TGAFile::header(const Header*& out) const {
     if (fileHeaderOff < 0) {
         return core::unexpected(TGAError::ApplicationBug);
     }
 
-    out = reinterpret_cast<Header*>(memory.data() + fileHeaderOff);
+    out = reinterpret_cast<const Header*>(memory.data() + fileHeaderOff);
     return {};
 }
 
-core::expected<TGAError> TGAFile::footer(Footer*& out) {
+core::expected<TGAError> TGAFile::footer(const Footer*& out) const {
     if (footerOff < 0) {
         return core::unexpected(TGAError::OldFormat);
     }
 
-    out = reinterpret_cast<Footer*>(memory.data() + footerOff);
+    out = reinterpret_cast<const Footer*>(memory.data() + footerOff);
     return {};
 }
 
-FileType TGAFile::fileType() {
+FileType TGAFile::fileType() const {
     return footerOff != -1 ? FileType::New : FileType::Original;
+}
+
+bool TGAFile::isValid() const {
+    bool ok = imageDataOff > 0 && memory.data() != nullptr && memory.length > 0;
+    return ok;
 }
 
 void TGAFile::free() {
     if (memory.data()) {
-        actx->freeFn(actx->allocatorData, memory.data(), memory.len(), sizeof(u8));
+        actx->free(memory.data(), memory.len(), sizeof(u8));
         memory = {};
     }
 }
