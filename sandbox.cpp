@@ -3,7 +3,7 @@
 #include "surface.h"
 #include "log_utils.h"
 
-void parseOneFile(const char* path) {
+void testOneFile(const char* path) {
     logInfo("Parsing File: {}", path);
 
     auto tgaFile = core::Unpack(TGA::loadFile(path));
@@ -15,7 +15,7 @@ void parseOneFile(const char* path) {
     logInfo_Surface(surface);
 }
 
-void parseAllFilesInAssetsDirectory(const char* path) {
+void testAllFilesInAssetsDirectory(const char* path) {
     auto ret = core::dirWalk(path, [](const core::DirEntry& entry, addr_size, void* userData) -> bool {
         if (entry.type == core::FileType::Regular) {
             const addr_size nameLen = core::cstrLen(entry.name);
@@ -34,7 +34,7 @@ void parseAllFilesInAssetsDirectory(const char* path) {
             addr_size idx = core::memcopy(pathBuffer, basePath, core::cstrLen(basePath));
             core::memcopy(pathBuffer + idx, entry.name, nameLen);
 
-            parseOneFile(pathBuffer);
+            testOneFile(pathBuffer);
         }
 
         return true;
@@ -49,8 +49,9 @@ void parseAllFilesInAssetsDirectory(const char* path) {
 int main() {
     coreInit(core::LogLevel::L_DEBUG);
 
-    const char* path = ASSETS_DIRECTORY "/tga-test-suite/conformance/";
-    parseAllFilesInAssetsDirectory(path);
+    testOneFile(ASSETS_DIRECTORY "/tga-test-suite/uwaterloo/serrano.tga");
+
+    // testAllFilesInAssetsDirectory(ASSETS_DIRECTORY "/tga-test-suite/uwaterloo/");
 
     coreShutdown();
     return 0;

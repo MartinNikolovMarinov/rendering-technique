@@ -24,15 +24,22 @@ void logInfo_Surface(const Surface& surface) {
 
 void logInfo_TGAFile(TGA::TGAFile& file) {
     if (file.isValid()) {
-        const TGA::Header* header;
+        const TGA::Header* header = nullptr;
         if (auto res = file.header(header); res.hasErr()) {
             logInfo("TGA file has an invalid header");
             return;
         }
 
+        const TGA::Footer defaultFooter = {};
+        const TGA::Footer* footer = nullptr;
+        if (auto res = file.footer(footer); res.hasErr()) {
+            footer = &defaultFooter;
+        }
+
         logInfo(
             "\n{{\n"
-            "  \"Header\": {{\n"
+            "  \"fileType: \"{}\",\n"
+            "  \"header\": {{\n"
             "    \"idLength\": {},\n"
             "    \"colorMapType\": {},\n"
             "    \"imageType\": {},\n"
@@ -46,12 +53,19 @@ void logInfo_TGAFile(TGA::TGAFile& file) {
             "    \"pixelDepth\": {},\n"
             "    \"alphaBits\": {},\n"
             "    \"origin\": {}\n"
+            "  }},\n"
+            "  \"footer\": {{\n"
+            "    \"developerOffset\": {},\n"
+            "    \"extensionOffset\": {}\n"
+            "    \"signature\": \"{}\"\n"
             "  }}\n"
             "}}",
+            file.fileType() == TGA::FileType::New ? "new" : "original",
             header->idLength, header->colorMapType, header->imageType,
             header->colorMapFirstEntryIdx(), header->colorMapLength(), header->colorMapEntrySize(),
             header->offsetX(), header->offsetY(), header->width(), header->height(),
-            header->pixelDepth(), header->alphaBits(), header->origin()
+            header->pixelDepth(), header->alphaBits(), header->origin(),
+            footer->developerDirectoryOffset, footer->extensionAreaOffset, footer->signature
         );
     }
     else {

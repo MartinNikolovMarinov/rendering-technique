@@ -150,9 +150,7 @@ PACK_PUSH
 struct PACKED Footer {
     TGALong extensionAreaOffset;      // Bytes 0-3: The Extension Area Offset
     TGALong developerDirectoryOffset; // Bytes 4-7: The Developer Directory Offset
-    char signature[16];               // Bytes 8-23: The Signature
-    char dot;                         // Byte 24: ASCII Character “.”
-    char zeroTerm;                    // Byte 25: Binary zero string terminator (0x00)
+    char signature[18];               // Bytes 8-24: The Signature, Byte 25: Binary zero string terminator (0x00)
 };
 PACK_POP
 

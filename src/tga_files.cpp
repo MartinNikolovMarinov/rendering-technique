@@ -10,7 +10,7 @@ namespace {
 
 constexpr bool isFatalError(TGAError err);
 
-constexpr bool hasSignature(char signature[16]);
+constexpr bool hasSignature(char signature[18]);
 constexpr core::expected<addr_off, TGAError> parseFooterOffset(u8* begin, u8* end);
 
 } // namespace
@@ -153,8 +153,8 @@ constexpr bool isFatalError(TGAError err) {
     }
 }
 
-constexpr bool hasSignature(char signature[16]) {
-    return core::memcmp(signature, 16, "TRUEVISION-XFILE", 16) == 0;
+constexpr bool hasSignature(char signature[18]) {
+    return core::memcmp(signature, 17, "TRUEVISION-XFILE.", 17) == 0;
 }
 
 constexpr core::expected<addr_off, TGAError> parseFooterOffset(u8* begin, u8* end) {
