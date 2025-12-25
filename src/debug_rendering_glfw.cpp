@@ -6,7 +6,8 @@
 namespace {
     GLenum pickGLFormat(PixelFormat pixelFormat) {
         switch (pixelFormat) {
-            case PixelFormat::ABGR8888: Assert(false, "TODO:"); return 0;
+            case PixelFormat::BGRA8888: return GL_BGRA;
+            case PixelFormat::BGRX8888: return GL_BGRA;
             case PixelFormat::BGR888:   return GL_BGR;
 
             case PixelFormat::Unknown: [[fallthrough]];
@@ -19,7 +20,8 @@ namespace {
 
     GLint pickGLInternalFormat(PixelFormat pixelFormat) {
         switch (pixelFormat) {
-            case PixelFormat::ABGR8888: Assert(false, "TODO:"); return 0;
+            case PixelFormat::BGRA8888: return GL_RGBA8;
+            case PixelFormat::BGRX8888: return GL_RGBA8;
             case PixelFormat::BGR888:   return GL_RGB8;
 
             case PixelFormat::Unknown: [[fallthrough]];

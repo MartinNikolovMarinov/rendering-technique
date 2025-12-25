@@ -18,11 +18,15 @@ PixelFormat pickPixelFormatForTrueColorImage(i32 bytesPerPixel, i32 alphaChannel
         pixelFormat = PixelFormat::BGR888;
     }
     else if (bytesPerPixel == 4) {
-        if (alphaChannelSize != 8) {
+        if (alphaChannelSize == 8) {
+            pixelFormat = PixelFormat::BGRA8888;
+        }
+        else if (alphaChannelSize == 0) {
+            pixelFormat = PixelFormat::BGRX8888; // 8 padding bits, no alpha channel data
+        }
+        else {
             goto error;
         }
-
-        pixelFormat = PixelFormat::ABGR8888;
     }
     else {
         goto error;

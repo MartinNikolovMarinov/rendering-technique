@@ -6,7 +6,8 @@ namespace TGA { struct TGAFile; }
 enum struct PixelFormat {
     Unknown,
 
-    ABGR8888,
+    BGRA8888,
+    BGRX8888,
     BGR888,
 
     SENTINEL
@@ -14,7 +15,8 @@ enum struct PixelFormat {
 
 constexpr i32 pixelFormatBytesPerPixel(PixelFormat pixelFormat) {
     switch (pixelFormat) {
-        case PixelFormat::ABGR8888: return 4;
+        case PixelFormat::BGRA8888: return 4;
+        case PixelFormat::BGRX8888: return 4;
         case PixelFormat::BGR888:   return 3;
 
         case PixelFormat::Unknown: [[fallthrough]];
@@ -27,7 +29,8 @@ constexpr i32 pixelFormatBytesPerPixel(PixelFormat pixelFormat) {
 
 constexpr bool pixelFormatHasAlpha(PixelFormat pixelFormat) {
     switch (pixelFormat) {
-        case PixelFormat::ABGR8888: return true;
+        case PixelFormat::BGRA8888: return true;
+        case PixelFormat::BGRX8888: return false;
         case PixelFormat::BGR888:   return false;
 
         case PixelFormat::Unknown: [[fallthrough]];
