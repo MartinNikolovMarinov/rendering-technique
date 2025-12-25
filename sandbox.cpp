@@ -16,6 +16,7 @@ void testOneFile(const char* path, bool debugRender = false) {
         core::Expect(tgaFile.header(h));
 
         if (h->imageType == 2) {
+
             auto surface = core::Unpack(createSurfaceFromTgaFile(tgaFile), "Failed to create surface from TGA file.");
             defer { surface.free(); };
             logInfo_Surface(surface);
@@ -64,7 +65,7 @@ int main() {
         initializeDebugRendering();
         defer { shutdownDebugRendering(); };
 
-        testAllFilesInDirectory(ASSETS_DIRECTORY "/");
+        testAllFilesInDirectory(ASSETS_DIRECTORY "/tga-test-suite/my_test_suite/");
     }
     return 0;
 }

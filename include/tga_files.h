@@ -66,7 +66,6 @@ struct PACKED Header {
     //
     //   * Field 2 (1 byte) - Color Map Entry Size:
     //      Establishes the number of bits per entry. Typically 15, 16, 24 or 32-bit values are used.
-    //      TODO2: Omitting the rest of the documentation for brevity, add it later if relevant.
     TGAByte colorMapSpecification[5];
 
     // This field and its sub-fields describe the image screen location, size and pixel depth.

@@ -10,7 +10,7 @@ namespace {
 
 constexpr bool isFatalError(TGAError err);
 
-constexpr bool hasSignature(char signature[18]);
+constexpr bool hasSignature(const char signature[18]);
 constexpr core::expected<addr_off, TGAError> parseFooterOffset(u8* begin, u8* end);
 
 } // namespace
@@ -56,14 +56,21 @@ core::expected<TGAFile, TGAError> loadFile(const char* path, core::AllocatorCont
         }
     }
 
-    // Parse the footer offset
-    {
-        auto res = parseFooterOffset(memory.data(), memory.end());
-        TGA_IS_ERR_FATAL(res);
-        tgaFile.footerOff = res.hasValue() ? res.value() : -1;
+    // Parse the footer
+    auto footerOffsetRes = parseFooterOffset(memory.data(), memory.end());
+    TGA_IS_ERR_FATAL(footerOffsetRes);
+    tgaFile.footerOff = footerOffsetRes.hasValue() ? footerOffsetRes.value() : -1;
+
+    if (tgaFile.footerOff > 0) {
+        const Footer* f = nullptr;
+        auto footerRes = tgaFile.footer(f);
+        TGA_IS_ERR_FATAL(footerRes);
+        tgaFile.developerAreaOff = f->developerDirectoryOffset;
+        tgaFile.extAreaOff = f->extensionAreaOffset;
     }
 
-    const Header* h;
+    // Parse the header
+    const Header* h = nullptr;
     if (auto res = tgaFile.header(h); res.hasErr()) {
         return core::unexpected(res.err());
     }
@@ -125,6 +132,17 @@ FileType TGAFile::fileType() const {
 
 bool TGAFile::isValid() const {
     bool ok = imageDataOff > 0 && memory.data() != nullptr && memory.length > 0;
+    if (fileType() == TGA::FileType::New) {
+        const TGA::Footer* f = nullptr;
+        if (auto res = footer(f); res.hasErr()) {
+            ok = false;
+        }
+        else {
+            ok &= f->developerDirectoryOffset == developerAreaOff &&
+                  f->extensionAreaOffset == extAreaOff &&
+                  hasSignature(f->signature);
+        }
+    }
     return ok;
 }
 
@@ -153,7 +171,7 @@ constexpr bool isFatalError(TGAError err) {
     }
 }
 
-constexpr bool hasSignature(char signature[18]) {
+constexpr bool hasSignature(const char signature[18]) {
     return core::memcmp(signature, 17, "TRUEVISION-XFILE.", 17) == 0;
 }
 

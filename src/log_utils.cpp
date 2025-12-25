@@ -56,7 +56,7 @@ void logInfo_TGAFile(TGA::TGAFile& file) {
             "  }},\n"
             "  \"footer\": {{\n"
             "    \"developerOffset\": {},\n"
-            "    \"extensionOffset\": {}\n"
+            "    \"extensionOffset\": {},\n"
             "    \"signature\": \"{}\"\n"
             "  }}\n"
             "}}",
@@ -65,7 +65,7 @@ void logInfo_TGAFile(TGA::TGAFile& file) {
             header->colorMapFirstEntryIdx(), header->colorMapLength(), header->colorMapEntrySize(),
             header->offsetX(), header->offsetY(), header->width(), header->height(),
             header->pixelDepth(), header->alphaBits(), header->origin(),
-            footer->developerDirectoryOffset, footer->extensionAreaOffset, footer->signature
+            file.developerAreaOff, file.extAreaOff, footer->signature
         );
     }
     else {
