@@ -65,7 +65,8 @@ int main() {
         initializeDebugRendering();
         defer { shutdownDebugRendering(); };
 
-        testAllFilesInDirectory(ASSETS_DIRECTORY "/tga-test-suite/my_test_suite/");
+        // testAllFilesInDirectory(ASSETS_DIRECTORY "/tga-test-suite/my_test_suite/");
+        testOneFile(ASSETS_DIRECTORY "/tga-test-suite/my_test_suite/TGA_16_uncompressed.tga", true);
     }
     return 0;
 }

@@ -11,6 +11,7 @@ static void glfwErrorCallback(int code, const char* desc);
 
 constexpr GLenum pickGLFormat(PixelFormat pixelFormat);
 constexpr GLint pickGLInternalFormat(PixelFormat pixelFormat);
+constexpr GLenum pickGLType(PixelFormat pixelFormat);
 
 } // namespace
 
@@ -68,8 +69,9 @@ void debug_immPreviewSurface(const Surface& surface) {
 
     const GLint internalFmt = pickGLInternalFormat(surface.pixelFormat);
     const GLenum fmt = pickGLFormat(surface.pixelFormat);
+    const GLenum type = pickGLType(surface.pixelFormat);
     glTexImage2D(GL_TEXTURE_2D, 0, internalFmt, surface.width, surface.height,
-                0, fmt, GL_UNSIGNED_BYTE, surface.data);
+                0, fmt, type, surface.data);
 
     while (!glfwWindowShouldClose(win)) {
         glfwPollEvents();
@@ -101,8 +103,8 @@ constexpr GLenum pickGLFormat(PixelFormat pixelFormat) {
         case PixelFormat::BGRX8888: return GL_BGRA;
         case PixelFormat::BGR888:   return GL_BGR;
 
-        case PixelFormat::BGRA5551: Assert(false, "Not supported yet") return 0;
-        case PixelFormat::BGR555: Assert(false, "Not supported yet") return 0;
+        case PixelFormat::BGRA5551: return GL_BGRA;
+        case PixelFormat::BGR555:   return GL_BGRA;
 
         case PixelFormat::Unknown: [[fallthrough]];
         case PixelFormat::SENTINEL: [[fallthrough]];
@@ -118,8 +120,25 @@ constexpr GLint pickGLInternalFormat(PixelFormat pixelFormat) {
         case PixelFormat::BGRX8888: return GL_RGBA8;
         case PixelFormat::BGR888:   return GL_RGB8;
 
-        case PixelFormat::BGRA5551: Assert(false, "Not supported yet") return 0;
-        case PixelFormat::BGR555: Assert(false, "Not supported yet") return 0;
+        case PixelFormat::BGRA5551: return GL_RGB5_A1;
+        case PixelFormat::BGR555:   return GL_RGB5;
+
+        case PixelFormat::Unknown: [[fallthrough]];
+        case PixelFormat::SENTINEL: [[fallthrough]];
+        default:
+            Assert(false, "invalid pixel format");
+            return false;
+    }
+}
+
+constexpr GLenum pickGLType(PixelFormat pixelFormat) {
+    switch (pixelFormat) {
+        case PixelFormat::BGRA8888: return GL_UNSIGNED_BYTE;
+        case PixelFormat::BGRX8888: return GL_UNSIGNED_BYTE;
+        case PixelFormat::BGR888:   return GL_UNSIGNED_BYTE;
+
+        case PixelFormat::BGRA5551: return GL_UNSIGNED_SHORT_1_5_5_5_REV;
+        case PixelFormat::BGR555:   return GL_UNSIGNED_SHORT_1_5_5_5_REV;
 
         case PixelFormat::Unknown: [[fallthrough]];
         case PixelFormat::SENTINEL: [[fallthrough]];
