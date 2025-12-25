@@ -66,7 +66,7 @@ int main() {
         defer { shutdownDebugRendering(); };
 
         // testAllFilesInDirectory(ASSETS_DIRECTORY "/tga-test-suite/my_test_suite/");
-        testOneFile(ASSETS_DIRECTORY "/tga-test-suite/my_test_suite/TGA_16_uncompressed.tga", true);
+        testOneFile(ASSETS_DIRECTORY "/tga-test-suite/my_test_suite/tulips.tga", true);
     }
     return 0;
 }
