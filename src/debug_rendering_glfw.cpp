@@ -10,6 +10,9 @@ namespace {
             case PixelFormat::BGRX8888: return GL_BGRA;
             case PixelFormat::BGR888:   return GL_BGR;
 
+            case PixelFormat::BGRA5551: Assert(false, "Not supported yet") return 0;
+            case PixelFormat::BGR555: Assert(false, "Not supported yet") return 0;
+
             case PixelFormat::Unknown: [[fallthrough]];
             case PixelFormat::SENTINEL: [[fallthrough]];
             default:
@@ -23,6 +26,9 @@ namespace {
             case PixelFormat::BGRA8888: return GL_RGBA8;
             case PixelFormat::BGRX8888: return GL_RGBA8;
             case PixelFormat::BGR888:   return GL_RGB8;
+
+            case PixelFormat::BGRA5551: Assert(false, "Not supported yet") return 0;
+            case PixelFormat::BGR555: Assert(false, "Not supported yet") return 0;
 
             case PixelFormat::Unknown: [[fallthrough]];
             case PixelFormat::SENTINEL: [[fallthrough]];

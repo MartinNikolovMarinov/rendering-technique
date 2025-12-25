@@ -28,6 +28,17 @@ PixelFormat pickPixelFormatForTrueColorImage(i32 bytesPerPixel, i32 alphaChannel
             goto error;
         }
     }
+    else if (bytesPerPixel == 2) {
+        if (alphaChannelSize == 1) {
+            pixelFormat = PixelFormat::BGRA5551;
+        }
+        else if (alphaChannelSize == 0) {
+            pixelFormat = PixelFormat::BGR555;
+        }
+        else {
+            goto error;
+        }
+    }
     else {
         goto error;
     }

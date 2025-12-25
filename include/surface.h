@@ -8,6 +8,8 @@ enum struct PixelFormat {
 
     BGRA8888,
     BGRX8888,
+    BGRA5551,
+    BGR555,
     BGR888,
 
     SENTINEL
@@ -17,6 +19,8 @@ constexpr i32 pixelFormatBytesPerPixel(PixelFormat pixelFormat) {
     switch (pixelFormat) {
         case PixelFormat::BGRA8888: return 4;
         case PixelFormat::BGRX8888: return 4;
+        case PixelFormat::BGRA5551: return 2;
+        case PixelFormat::BGR555:   return 2;
         case PixelFormat::BGR888:   return 3;
 
         case PixelFormat::Unknown: [[fallthrough]];
@@ -31,6 +35,8 @@ constexpr bool pixelFormatHasAlpha(PixelFormat pixelFormat) {
     switch (pixelFormat) {
         case PixelFormat::BGRA8888: return true;
         case PixelFormat::BGRX8888: return false;
+        case PixelFormat::BGRA5551: return true;
+        case PixelFormat::BGR555:   return false;
         case PixelFormat::BGR888:   return false;
 
         case PixelFormat::Unknown: [[fallthrough]];
