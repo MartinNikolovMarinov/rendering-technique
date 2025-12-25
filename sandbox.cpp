@@ -4,34 +4,29 @@
 #include "log_utils.h"
 #include "debug_rendering.h"
 
-void testParseOneFile(const char* path) {
+void testOneFile(const char* path, bool debugRender = false) {
     logInfo("Parsing File: {}", path);
 
     auto tgaFile = core::Unpack(TGA::loadFile(path));
     defer { tgaFile.free(); };
     logInfo_TGAFile(tgaFile);
 
-    auto surface = core::Unpack(createSurfaceFromTgaFile(tgaFile), "Failed to create surface from TGA file.");
-    defer { surface.free(); };
-    logInfo_Surface(surface);
+    if (debugRender) {
+        const TGA::Header* h = nullptr;
+        core::Expect(tgaFile.header(h));
+
+        if (h->imageType == 2) {
+            auto surface = core::Unpack(createSurfaceFromTgaFile(tgaFile), "Failed to create surface from TGA file.");
+            defer { surface.free(); };
+            logInfo_Surface(surface);
+
+            logInfo("Image is True Color; rendering is supported.");
+            debug_immPreviewSurface(surface);
+        }
+    }
 }
 
-void testLoadFileAndDebugRender(const char* path) {
-    logInfo("Parsing File: {}", path);
-
-    auto tgaFile = core::Unpack(TGA::loadFile(path));
-    defer { tgaFile.free(); };
-    logInfo_TGAFile(tgaFile);
-
-    auto surface = core::Unpack(createSurfaceFromTgaFile(tgaFile), "Failed to create surface from TGA file.");
-    defer { surface.free(); };
-    logInfo_Surface(surface);
-
-    debug_immPreviewSurface(surface);
-}
-
-
-void testParseAllFilesInDirectory(const char* directoryPath) {
+void testAllFilesInDirectory(const char* directoryPath) {
     auto ret = core::dirWalk(directoryPath, [](const core::DirEntry& entry, addr_size, void* userData) -> bool {
         if (entry.type == core::FileType::Regular) {
             const addr_size nameLen = core::cstrLen(entry.name);
@@ -50,7 +45,7 @@ void testParseAllFilesInDirectory(const char* directoryPath) {
             addr_size idx = core::memcopy(pathBuffer, basePath, core::cstrLen(basePath));
             core::memcopy(pathBuffer + idx, entry.name, nameLen);
 
-            testParseOneFile(pathBuffer);
+            testOneFile(pathBuffer, true);
         }
 
         return true;
@@ -63,12 +58,13 @@ void testParseAllFilesInDirectory(const char* directoryPath) {
 }
 
 int main() {
-    coreInit(core::LogLevel::L_DEBUG);
+    {
+        coreInit(core::LogLevel::L_DEBUG);
+        defer { coreShutdown(); };
+        initializeDebugRendering();
+        defer { shutdownDebugRendering(); };
 
-    testLoadFileAndDebugRender(ASSETS_DIRECTORY "/tga-test-suite/uwaterloo/serrano.tga");
-    // testParseOneFile(ASSETS_DIRECTORY "/tga-test-suite/uwaterloo/serrano.tga");
-    // testAllFilesInAssetsDirectory(ASSETS_DIRECTORY "/tga-test-suite/uwaterloo/");
-
-    coreShutdown();
+        testAllFilesInDirectory(ASSETS_DIRECTORY "/");
+    }
     return 0;
 }

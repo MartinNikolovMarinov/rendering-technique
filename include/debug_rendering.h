@@ -2,4 +2,7 @@
 
 struct Surface;
 
+bool initializeDebugRendering();
+void shutdownDebugRendering();
+
 void debug_immPreviewSurface(const Surface& surface);

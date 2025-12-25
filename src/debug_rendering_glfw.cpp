@@ -4,51 +4,53 @@
 #include "GLFW/glfw3.h"
 
 namespace {
-    GLenum pickGLFormat(PixelFormat pixelFormat) {
-        switch (pixelFormat) {
-            case PixelFormat::BGRA8888: return GL_BGRA;
-            case PixelFormat::BGRX8888: return GL_BGRA;
-            case PixelFormat::BGR888:   return GL_BGR;
 
-            case PixelFormat::BGRA5551: Assert(false, "Not supported yet") return 0;
-            case PixelFormat::BGR555: Assert(false, "Not supported yet") return 0;
+bool g_glfwInitialized = false;
 
-            case PixelFormat::Unknown: [[fallthrough]];
-            case PixelFormat::SENTINEL: [[fallthrough]];
-            default:
-                Assert(false, "invalid pixel format");
-                return false;
-        }
+static void glfwErrorCallback(int code, const char* desc);
+
+constexpr GLenum pickGLFormat(PixelFormat pixelFormat);
+constexpr GLint pickGLInternalFormat(PixelFormat pixelFormat);
+
+} // namespace
+
+bool initializeDebugRendering() {
+    if (g_glfwInitialized) {
+        return true;
     }
 
-    GLint pickGLInternalFormat(PixelFormat pixelFormat) {
-        switch (pixelFormat) {
-            case PixelFormat::BGRA8888: return GL_RGBA8;
-            case PixelFormat::BGRX8888: return GL_RGBA8;
-            case PixelFormat::BGR888:   return GL_RGB8;
+    glfwSetErrorCallback(glfwErrorCallback);
 
-            case PixelFormat::BGRA5551: Assert(false, "Not supported yet") return 0;
-            case PixelFormat::BGR555: Assert(false, "Not supported yet") return 0;
-
-            case PixelFormat::Unknown: [[fallthrough]];
-            case PixelFormat::SENTINEL: [[fallthrough]];
-            default:
-                Assert(false, "invalid pixel format");
-                return false;
-        }
+    if (glfwInit() == GLFW_FALSE) {
+        Assert(false, "Failed to initialize GLFW!");
+        return false;
     }
+
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 2);
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 1);
+
+    g_glfwInitialized = true;
+    return true;
+}
+
+void shutdownDebugRendering() {
+    if (!g_glfwInitialized) {
+        return;
+    }
+
+    glfwTerminate();
+    g_glfwInitialized = false;
 }
 
 void debug_immPreviewSurface(const Surface& surface) {
+    Panic(g_glfwInitialized, "GLFW is not initalized");
+
     i32 bytesPerPixel = pixelFormatBytesPerPixel(surface.pixelFormat);
 
-    glfwInit();
-    defer { glfwTerminate(); };
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 2);
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 1);
     GLFWwindow* win = glfwCreateWindow(surface.width, surface.height,
                                         "Surface Preview", nullptr, nullptr);
     if (!win) return;
+    defer { glfwDestroyWindow(win); };
     glfwMakeContextCurrent(win);
     glfwSwapInterval(1);
 
@@ -57,6 +59,7 @@ void debug_immPreviewSurface(const Surface& surface) {
     glBindTexture(GL_TEXTURE_2D, tex);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    defer { glDeleteTextures(1, &tex); };
 
     glPixelStorei(GL_UNPACK_ALIGNMENT, 1); // allow tightly packed rows
     if (surface.pitch != surface.width * bytesPerPixel) {
@@ -84,7 +87,46 @@ void debug_immPreviewSurface(const Surface& surface) {
 
         glfwSwapBuffers(win);
     }
-
-    glDeleteTextures(1, &tex);
-    glfwDestroyWindow(win);
 }
+
+namespace {
+
+void glfwErrorCallback(int code, const char* desc) {
+    logErr("GLFW error {}: {}", code, desc);
+}
+
+constexpr GLenum pickGLFormat(PixelFormat pixelFormat) {
+    switch (pixelFormat) {
+        case PixelFormat::BGRA8888: return GL_BGRA;
+        case PixelFormat::BGRX8888: return GL_BGRA;
+        case PixelFormat::BGR888:   return GL_BGR;
+
+        case PixelFormat::BGRA5551: Assert(false, "Not supported yet") return 0;
+        case PixelFormat::BGR555: Assert(false, "Not supported yet") return 0;
+
+        case PixelFormat::Unknown: [[fallthrough]];
+        case PixelFormat::SENTINEL: [[fallthrough]];
+        default:
+            Assert(false, "invalid pixel format");
+            return false;
+    }
+}
+
+constexpr GLint pickGLInternalFormat(PixelFormat pixelFormat) {
+    switch (pixelFormat) {
+        case PixelFormat::BGRA8888: return GL_RGBA8;
+        case PixelFormat::BGRX8888: return GL_RGBA8;
+        case PixelFormat::BGR888:   return GL_RGB8;
+
+        case PixelFormat::BGRA5551: Assert(false, "Not supported yet") return 0;
+        case PixelFormat::BGR555: Assert(false, "Not supported yet") return 0;
+
+        case PixelFormat::Unknown: [[fallthrough]];
+        case PixelFormat::SENTINEL: [[fallthrough]];
+        default:
+            Assert(false, "invalid pixel format");
+            return false;
+    }
+}
+
+} // namespace
