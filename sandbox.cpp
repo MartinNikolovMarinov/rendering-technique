@@ -2,8 +2,9 @@
 #include "tga_files.h"
 #include "surface.h"
 #include "log_utils.h"
+#include "debug_rendering.h"
 
-void testOneFile(const char* path) {
+void testParseOneFile(const char* path) {
     logInfo("Parsing File: {}", path);
 
     auto tgaFile = core::Unpack(TGA::loadFile(path));
@@ -15,8 +16,23 @@ void testOneFile(const char* path) {
     logInfo_Surface(surface);
 }
 
-void testAllFilesInAssetsDirectory(const char* path) {
-    auto ret = core::dirWalk(path, [](const core::DirEntry& entry, addr_size, void* userData) -> bool {
+void testLoadFileAndDebugRender(const char* path) {
+    logInfo("Parsing File: {}", path);
+
+    auto tgaFile = core::Unpack(TGA::loadFile(path));
+    defer { tgaFile.free(); };
+    logInfo_TGAFile(tgaFile);
+
+    auto surface = core::Unpack(createSurfaceFromTgaFile(tgaFile), "Failed to create surface from TGA file.");
+    defer { surface.free(); };
+    logInfo_Surface(surface);
+
+    debug_immPreviewSurface(surface);
+}
+
+
+void testParseAllFilesInDirectory(const char* directoryPath) {
+    auto ret = core::dirWalk(directoryPath, [](const core::DirEntry& entry, addr_size, void* userData) -> bool {
         if (entry.type == core::FileType::Regular) {
             const addr_size nameLen = core::cstrLen(entry.name);
             if (entry.name[nameLen - 1] != 't' &&
@@ -34,23 +50,23 @@ void testAllFilesInAssetsDirectory(const char* path) {
             addr_size idx = core::memcopy(pathBuffer, basePath, core::cstrLen(basePath));
             core::memcopy(pathBuffer + idx, entry.name, nameLen);
 
-            testOneFile(pathBuffer);
+            testParseOneFile(pathBuffer);
         }
 
         return true;
-    }, const_cast<char*>(path));
+    }, const_cast<char*>(directoryPath));
 
     if (ret.hasErr()) {
         logErr_PltErrorCode(ret.err());
-        PanicFmt(false, "failed to walk direcotry: {}", path);
+        PanicFmt(false, "failed to walk direcotry: {}", directoryPath);
     }
 }
 
 int main() {
     coreInit(core::LogLevel::L_DEBUG);
 
-    testOneFile(ASSETS_DIRECTORY "/tga-test-suite/uwaterloo/serrano.tga");
-
+    testLoadFileAndDebugRender(ASSETS_DIRECTORY "/tga-test-suite/uwaterloo/serrano.tga");
+    // testParseOneFile(ASSETS_DIRECTORY "/tga-test-suite/uwaterloo/serrano.tga");
     // testAllFilesInAssetsDirectory(ASSETS_DIRECTORY "/tga-test-suite/uwaterloo/");
 
     coreShutdown();

@@ -61,21 +61,31 @@ set(src_sandbox
     src/tga_files.cpp
     src/log_utils.cpp
     src/surface.cpp
+    src/debug_rendering_glfw.cpp
 )
 
 # ---------------------------------------- End Declare Source Files ----------------------------------------------------
 
 # ---------------------------------------- Begin Create Executable -----------------------------------------------------
 
+set(OpenGL_GL_PREFERENCE GLVND)
+find_package(OpenGL REQUIRED)
+find_package(glfw3 REQUIRED)
+
 macro(common_target_setup target)
+    target_link_libraries(${target} PUBLIC core)
+    target_link_libraries(${target} PRIVATE glfw OpenGL::GL)
+
     target_include_directories(${target} PUBLIC
         ${CMAKE_CURRENT_SOURCE_DIR}/include
     )
+
     target_compile_definitions(${target} PUBLIC
         "USE_ANSI_LOGGING=$<BOOL:${USE_ANSI_LOGGING}>"
         "RENDERING_TECHNIQUES_DEBUG=$<BOOL:${RENDERING_TECHNIQUES_DEBUG}>"
         "ASSETS_DIRECTORY=\"${CMAKE_CURRENT_SOURCE_DIR}/assets\""
     )
+
     rendering_techniques_target_set_default_flags(${target} ${RENDERING_TECHNIQUES_DEBUG} false)
 endmacro()
 
@@ -113,7 +123,6 @@ endmacro()
 # endif()
 
 add_executable(${target_sandbox} sandbox.cpp ${src_sandbox})
-target_link_libraries(${target_sandbox} PUBLIC core)
 common_target_setup(${target_sandbox})
 
 # ---------------------------------------- END Create Executable -------------------------------------------------------
