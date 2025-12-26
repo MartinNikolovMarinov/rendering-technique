@@ -106,8 +106,18 @@ core::expected<Surface, Error> createSurfaceFromTgaFile(const TGA::TGAFile& tgaF
     addr_size imageDataOff = addr_size(tgaFile.imageDataOff);
     core::memcopy(data, &tgaFile.memory[imageDataOff], imageSize);
 
+    Origin origin = Origin::Undefined;
+    switch (header->origin()) {
+        case 0b00: origin = Origin::BottomLeft;  break;
+        case 0b01: origin = Origin::BottomRight; break;
+        case 0b10: origin = Origin::TopLeft;     break;
+        case 0b11: origin = Origin::TopRight;    break;
+        default:   origin = Origin::Undefined;   break;
+    }
+
     Surface surface = Surface();
     surface.actx = &actx;
+    surface.origin = origin;
     surface.pixelFormat = pixelFormat;
     surface.width = width;
     surface.height = height;

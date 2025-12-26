@@ -3,6 +3,9 @@
 #include "surface.h"
 #include "log_utils.h"
 #include "debug_rendering.h"
+#include "surface_renderer.h"
+
+// TODO: Write tests.
 
 void testOneFile(const char* path, bool debugRender = false) {
     logInfo("Parsing File: {}", path);
@@ -59,27 +62,22 @@ void testAllFilesInDirectory(const char* directoryPath) {
 }
 
 void createFileTest(const char* path) {
-    u8 buf[64*64*3] = {};
+    constexpr PixelFormat f = PixelFormat::BGRA8888;
+    constexpr i32 bpp = pixelFormatBytesPerPixel(f);
+
+    u8 buf[64*64*bpp] = {};
     Surface s = Surface();
     s.actx = nullptr;
-    s.pixelFormat = PixelFormat::BGR888;
+    s.origin = Origin::TopLeft;
+    s.pixelFormat = f;
     s.width = 64;
     s.height = 64;
-    s.pitch = s.width * 3;
+    s.pitch = s.width * bpp;
     s.data = buf;
 
-    u8 b = 255;
-    u8 g = 0;
-    u8 r = 0;
-
-    for (i32 row = 0; row < s.height; row++) {
-        for (i32 col = 0; col < s.width; col++) {
-            i32 idx = row * s.pitch + col * 3;
-            s.data[idx + 0] = b;
-            s.data[idx + 1] = g;
-            s.data[idx + 2] = r;
-        }
-    }
+    fillRectTopLeft(s, 0, 0, { .rgba = {255, 0, 255, 255} }, s.width, s.height);
+    fillRectTopLeft(s, 0, 0, { .rgba = {255, 0, 40, 255} }, s.width / 2, s.height / 2);
+    setPixelTopLeft(s, s.width / 2 - 15, 0, { .rgba = {0, 255, 255, 255} });
 
     TGA::CreateFileFromSurfaceParams params = {
         .surface = s,
@@ -94,13 +92,13 @@ int main() {
     {
         coreInit(core::LogLevel::L_DEBUG);
         defer { coreShutdown(); };
-        // initializeDebugRendering();
-        // defer { shutdownDebugRendering(); };
+        initializeDebugRendering();
+        defer { shutdownDebugRendering(); };
 
         createFileTest(ASSETS_DIRECTORY "/example.tga");
 
         // testAllFilesInDirectory(ASSETS_DIRECTORY "/tga-test-suite/my_test_suite/");
-        // testOneFile(ASSETS_DIRECTORY "/example.tga", true);
+        testOneFile(ASSETS_DIRECTORY "/example.tga", true);
     }
     return 0;
 }

@@ -46,9 +46,7 @@ void shutdownDebugRendering() {
 void debug_immPreviewSurface(const Surface& surface) {
     Panic(g_glfwInitialized, "GLFW is not initalized");
 
-    i32 bytesPerPixel = pixelFormatBytesPerPixel(surface.pixelFormat);
-
-    GLFWwindow* win = glfwCreateWindow(surface.width, surface.height,
+    GLFWwindow* win = glfwCreateWindow(surface.width * surface.bpp(), surface.height * surface.bpp(),
                                         "Surface Preview", nullptr, nullptr);
     if (!win) return;
     defer { glfwDestroyWindow(win); };
@@ -63,9 +61,6 @@ void debug_immPreviewSurface(const Surface& surface) {
     defer { glDeleteTextures(1, &tex); };
 
     glPixelStorei(GL_UNPACK_ALIGNMENT, 1); // allow tightly packed rows
-    if (surface.pitch != surface.width * bytesPerPixel) {
-        glPixelStorei(GL_UNPACK_ROW_LENGTH, surface.pitch / bytesPerPixel);
-    }
 
     const GLint internalFmt = pickGLInternalFormat(surface.pixelFormat);
     const GLenum fmt = pickGLFormat(surface.pixelFormat);
@@ -73,17 +68,38 @@ void debug_immPreviewSurface(const Surface& surface) {
     glTexImage2D(GL_TEXTURE_2D, 0, internalFmt, surface.width, surface.height,
                 0, fmt, type, surface.data);
 
+    // Choose texture coordinates based on surface origin (default GL origin is bottom-left).
+    float u0 = 0.f, u1 = 1.f, v0 = 0.f, v1 = 1.f;
+    switch (surface.origin) {
+        case Origin::BottomLeft:
+            break;
+        case Origin::BottomRight:
+            std::swap(u0, u1);
+            break;
+        case Origin::TopLeft:
+            std::swap(v0, v1);
+            break;
+        case Origin::TopRight:
+            std::swap(u0, u1);
+            std::swap(v0, v1);
+            break;
+        case Origin::Undefined: [[fallthrough]];
+        case Origin::Center:    [[fallthrough]];
+        case Origin::SENTINEL:
+            break; // leave default orientation
+    }
+
     while (!glfwWindowShouldClose(win)) {
         glfwPollEvents();
-        glViewport(0, 0, surface.width, surface.height);
+        glViewport(0, 0, surface.width * surface.bpp(), surface.height * surface.bpp());
         glClear(GL_COLOR_BUFFER_BIT);
 
         glEnable(GL_TEXTURE_2D);
         glBegin(GL_TRIANGLE_STRIP);
-            glTexCoord2f(0.f, 0.f); glVertex2f(-1.f, -1.f);
-            glTexCoord2f(1.f, 0.f); glVertex2f( 1.f, -1.f);
-            glTexCoord2f(0.f, 1.f); glVertex2f(-1.f,  1.f);
-            glTexCoord2f(1.f, 1.f); glVertex2f( 1.f,  1.f);
+            glTexCoord2f(u0, v0); glVertex2f(-1.f, -1.f);
+            glTexCoord2f(u1, v0); glVertex2f( 1.f, -1.f);
+            glTexCoord2f(u0, v1); glVertex2f(-1.f,  1.f);
+            glTexCoord2f(u1, v1); glVertex2f( 1.f,  1.f);
         glEnd();
         glDisable(GL_TEXTURE_2D);
 

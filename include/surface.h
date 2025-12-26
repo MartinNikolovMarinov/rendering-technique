@@ -1,3 +1,5 @@
+#pragma once
+
 #include "core_init.h"
 #include "error.h"
 
@@ -61,17 +63,31 @@ constexpr const char* pixelFormatToCstr(PixelFormat pixelFormat) {
     }
 }
 
+enum struct Origin {
+    Undefined,
+
+    BottomLeft,
+    BottomRight,
+    TopLeft,
+    TopRight,
+    Center,
+
+    SENTINEL
+};
+
 struct Surface {
     core::AllocatorContext* actx;
 
     Surface()
         : actx(nullptr)
+        , origin(Origin::Undefined)
         , pixelFormat(PixelFormat::Unknown)
         , width(0)
         , height(0)
         , pitch(0)
         , data(nullptr) {}
 
+    Origin origin;
     PixelFormat pixelFormat;
     i32 width;
     i32 height;
@@ -79,6 +95,7 @@ struct Surface {
     u8* data;
 
     constexpr i32 size() const { return height * pitch; }
+    constexpr i32 bpp() const { return pixelFormatBytesPerPixel(pixelFormat); }
     constexpr bool isOwner() const { return actx != nullptr; }
     void free();
 };

@@ -249,6 +249,28 @@ core::expected<TGAError> createTrueColorFile(const CreateFileFromSurfaceParams& 
     header.setPixelDepth(u8(pixelFormatBytesPerPixel(params.surface.pixelFormat) * core::BYTE_SIZE));
     header.setAlphaBits(u8(pixelFormatAlphaBits(params.surface.pixelFormat)));
 
+    // Set image origin
+    switch (params.surface.origin) {
+        case Origin::BottomLeft:
+            header.setOrigin(0b00);
+            break;
+        case Origin::BottomRight:
+            header.setOrigin(0b01);
+            break;
+        case Origin::TopLeft:
+            header.setOrigin(0b10);
+            break;
+        case Origin::TopRight:
+            header.setOrigin(0b11);
+            break;
+
+        case Origin::Undefined: [[fallthrough]];
+        case Origin::Center:    [[fallthrough]];
+        case Origin::SENTINEL:
+            Assert(false, "unsupported surface origin");
+            return core::unexpected(TGAError::InvalidArgument);
+    }
+
     // Write the header
     if (auto res = core::fileWrite(file, &header, sizeof(Header)); res.hasErr() || res.value() != sizeof(Header)) {
         logErr_PltErrorCode(res.err());

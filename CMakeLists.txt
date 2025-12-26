@@ -62,6 +62,7 @@ set(src_sandbox
     src/log_utils.cpp
     src/surface.cpp
     src/debug_rendering_glfw.cpp
+    src/surface_renderer.cpp
 )
 
 # ---------------------------------------- End Declare Source Files ----------------------------------------------------
