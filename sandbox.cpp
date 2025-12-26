@@ -68,16 +68,23 @@ void createFileTest(const char* path) {
     u8 buf[64*64*bpp] = {};
     Surface s = Surface();
     s.actx = nullptr;
-    s.origin = Origin::TopLeft;
+    s.origin = Origin::BottomLeft;
     s.pixelFormat = f;
     s.width = 64;
     s.height = 64;
     s.pitch = s.width * bpp;
     s.data = buf;
 
-    fillRectTopLeft(s, 0, 0, { .rgba = {255, 0, 255, 255} }, s.width, s.height);
-    fillRectTopLeft(s, 0, 0, { .rgba = {255, 0, 40, 255} }, s.width / 2, s.height / 2);
-    setPixelTopLeft(s, s.width / 2 - 15, 0, { .rgba = {0, 255, 255, 255} });
+    fillRect(s, 0, 0, { .rgba = {0, 0, 0, 255} }, s.width, s.height);
+
+    int ax =  7, ay =  3;
+    int bx = 12, by = 37;
+    int cx = 62, cy = 53;
+
+    fillLine(s, ax, ay, bx, by, BLUE);
+    fillLine(s, cx, cy, bx, by, GREEN);
+    fillLine(s, cx, cy, ax, ay, YELLOW);
+    fillLine(s, ax, ay, cx, cy, RED);
 
     TGA::CreateFileFromSurfaceParams params = {
         .surface = s,

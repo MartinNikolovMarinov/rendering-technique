@@ -39,7 +39,7 @@ void shutdownDebugRendering() {
         return;
     }
 
-    glfwTerminate();
+    // glfwTerminate(); // TODO: find out why this is segfaulting.
     g_glfwInitialized = false;
 }
 
@@ -74,14 +74,14 @@ void debug_immPreviewSurface(const Surface& surface) {
         case Origin::BottomLeft:
             break;
         case Origin::BottomRight:
-            std::swap(u0, u1);
+            core::swap(u0, u1);
             break;
         case Origin::TopLeft:
-            std::swap(v0, v1);
+            core::swap(v0, v1);
             break;
         case Origin::TopRight:
-            std::swap(u0, u1);
-            std::swap(v0, v1);
+            core::swap(u0, u1);
+            core::swap(v0, v1);
             break;
         case Origin::Undefined: [[fallthrough]];
         case Origin::Center:    [[fallthrough]];

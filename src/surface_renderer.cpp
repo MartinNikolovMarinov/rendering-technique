@@ -14,7 +14,7 @@ constexpr inline SetPixelFn pickSetPixelFunction(PixelFormat pixelFormat);
 
 } // namespace
 
-void setPixelTopLeft(Surface& surface, i32 x, i32 y, Color color) {
+void fillPixel(Surface& surface, i32 x, i32 y, Color color) {
     i32 idx = y * surface.pitch + x * surface.bpp();
 
     Assert(surface.data != nullptr, "surface data is null");
@@ -26,7 +26,7 @@ void setPixelTopLeft(Surface& surface, i32 x, i32 y, Color color) {
     setPixelFn(surface.data, idx, color);
 }
 
-void fillRectTopLeft(Surface& surface, i32 x, i32 y, Color color, i32 width, i32 height) {
+void fillRect(Surface& surface, i32 x, i32 y, Color color, i32 width, i32 height) {
     Assert(surface.data != nullptr, "surface data is null");
     Assert(width > 0 && height > 0, "rect has non-positive size");
     Assert(x >= 0 && y >= 0, "rect origin out of bounds");
@@ -37,6 +37,42 @@ void fillRectTopLeft(Surface& surface, i32 x, i32 y, Color color, i32 width, i32
     for (i32 row = y; row < y + height; row++) {
         for (i32 col = x; col < x + width; col++) {
             i32 idx = row * surface.pitch + col * surface.bpp();
+            setPixelFn(surface.data, idx, color);
+        }
+    }
+}
+
+void fillLine(Surface& surface, i32 ax, i32 ay, i32 bx, i32 by, Color color) {
+    Assert(surface.data != nullptr, "surface data is null");
+    Assert(ax >= 0 && ay >= 0 && bx >= 0 && by >= 0, "line start/end out of bounds (negative)");
+    Assert(ax < surface.width && bx < surface.width, "line x out of bounds");
+    Assert(ay < surface.height && by < surface.height, "line y out of bounds");
+    Assert(surface.bpp() > 0, "invalid bytes-per-pixel");
+
+    SetPixelFn setPixelFn = pickSetPixelFunction(surface.pixelFormat);
+
+    bool transpose = core::absGeneric(ax - bx) < core::absGeneric(ay - by);
+    if (transpose) {
+        core::swap(ax, ay);
+        core::swap(bx, by);
+    }
+
+    bool flipLeftToRight = ax > bx;
+    if (flipLeftToRight) {
+        core::swap(ax, bx);
+        core::swap(ay, by);
+    }
+
+    for (i32 x = ax; x <= bx; x++) {
+        f32 t = f32(x-ax) / f32(bx-ax);
+        i32 y = i32(core::round(f32(ay) + f32(by - ay)*t));
+
+        if (transpose) {
+            i32 idx = x * surface.pitch + y * surface.bpp();
+            setPixelFn(surface.data, idx, color);
+        }
+        else {
+            i32 idx = y * surface.pitch + x * surface.bpp();
             setPixelFn(surface.data, idx, color);
         }
     }
