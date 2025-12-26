@@ -5,7 +5,17 @@
 #include "debug_rendering.h"
 #include "surface_renderer.h"
 
+#include <ctime>
+
 // TODO: Write tests.
+
+core::Profiler profiler_1;
+
+enum ProfilePoints {
+    PP_RESERVED,
+
+    PP_DRAW_LINE,
+};
 
 void testOneFile(const char* path, bool debugRender = false) {
     logInfo("Parsing File: {}", path);
@@ -95,17 +105,66 @@ void createFileTest(const char* path) {
     core::Expect(TGA::createFileFromSurface(params));
 }
 
+void create5MillionLines(const char* path) {
+    constexpr PixelFormat f = PixelFormat::BGR888;
+    constexpr i32 bpp = pixelFormatBytesPerPixel(f);
+
+    u8 buf[64*64*bpp] = {};
+    Surface s = Surface();
+    s.actx = nullptr;
+    s.origin = Origin::BottomLeft;
+    s.pixelFormat = f;
+    s.width = 64;
+    s.height = 64;
+    s.pitch = s.width * bpp;
+    s.data = buf;
+
+    fillRect(s, 0, 0, { .rgba = {0, 0, 0, 255} }, s.width, s.height);
+
+    {
+        profiler_1.beginProfile();
+        defer {
+            auto pRes = profiler_1.endProfile();
+            logInfo("Profiler 1");
+            pRes.logResult(core::LogLevel::L_INFO);
+        };
+
+        constexpr addr_size N = 5000000;
+        std::srand(u32(std::time({})));
+        for (addr_size i = 0; i < N; i++) {
+            i32 ax = rand() % s.width;
+            i32 ay = rand() % s.height;
+            i32 bx = rand() % s.width;
+            i32 by = rand() % s.height;
+            Color color = { .rgba = { u8(rand()%255), u8(rand()%255), u8(rand()%255), u8(rand()%255) } };
+
+            {
+                TIME_BLOCK(profiler_1, PP_DRAW_LINE, "Draw Line");
+                fillLine(s, ax, ay, bx, by, color);
+            }
+        }
+    }
+
+    TGA::CreateFileFromSurfaceParams params = {
+        .surface = s,
+        .path = path,
+        .imageType = 2,
+        .fileType = TGA::FileType::New,
+    };
+    core::Expect(TGA::createFileFromSurface(params));
+}
+
 int main() {
     {
         coreInit(core::LogLevel::L_DEBUG);
         defer { coreShutdown(); };
-        initializeDebugRendering();
-        defer { shutdownDebugRendering(); };
+        // initializeDebugRendering();
+        // defer { shutdownDebugRendering(); };
 
-        createFileTest(ASSETS_DIRECTORY "/example.tga");
-
+        create5MillionLines(ASSETS_DIRECTORY "/example.tga");
+        // createFileTest(ASSETS_DIRECTORY "/example.tga");
         // testAllFilesInDirectory(ASSETS_DIRECTORY "/tga-test-suite/my_test_suite/");
-        testOneFile(ASSETS_DIRECTORY "/example.tga", true);
+        // testOneFile(ASSETS_DIRECTORY "/example.tga", true);
     }
     return 0;
 }
