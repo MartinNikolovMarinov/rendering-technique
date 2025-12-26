@@ -15,11 +15,23 @@ void logErr_PltErrorCode(core::PltErrCode pltErrCode) {
 
 void logInfo_Surface(const Surface& surface) {
     logInfo(
-        "Surface: width={}, height={}, pitch={}",
-        surface.width, surface.height, surface.pitch
+        "\n{{\n"
+        "  \"surface\": {{\n"
+        "    \"width\": {},\n"
+        "    \"height\": {},\n"
+        "    \"pitch\": {},\n"
+        "    \"pixelFormat\": \"{}\",\n"
+        "    \"size\": {},\n"
+        "    \"isOwner\": {}\n"
+        "  }}\n"
+        "}}",
+        surface.width,
+        surface.height,
+        surface.pitch,
+        pixelFormatToCstr(surface.pixelFormat),
+        surface.size(),
+        surface.isOwner()
     );
-
-    // TODO: log the pixel format appropriately: surface.pixelFormat
 }
 
 void logInfo_TGAFile(TGA::TGAFile& file) {

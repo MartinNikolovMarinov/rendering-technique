@@ -47,6 +47,20 @@ constexpr i32 pixelFormatAlphaBits(PixelFormat pixelFormat) {
     }
 }
 
+constexpr const char* pixelFormatToCstr(PixelFormat pixelFormat) {
+    switch (pixelFormat) {
+        case PixelFormat::BGRA8888: return "BGRA_8888";
+        case PixelFormat::BGRX8888: return "BGRX_8888";
+        case PixelFormat::BGRA5551: return "BGRA_5551";
+        case PixelFormat::BGR555:   return "BGR_555";
+        case PixelFormat::BGR888:   return "BGR_888";
+
+        case PixelFormat::Unknown: [[fallthrough]];
+        case PixelFormat::SENTINEL: [[fallthrough]];
+        default: return "unknown";
+    }
+}
+
 struct Surface {
     core::AllocatorContext* actx;
 

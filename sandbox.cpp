@@ -58,15 +58,49 @@ void testAllFilesInDirectory(const char* directoryPath) {
     }
 }
 
+void createFileTest(const char* path) {
+    u8 buf[64*64*3] = {};
+    Surface s = Surface();
+    s.actx = nullptr;
+    s.pixelFormat = PixelFormat::BGR888;
+    s.width = 64;
+    s.height = 64;
+    s.pitch = s.width * 3;
+    s.data = buf;
+
+    u8 b = 255;
+    u8 g = 0;
+    u8 r = 0;
+
+    for (i32 row = 0; row < s.height; row++) {
+        for (i32 col = 0; col < s.width; col++) {
+            i32 idx = row * s.pitch + col * 3;
+            s.data[idx + 0] = b;
+            s.data[idx + 1] = g;
+            s.data[idx + 2] = r;
+        }
+    }
+
+    TGA::CreateFileFromSurfaceParams params = {
+        .surface = s,
+        .path = path,
+        .imageType = 2,
+        .fileType = TGA::FileType::New,
+    };
+    core::Expect(TGA::createFileFromSurface(params));
+}
+
 int main() {
     {
         coreInit(core::LogLevel::L_DEBUG);
         defer { coreShutdown(); };
-        initializeDebugRendering();
-        defer { shutdownDebugRendering(); };
+        // initializeDebugRendering();
+        // defer { shutdownDebugRendering(); };
+
+        createFileTest(ASSETS_DIRECTORY "/example.tga");
 
         // testAllFilesInDirectory(ASSETS_DIRECTORY "/tga-test-suite/my_test_suite/");
-        testOneFile(ASSETS_DIRECTORY "/tga-test-suite/my_test_suite/tulips.tga", true);
+        // testOneFile(ASSETS_DIRECTORY "/example.tga", true);
     }
     return 0;
 }

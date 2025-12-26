@@ -1,5 +1,6 @@
 #include "tga_files.h"
 #include "log_utils.h"
+#include "surface.h"
 
 #define TGA_IS_ERR_FATAL(x) if (x.hasErr() && isFatalError(x.err())) return core::unexpected(x.err());
 
@@ -8,21 +9,28 @@ namespace TGA
 
 namespace {
 
+constexpr auto TRUE_VISION_SIGNATURE = "TRUEVISION-XFILE."_sv;
+
 constexpr bool isFatalError(TGAError err);
 
 constexpr bool hasSignature(const char signature[18]);
 constexpr core::expected<addr_off, TGAError> parseFooterOffset(u8* begin, u8* end);
+
+core::expected<TGAError> createTrueColorFile(const CreateFileFromSurfaceParams& params);
 
 } // namespace
 
 const char* errorToCstr(TGAError err) {
     switch (err)
     {
-        case TGAError::FailedToStatFile:  return "Failed to stat file";
-        case TGAError::FailedToReadFile:  return "Failed to read file";
-        case TGAError::InvalidFileFormat: return "Invalid file format";
-        case TGAError::OldFormat:         return "Old format";
-        case TGAError::ApplicationBug:    return "User code has a bug";
+        case TGAError::FailedToStatFile:     return "Failed to stat file";
+        case TGAError::FailedToReadFile:     return "Failed to read file";
+        case TGAError::FailedToWriteFile:    return "Failed to write file";
+        case TGAError::InvalidFileFormat:    return "Invalid file format";
+        case TGAError::OldFormat:            return "Old format";
+        case TGAError::ApplicationBug:       return "User code has a bug";
+        case TGAError::InvalidArgument:      return "Invalid argument passed";
+        case TGAError::UnsupportedImageType: return "Unsupported image type";
 
         case TGAError::Undefined: [[fallthrough]];
         case TGAError::SENTINEL: [[fallthrough]];
@@ -153,17 +161,48 @@ void TGAFile::free() {
     }
 }
 
+core::expected<TGAError> createFileFromSurface(const CreateFileFromSurfaceParams& params) {
+    if (params.surface.size() == 0) {
+        logErr("Surface size is 0");
+        return core::unexpected(TGAError::InvalidArgument);
+    }
+
+    bool isValidFileType = (params.fileType == FileType::New) || (params.fileType == FileType::Original);
+    if (!isValidFileType) {
+        logErr("Invalid file type = {}", params.fileType);
+        return core::unexpected(TGAError::InvalidArgument);
+    }
+
+    switch (params.imageType) {
+        case 2:
+            return createTrueColorFile(params);
+
+        // TODO2: [Support] Do I cae for any other image type?
+        // TODO2: [Support] Run-length encoding (RLE).
+
+        default:
+            logErr("Unsupported image type = {}", params.imageType);
+            return core::unexpected(TGAError::UnsupportedImageType);
+    }
+
+    return {};
+}
+
 namespace
 {
 
 constexpr bool isFatalError(TGAError err) {
     switch (err)
     {
-        case TGAError::FailedToStatFile:  return true;
-        case TGAError::FailedToReadFile:  return true;
-        case TGAError::InvalidFileFormat: return true;
-        case TGAError::OldFormat:         return false;
-        case TGAError::ApplicationBug:    return true;
+        case TGAError::OldFormat:            return false;
+
+        case TGAError::FailedToStatFile:     return true;
+        case TGAError::FailedToReadFile:     return true;
+        case TGAError::FailedToWriteFile:    return true;
+        case TGAError::InvalidFileFormat:    return true;
+        case TGAError::ApplicationBug:       return true;
+        case TGAError::InvalidArgument:      return true;
+        case TGAError::UnsupportedImageType: return true;
 
         case TGAError::Undefined: [[fallthrough]];
         case TGAError::SENTINEL: [[fallthrough]];
@@ -172,7 +211,7 @@ constexpr bool isFatalError(TGAError err) {
 }
 
 constexpr bool hasSignature(const char signature[18]) {
-    return core::memcmp(signature, 17, "TRUEVISION-XFILE.", 17) == 0;
+    return core::memcmp(signature, 17, TRUE_VISION_SIGNATURE.data(), TRUE_VISION_SIGNATURE.len()) == 0;
 }
 
 constexpr core::expected<addr_off, TGAError> parseFooterOffset(u8* begin, u8* end) {
@@ -192,7 +231,49 @@ constexpr core::expected<addr_off, TGAError> parseFooterOffset(u8* begin, u8* en
     return off;
 }
 
-} // namespace
+core::expected<TGAError> createTrueColorFile(const CreateFileFromSurfaceParams& params) {
+    auto openRes = core::fileOpen(params.path,
+        core::OpenMode::Read | core::OpenMode::Write | core::OpenMode::Truncate | core::OpenMode::Create);
+    if (openRes.hasErr()) {
+        logErr_PltErrorCode(openRes.err());
+        return core::unexpected(TGAError::InvalidArgument);
+    }
 
+    core::FileDesc file = std::move(openRes.value());
+
+    Header header = {};
+
+    header.imageType = TGAByte(params.imageType);
+    header.setWidth(u16(params.surface.width));
+    header.setHeight(u16(params.surface.height));
+    header.setPixelDepth(u8(pixelFormatBytesPerPixel(params.surface.pixelFormat) * core::BYTE_SIZE));
+    header.setAlphaBits(u8(pixelFormatAlphaBits(params.surface.pixelFormat)));
+
+    // Write the header
+    if (auto res = core::fileWrite(file, &header, sizeof(Header)); res.hasErr() || res.value() != sizeof(Header)) {
+        logErr_PltErrorCode(res.err());
+        return core::unexpected(TGAError::FailedToWriteFile);
+    }
+
+    // Write the content
+    if (auto res = core::fileWrite(file, params.surface.data, addr_size(params.surface.size())); res.hasErr() || res.value() != addr_size(params.surface.size())) {
+        logErr_PltErrorCode(res.err());
+        return core::unexpected(TGAError::FailedToWriteFile);
+    }
+
+    // Write the footer if file type is new
+    if (params.fileType == FileType::New) {
+        Footer footer = {};
+        core::memcopy(footer.signature, TRUE_VISION_SIGNATURE.data(), TRUE_VISION_SIGNATURE.len());
+        if (auto res = core::fileWrite(file, &footer, sizeof(Footer)); res.hasErr() || res.value() != sizeof(Footer)) {
+            logErr_PltErrorCode(res.err());
+            return core::unexpected(TGAError::FailedToWriteFile);
+        }
+    }
+
+    return {};
+}
+
+} // namespace
 
 } // namespace TGA

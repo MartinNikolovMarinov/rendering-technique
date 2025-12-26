@@ -1,5 +1,7 @@
 #include "core_init.h"
 
+struct Surface;
+
 namespace TGA
 {
 
@@ -11,9 +13,12 @@ enum struct TGAError {
     Undefined,
     FailedToStatFile,
     FailedToReadFile,
+    FailedToWriteFile,
     InvalidFileFormat,
     OldFormat,
     ApplicationBug,
+    InvalidArgument,
+    UnsupportedImageType,
     SENTINEL
 };
 
@@ -124,23 +129,54 @@ struct PACKED Header {
     constexpr inline i32 offsetX() const {
         return i32(imageSpecification[0]) | (i32(imageSpecification[1]) << core::BYTE_SIZE);
     }
+    constexpr inline void setOffsetX(u16 x) {
+        imageSpecification[0] = TGAByte(x);
+        imageSpecification[1] = TGAByte(x >> core::BYTE_SIZE);
+    }
+
     constexpr inline i32 offsetY() const {
         return i32(imageSpecification[2]) | (i32(imageSpecification[3]) << core::BYTE_SIZE);
     }
+    constexpr inline void setOffsetY(u16 x) {
+        imageSpecification[2] = TGAByte(x);
+        imageSpecification[3] = TGAByte(x >> core::BYTE_SIZE);
+    }
+
     constexpr inline i32 width() const {
         return i32(imageSpecification[4]) | (i32(imageSpecification[5]) << core::BYTE_SIZE);
     }
+    constexpr inline void setWidth(u16 x) {
+        imageSpecification[4] = TGAByte(x);
+        imageSpecification[5] = TGAByte(x >> core::BYTE_SIZE);
+    }
+
     constexpr inline i32 height() const {
         return i32(imageSpecification[6]) | (i32(imageSpecification[7]) << core::BYTE_SIZE);
     }
+    constexpr inline void setHeight(u16 x) {
+        imageSpecification[6] = TGAByte(x);
+        imageSpecification[7] = TGAByte(x >> core::BYTE_SIZE);
+    }
+
     constexpr inline i32 pixelDepth() const {
         return i32(imageSpecification[8]);
     }
+    constexpr inline void setPixelDepth(u8 x) {
+        imageSpecification[8] = TGAByte(x);
+    }
+
     constexpr inline i32 alphaBits() const {
         return i32(0b1111 & imageSpecification[9]);
     }
+    constexpr inline void setAlphaBits(u8 x) {
+        imageSpecification[9] = TGAByte(0b1111 & x);
+    }
+
     constexpr inline i32 origin() const {
         return i32(0b110000 & imageSpecification[9]) >> 4;
+    }
+    constexpr inline void setOrigin(u8 x) {
+        imageSpecification[9] = TGAByte((0b11 & x) << 4);
     }
 };
 PACK_POP
@@ -190,8 +226,16 @@ struct TGAFile {
     void free();
 };
 
+struct CreateFileFromSurfaceParams {
+    const Surface& surface;
+    const char* path = nullptr;
+    i32 imageType = 1;
+    FileType fileType = FileType::Unknown;
+};
+
 const char* errorToCstr(TGAError err);
 
 core::expected<TGAFile, TGAError> loadFile(const char* path, core::AllocatorContext& actx = DEF_ALLOC);
+core::expected<TGAError> createFileFromSurface(const CreateFileFromSurfaceParams& params);
 
 } // namespace TGA
