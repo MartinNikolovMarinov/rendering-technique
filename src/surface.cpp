@@ -2,7 +2,9 @@
 #include "tga_files.h"
 
 void Surface::free() {
-    actx->free(data, addr_size(size()), sizeof(u8));
+    if (isOwner() && data) {
+        actx->free(data, addr_size(size()), sizeof(u8));
+    }
 }
 
 namespace {
@@ -55,11 +57,13 @@ core::expected<Surface, Error> createSurfaceFromTgaFile(const TGA::TGAFile& tgaF
     using namespace TGA;
 
     if (!tgaFile.isValid()) {
+        logErr("Tga file is invalid");
         return core::unexpected(Error::FailedToCreateSurface);
     }
 
     const Header* header;
     if (auto res = tgaFile.header(header); res.hasErr()) {
+        logErr("Failed to parse header");
         return core::unexpected(Error::FailedToCreateSurface);
     }
 
@@ -71,6 +75,11 @@ core::expected<Surface, Error> createSurfaceFromTgaFile(const TGA::TGAFile& tgaF
     i32 alphaChannelSize = header->alphaBits();
 
     addr_size imageSize = addr_size(pitch) * addr_size(height);
+    if (imageSize == 0) {
+        logErr("Image size is 0");
+        return core::unexpected(Error::FailedToCreateSurface);
+    }
+
     u8* data = reinterpret_cast<u8*>(actx.alloc(imageSize, sizeof(u8)));
 
     PixelFormat pixelFormat = PixelFormat::Unknown;
@@ -80,6 +89,9 @@ core::expected<Surface, Error> createSurfaceFromTgaFile(const TGA::TGAFile& tgaF
             // True Color Image
             pixelFormat = pickPixelFormatForTrueColorImage(bytesPerPixel, alphaChannelSize);
             break;
+
+        // TODO2: [Support] Do I care for any other image type?
+        // TODO2: [Support] Decode if run-length encoded (RLE).
 
         default:
             logErr("Unsupported tga image type: {}", i32(header->imageType));
@@ -91,17 +103,15 @@ core::expected<Surface, Error> createSurfaceFromTgaFile(const TGA::TGAFile& tgaF
         return core::unexpected(Error::FailedToCreateSurface);
     }
 
-    // TODO2: Decode if run-length encoded (RLE)
     addr_size imageDataOff = addr_size(tgaFile.imageDataOff);
     core::memcopy(data, &tgaFile.memory[imageDataOff], imageSize);
 
-    Surface surface = {
-        .actx = &actx,
-        .pixelFormat = pixelFormat,
-        .width = width,
-        .height = height,
-        .pitch = pitch,
-        .data = data
-    };
+    Surface surface = Surface();
+    surface.actx = &actx;
+    surface.pixelFormat = pixelFormat;
+    surface.width = width;
+    surface.height = height;
+    surface.pitch = pitch;
+    surface.data = data;
     return surface;
 }

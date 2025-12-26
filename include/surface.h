@@ -31,13 +31,13 @@ constexpr i32 pixelFormatBytesPerPixel(PixelFormat pixelFormat) {
     }
 }
 
-constexpr bool pixelFormatHasAlpha(PixelFormat pixelFormat) {
+constexpr i32 pixelFormatAlphaBits(PixelFormat pixelFormat) {
     switch (pixelFormat) {
-        case PixelFormat::BGRA8888: return true;
-        case PixelFormat::BGRX8888: return false;
-        case PixelFormat::BGRA5551: return true;
-        case PixelFormat::BGR555:   return false;
-        case PixelFormat::BGR888:   return false;
+        case PixelFormat::BGRA8888: return 8;
+        case PixelFormat::BGRX8888: return 0;
+        case PixelFormat::BGRA5551: return 1;
+        case PixelFormat::BGR555:   return 0;
+        case PixelFormat::BGR888:   return 0;
 
         case PixelFormat::Unknown: [[fallthrough]];
         case PixelFormat::SENTINEL: [[fallthrough]];
@@ -50,13 +50,22 @@ constexpr bool pixelFormatHasAlpha(PixelFormat pixelFormat) {
 struct Surface {
     core::AllocatorContext* actx;
 
+    Surface()
+        : actx(nullptr)
+        , pixelFormat(PixelFormat::Unknown)
+        , width(0)
+        , height(0)
+        , pitch(0)
+        , data(nullptr) {}
+
     PixelFormat pixelFormat;
     i32 width;
     i32 height;
     i32 pitch;
     u8* data;
 
-    constexpr i32 size() { return height * pitch; }
+    constexpr i32 size() const { return height * pitch; }
+    constexpr bool isOwner() const { return actx != nullptr; }
     void free();
 };
 
