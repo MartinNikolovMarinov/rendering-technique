@@ -5,8 +5,6 @@
 #include "debug_rendering.h"
 #include "surface_renderer.h"
 
-#include <ctime>
-
 // TODO: Write tests.
 
 core::Profiler profiler_1;
@@ -130,13 +128,13 @@ void create5MillionLines(const char* path) {
         };
 
         constexpr addr_size N = 5000000;
-        std::srand(u32(std::time({})));
+        core::rndInit();
         for (addr_size i = 0; i < N; i++) {
-            i32 ax = rand() % s.width;
-            i32 ay = rand() % s.height;
-            i32 bx = rand() % s.width;
-            i32 by = rand() % s.height;
-            Color color = { .rgba = { u8(rand()%255), u8(rand()%255), u8(rand()%255), u8(rand()%255) } };
+            i32 ax = i32(core::rndU32() % u32(s.width));
+            i32 ay = i32(core::rndU32() % u32(s.height));
+            i32 bx = i32(core::rndU32() % u32(s.width));
+            i32 by = i32(core::rndU32() % u32(s.height));
+            Color color = { .rgba = { u8(core::rndU32()%255), u8(core::rndU32()%255), u8(core::rndU32()%255), u8(core::rndU32()%255) } };
 
             {
                 TIME_BLOCK(profiler_1, PP_DRAW_LINE, "Draw Line");
@@ -163,6 +161,7 @@ int main() {
 
         create5MillionLines(ASSETS_DIRECTORY "/example.tga");
         // createFileTest(ASSETS_DIRECTORY "/example.tga");
+
         // testAllFilesInDirectory(ASSETS_DIRECTORY "/tga-test-suite/my_test_suite/");
         // testOneFile(ASSETS_DIRECTORY "/example.tga", true);
     }

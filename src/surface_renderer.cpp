@@ -51,6 +51,8 @@ void fillLine(Surface& surface, i32 ax, i32 ay, i32 bx, i32 by, Color color) {
 
     SetPixelFn setPixelFn = pickSetPixelFunction(surface.pixelFormat);
 
+    // Bresenham line drawing algorithm using integer calculations.
+
     bool transpose = core::absGeneric(ax - bx) < core::absGeneric(ay - by);
     if (transpose) {
         core::swap(ax, ay);
@@ -63,10 +65,9 @@ void fillLine(Surface& surface, i32 ax, i32 ay, i32 bx, i32 by, Color color) {
         core::swap(ay, by);
     }
 
+    i32 y = ay;
+    i32 ierror = 0;
     for (i32 x = ax; x <= bx; x++) {
-        f32 t = f32(x-ax) / f32(bx-ax);
-        i32 y = i32(core::round(f32(ay) + f32(by - ay)*t));
-
         if (transpose) {
             i32 idx = x * surface.pitch + y * surface.bpp();
             setPixelFn(surface.data, idx, color);
@@ -74,6 +75,12 @@ void fillLine(Surface& surface, i32 ax, i32 ay, i32 bx, i32 by, Color color) {
         else {
             i32 idx = y * surface.pitch + x * surface.bpp();
             setPixelFn(surface.data, idx, color);
+        }
+
+        ierror += i32(2 * core::absGeneric(by - ay));
+        if (ierror > bx - ax) {
+            y += by > ay ? 1 : -1;
+            ierror -= 2 * (bx-ax);
         }
     }
 }
