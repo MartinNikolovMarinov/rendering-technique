@@ -2,7 +2,7 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "Debug Sandbox with Sandbox",
+            "name": "Debug Sandbox with LLDB",
             "type": "lldb",
             "request": "launch",
             "program": "${workspaceFolder}/build/sandbox",

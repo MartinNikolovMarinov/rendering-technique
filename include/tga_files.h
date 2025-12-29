@@ -13,6 +13,8 @@ using TGAByte = u8;
 
 enum struct TGAError {
     Undefined,
+
+    FailedToOpenFile,
     FailedToStatFile,
     FailedToReadFile,
     FailedToWriteFile,
@@ -21,6 +23,8 @@ enum struct TGAError {
     ApplicationBug,
     InvalidArgument,
     UnsupportedImageType,
+    FailedToCreateSurface,
+
     SENTINEL
 };
 
@@ -237,7 +241,8 @@ struct CreateFileFromSurfaceParams {
 
 const char* errorToCstr(TGAError err);
 
-core::expected<TGAFile, TGAError> loadFile(const char* path, core::AllocatorContext& actx = DEF_ALLOC);
-core::expected<TGAError> createFileFromSurface(const CreateFileFromSurfaceParams& params);
+[[nodiscard]] core::expected<TGAFile, TGAError> loadFile(const char* path, core::AllocatorContext& actx = DEF_ALLOC);
+[[nodiscard]] core::expected<Surface, TGAError> createSurfaceFromTgaFile(const TGA::TGAFile& tgaFile, core::AllocatorContext& actx = DEF_ALLOC);
+[[nodiscard]] core::expected<TGAError> createFileFromSurface(const CreateFileFromSurfaceParams& params);
 
 } // namespace TGA

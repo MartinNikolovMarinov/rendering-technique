@@ -4,7 +4,7 @@
 
 struct Surface;
 
-bool initializeDebugRendering();
+[[nodiscard]] bool initializeDebugRendering();
 void shutdownDebugRendering();
 
 void debug_immPreviewSurface(const Surface& surface);

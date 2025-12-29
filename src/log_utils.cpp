@@ -13,6 +13,11 @@ void logErr_PltErrorCode(core::PltErrCode pltErrCode) {
     }
 }
 
+void logErr_ConvErrorCode(core::ConversionError convErrCode) {
+    const char* errMg = core::conversionErrorToCstr(convErrCode);
+    logErr("Conversion Error; reason: {}", errMg);
+}
+
 void logInfo_Surface(const Surface& surface) {
     logInfo(
         "\n{{\n"

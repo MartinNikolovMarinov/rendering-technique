@@ -16,6 +16,8 @@ constexpr bool isFatalError(TGAError err);
 constexpr bool hasSignature(const char signature[18]);
 constexpr core::expected<addr_off, TGAError> parseFooterOffset(u8* begin, u8* end);
 
+PixelFormat pickPixelFormatForTrueColorImage(i32 bytesPerPixel, i32 alphaChannelSize);
+
 core::expected<TGAError> createTrueColorFile(const CreateFileFromSurfaceParams& params);
 
 } // namespace
@@ -23,18 +25,65 @@ core::expected<TGAError> createTrueColorFile(const CreateFileFromSurfaceParams& 
 const char* errorToCstr(TGAError err) {
     switch (err)
     {
-        case TGAError::FailedToStatFile:     return "Failed to stat file";
-        case TGAError::FailedToReadFile:     return "Failed to read file";
-        case TGAError::FailedToWriteFile:    return "Failed to write file";
-        case TGAError::InvalidFileFormat:    return "Invalid file format";
-        case TGAError::OldFormat:            return "Old format";
-        case TGAError::ApplicationBug:       return "User code has a bug";
-        case TGAError::InvalidArgument:      return "Invalid argument passed";
-        case TGAError::UnsupportedImageType: return "Unsupported image type";
+        case TGAError::FailedToOpenFile:      return "Failed to open file";
+        case TGAError::FailedToStatFile:      return "Failed to stat file";
+        case TGAError::FailedToReadFile:      return "Failed to read file";
+        case TGAError::FailedToWriteFile:     return "Failed to write file";
+        case TGAError::InvalidFileFormat:     return "Invalid file format";
+        case TGAError::OldFormat:             return "Old format";
+        case TGAError::ApplicationBug:        return "User code has a bug";
+        case TGAError::InvalidArgument:       return "Invalid argument passed";
+        case TGAError::UnsupportedImageType:  return "Unsupported image type";
+        case TGAError::FailedToCreateSurface: return "Failed to create surface";
 
         case TGAError::Undefined: [[fallthrough]];
         case TGAError::SENTINEL: [[fallthrough]];
         default: return "unknown";
+    }
+}
+
+core::expected<TGAError> TGAFile::header(const Header*& out) const {
+    if (fileHeaderOff < 0) {
+        return core::unexpected(TGAError::ApplicationBug);
+    }
+
+    out = reinterpret_cast<const Header*>(memory.data() + fileHeaderOff);
+    return {};
+}
+
+core::expected<TGAError> TGAFile::footer(const Footer*& out) const {
+    if (footerOff < 0) {
+        return core::unexpected(TGAError::OldFormat);
+    }
+
+    out = reinterpret_cast<const Footer*>(memory.data() + footerOff);
+    return {};
+}
+
+FileType TGAFile::fileType() const {
+    return footerOff != -1 ? FileType::New : FileType::Original;
+}
+
+bool TGAFile::isValid() const {
+    bool ok = imageDataOff > 0 && memory.data() != nullptr && memory.length > 0;
+    if (fileType() == TGA::FileType::New) {
+        const TGA::Footer* f = nullptr;
+        if (auto res = footer(f); res.hasErr()) {
+            ok = false;
+        }
+        else {
+            ok &= f->developerDirectoryOffset == developerAreaOff &&
+                  f->extensionAreaOffset == extAreaOff &&
+                  hasSignature(f->signature);
+        }
+    }
+    return ok;
+}
+
+void TGAFile::free() {
+    if (memory.data()) {
+        actx->free(memory.data(), memory.len(), sizeof(u8));
+        memory = {};
     }
 }
 
@@ -116,49 +165,77 @@ core::expected<TGAFile, TGAError> loadFile(const char* path, core::AllocatorCont
     return tgaFile;
 }
 
-core::expected<TGAError> TGAFile::header(const Header*& out) const {
-    if (fileHeaderOff < 0) {
-        return core::unexpected(TGAError::ApplicationBug);
+core::expected<Surface, TGAError> createSurfaceFromTgaFile(const TGA::TGAFile& tgaFile, core::AllocatorContext& actx) {
+    using namespace TGA;
+
+    if (!tgaFile.isValid()) {
+        logErr("Tga file is invalid");
+        return core::unexpected(TGAError::FailedToCreateSurface);
     }
 
-    out = reinterpret_cast<const Header*>(memory.data() + fileHeaderOff);
-    return {};
-}
-
-core::expected<TGAError> TGAFile::footer(const Footer*& out) const {
-    if (footerOff < 0) {
-        return core::unexpected(TGAError::OldFormat);
+    const Header* header;
+    if (auto res = tgaFile.header(header); res.hasErr()) {
+        logErr("Failed to parse header");
+        return core::unexpected(TGAError::FailedToCreateSurface);
     }
 
-    out = reinterpret_cast<const Footer*>(memory.data() + footerOff);
-    return {};
-}
+    i32 height = header->height();
+    i32 width = header->width();
+    i32 pixelDepthInBits = header->pixelDepth();
+    i32 bytesPerPixel = i32(f32(pixelDepthInBits) / f32(core::BYTE_SIZE) + 0.5f);
+    i32 pitch = bytesPerPixel * width;
+    i32 alphaChannelSize = header->alphaBits();
 
-FileType TGAFile::fileType() const {
-    return footerOff != -1 ? FileType::New : FileType::Original;
-}
-
-bool TGAFile::isValid() const {
-    bool ok = imageDataOff > 0 && memory.data() != nullptr && memory.length > 0;
-    if (fileType() == TGA::FileType::New) {
-        const TGA::Footer* f = nullptr;
-        if (auto res = footer(f); res.hasErr()) {
-            ok = false;
-        }
-        else {
-            ok &= f->developerDirectoryOffset == developerAreaOff &&
-                  f->extensionAreaOffset == extAreaOff &&
-                  hasSignature(f->signature);
-        }
+    addr_size imageSize = addr_size(pitch) * addr_size(height);
+    if (imageSize == 0) {
+        logErr("Image size is 0");
+        return core::unexpected(TGAError::FailedToCreateSurface);
     }
-    return ok;
-}
 
-void TGAFile::free() {
-    if (memory.data()) {
-        actx->free(memory.data(), memory.len(), sizeof(u8));
-        memory = {};
+    u8* data = reinterpret_cast<u8*>(actx.alloc(imageSize, sizeof(u8)));
+
+    PixelFormat pixelFormat = PixelFormat::Unknown;
+
+    switch (header->imageType) {
+        case 2:
+            // True Color Image
+            pixelFormat = pickPixelFormatForTrueColorImage(bytesPerPixel, alphaChannelSize);
+            break;
+
+        // TODO2: [Support] Do I care for any other image type?
+        // TODO2: [Support] Decode if run-length encoded (RLE).
+
+        default:
+            logErr("Unsupported tga image type: {}", i32(header->imageType));
+            return core::unexpected(TGAError::FailedToCreateSurface);
     }
+
+    if (pixelFormat == PixelFormat::Unknown) {
+        logErr("pixel format unknown");
+        return core::unexpected(TGAError::FailedToCreateSurface);
+    }
+
+    addr_size imageDataOff = addr_size(tgaFile.imageDataOff);
+    core::memcopy(data, &tgaFile.memory[imageDataOff], imageSize);
+
+    Origin origin = Origin::Undefined;
+    switch (header->origin()) {
+        case 0b00: origin = Origin::BottomLeft;  break;
+        case 0b01: origin = Origin::BottomRight; break;
+        case 0b10: origin = Origin::TopLeft;     break;
+        case 0b11: origin = Origin::TopRight;    break;
+        default:   origin = Origin::Undefined;   break;
+    }
+
+    Surface surface = Surface();
+    surface.actx = &actx;
+    surface.origin = origin;
+    surface.pixelFormat = pixelFormat;
+    surface.width = width;
+    surface.height = height;
+    surface.pitch = pitch;
+    surface.data = data;
+    return surface;
 }
 
 core::expected<TGAError> createFileFromSurface(const CreateFileFromSurfaceParams& params) {
@@ -194,15 +271,17 @@ namespace
 constexpr bool isFatalError(TGAError err) {
     switch (err)
     {
-        case TGAError::OldFormat:            return false;
+        case TGAError::OldFormat:             return false;
 
-        case TGAError::FailedToStatFile:     return true;
-        case TGAError::FailedToReadFile:     return true;
-        case TGAError::FailedToWriteFile:    return true;
-        case TGAError::InvalidFileFormat:    return true;
-        case TGAError::ApplicationBug:       return true;
-        case TGAError::InvalidArgument:      return true;
-        case TGAError::UnsupportedImageType: return true;
+        case TGAError::FailedToOpenFile:      return true;
+        case TGAError::FailedToStatFile:      return true;
+        case TGAError::FailedToReadFile:      return true;
+        case TGAError::FailedToWriteFile:     return true;
+        case TGAError::InvalidFileFormat:     return true;
+        case TGAError::ApplicationBug:        return true;
+        case TGAError::InvalidArgument:       return true;
+        case TGAError::UnsupportedImageType:  return true;
+        case TGAError::FailedToCreateSurface: return true;
 
         case TGAError::Undefined: [[fallthrough]];
         case TGAError::SENTINEL: [[fallthrough]];
@@ -231,12 +310,54 @@ constexpr core::expected<addr_off, TGAError> parseFooterOffset(u8* begin, u8* en
     return off;
 }
 
+PixelFormat pickPixelFormatForTrueColorImage(i32 bytesPerPixel, i32 alphaChannelSize) {
+    PixelFormat pixelFormat = PixelFormat::Unknown;
+
+    if (bytesPerPixel == 3) {
+        if (alphaChannelSize != 0) {
+            goto error;
+        }
+
+        pixelFormat = PixelFormat::BGR888;
+    }
+    else if (bytesPerPixel == 4) {
+        if (alphaChannelSize == 8) {
+            pixelFormat = PixelFormat::BGRA8888;
+        }
+        else if (alphaChannelSize == 0) {
+            pixelFormat = PixelFormat::BGRX8888; // 8 padding bits, no alpha channel data
+        }
+        else {
+            goto error;
+        }
+    }
+    else if (bytesPerPixel == 2) {
+        if (alphaChannelSize == 1) {
+            pixelFormat = PixelFormat::BGRA5551;
+        }
+        else if (alphaChannelSize == 0) {
+            pixelFormat = PixelFormat::BGR555;
+        }
+        else {
+            goto error;
+        }
+    }
+    else {
+        goto error;
+    }
+
+    return pixelFormat;
+error:
+    logErr("bytesPerPixel = {}, but alphaChannelSize = {}", bytesPerPixel, alphaChannelSize);
+    return PixelFormat::Unknown;
+}
+
 core::expected<TGAError> createTrueColorFile(const CreateFileFromSurfaceParams& params) {
     auto openRes = core::fileOpen(params.path,
         core::OpenMode::Read | core::OpenMode::Write | core::OpenMode::Truncate | core::OpenMode::Create);
     if (openRes.hasErr()) {
         logErr_PltErrorCode(openRes.err());
-        return core::unexpected(TGAError::InvalidArgument);
+        return core::unexpected(TGAError::FailedToOpenFile);
     }
 
     core::FileDesc file = std::move(openRes.value());

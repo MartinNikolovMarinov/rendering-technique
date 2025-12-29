@@ -61,8 +61,10 @@ set(src_sandbox
     src/tga_files.cpp
     src/log_utils.cpp
     src/surface.cpp
+    src/mesh.cpp
     src/debug_rendering_glfw.cpp
     src/surface_renderer.cpp
+    src/wavefront_files.cpp
 )
 
 # ---------------------------------------- End Declare Source Files ----------------------------------------------------
@@ -83,7 +85,7 @@ macro(common_target_setup target)
 
     target_compile_definitions(${target} PUBLIC
         "USE_ANSI_LOGGING=$<BOOL:${USE_ANSI_LOGGING}>"
-        "RENDERING_TECHNIQUES_DEBUG=$<BOOL:${RENDERING_TECHNIQUES_DEBUG}>"
+        "IS_DEBUG=$<BOOL:${RENDERING_TECHNIQUES_DEBUG}>"
         "ASSETS_DIRECTORY=\"${CMAKE_CURRENT_SOURCE_DIR}/assets\""
     )
 

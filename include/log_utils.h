@@ -6,6 +6,7 @@ struct Surface;
 namespace TGA { struct TGAFile; }
 
 void logErr_PltErrorCode(core::PltErrCode pltErrCode);
+void logErr_ConvErrorCode(core::ConversionError convErrCode);
 
 void logInfo_Surface(const Surface& surface);
 

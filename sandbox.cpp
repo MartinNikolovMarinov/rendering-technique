@@ -4,6 +4,8 @@
 #include "log_utils.h"
 #include "debug_rendering.h"
 #include "surface_renderer.h"
+#include "wavefront_files.h"
+#include "mesh.h"
 
 // TODO: Write tests.
 
@@ -76,7 +78,7 @@ void createFileTest(const char* path) {
     u8 buf[64*64*bpp] = {};
     Surface s = Surface();
     s.actx = nullptr;
-    s.origin = Origin::BottomLeft;
+    s.origin = Origin::TopRight;
     s.pixelFormat = f;
     s.width = 64;
     s.height = 64;
@@ -84,6 +86,8 @@ void createFileTest(const char* path) {
     s.data = buf;
 
     fillRect(s, 0, 0, { .rgba = {0, 0, 0, 255} }, s.width, s.height);
+
+    fillRect(s, 5, 5, { .rgba = {255, 0, 255, 255} }, s.width - 5, s.height - 5);
 
     int ax =  7, ay =  3;
     int bx = 12, by = 37;
@@ -152,14 +156,23 @@ void create5MillionLines(const char* path) {
     core::Expect(TGA::createFileFromSurface(params));
 }
 
+void testLoadingMesh(const char* path) {
+    auto mesh = core::Unpack(Wavefront::loadMesh(path));
+    defer { mesh.free(); };
+    logInfo("verts={}, indics={}", mesh.vertexCount(), mesh.indicesCount());
+}
+
 int main() {
     {
         coreInit(core::LogLevel::L_DEBUG);
         defer { coreShutdown(); };
-        // initializeDebugRendering();
-        // defer { shutdownDebugRendering(); };
+        Panic(initializeDebugRendering(), "Failed to initialize debug rendering!");
+        defer { shutdownDebugRendering(); };
 
-        create5MillionLines(ASSETS_DIRECTORY "/example.tga");
+        testLoadingMesh(ASSETS_DIRECTORY "/diablo3_pose.obj");
+        // testLoadingMesh(ASSETS_DIRECTORY "/floor.obj");
+
+        // create5MillionLines(ASSETS_DIRECTORY "/example.tga");
         // createFileTest(ASSETS_DIRECTORY "/example.tga");
 
         // testAllFilesInDirectory(ASSETS_DIRECTORY "/tga-test-suite/my_test_suite/");

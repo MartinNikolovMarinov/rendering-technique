@@ -1,7 +1,6 @@
 #pragma once
 
 #include "core_init.h"
-#include "error.h"
 
 namespace TGA { struct TGAFile; }
 
@@ -99,6 +98,3 @@ struct Surface {
     constexpr bool isOwner() const { return actx != nullptr; }
     void free();
 };
-
-core::expected<Surface, Error> createSurfaceFromTgaFile(const TGA::TGAFile& tgaFile,
-                                                        core::AllocatorContext& actx = DEF_ALLOC);
