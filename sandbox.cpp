@@ -5,7 +5,6 @@
 #include "debug_rendering.h"
 #include "surface_renderer.h"
 #include "wavefront_files.h"
-#include "mesh.h"
 
 // TODO: Write tests.
 
@@ -157,9 +156,9 @@ void create5MillionLines(const char* path) {
 }
 
 void testLoadingMesh(const char* path) {
-    auto mesh = core::Unpack(Wavefront::loadMesh(path));
-    defer { mesh.free(); };
-    logInfo("verts={}, indics={}", mesh.vertexCount(), mesh.indicesCount());
+    auto obj = core::Unpack(Wavefront::loadFile(path));
+    defer { obj.free(); };
+    logInfo("verts={}, faces={}", obj.verticesCount, obj.facesCount);
 }
 
 int main() {
@@ -169,8 +168,8 @@ int main() {
         Panic(initializeDebugRendering(), "Failed to initialize debug rendering!");
         defer { shutdownDebugRendering(); };
 
-        testLoadingMesh(ASSETS_DIRECTORY "/diablo3_pose.obj");
-        // testLoadingMesh(ASSETS_DIRECTORY "/floor.obj");
+        // testLoadingMesh(ASSETS_DIRECTORY "/diablo3_pose.obj");
+        testLoadingMesh(ASSETS_DIRECTORY "/floor.obj");
 
         // create5MillionLines(ASSETS_DIRECTORY "/example.tga");
         // createFileTest(ASSETS_DIRECTORY "/example.tga");

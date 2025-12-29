@@ -39,7 +39,7 @@ void logInfo_Surface(const Surface& surface) {
     );
 }
 
-void logInfo_TGAFile(TGA::TGAFile& file) {
+void logInfo_TGAFile(TGA::TGAImage& file) {
     if (file.isValid()) {
         const TGA::Header* header = nullptr;
         if (auto res = file.header(header); res.hasErr()) {

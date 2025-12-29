@@ -61,7 +61,6 @@ set(src_sandbox
     src/tga_files.cpp
     src/log_utils.cpp
     src/surface.cpp
-    src/mesh.cpp
     src/debug_rendering_glfw.cpp
     src/surface_renderer.cpp
     src/wavefront_files.cpp

@@ -207,7 +207,7 @@ enum struct FileType {
     New
 };
 
-struct TGAFile {
+struct TGAImage {
     core::AllocatorContext* actx;
 
     core::Memory<u8> memory;
@@ -241,8 +241,8 @@ struct CreateFileFromSurfaceParams {
 
 const char* errorToCstr(TGAError err);
 
-[[nodiscard]] core::expected<TGAFile, TGAError> loadFile(const char* path, core::AllocatorContext& actx = DEF_ALLOC);
-[[nodiscard]] core::expected<Surface, TGAError> createSurfaceFromTgaFile(const TGA::TGAFile& tgaFile, core::AllocatorContext& actx = DEF_ALLOC);
+[[nodiscard]] core::expected<TGAImage, TGAError> loadFile(const char* path, core::AllocatorContext& actx = DEF_ALLOC);
+[[nodiscard]] core::expected<Surface, TGAError> createSurfaceFromTgaFile(const TGA::TGAImage& tgaFile, core::AllocatorContext& actx = DEF_ALLOC);
 [[nodiscard]] core::expected<TGAError> createFileFromSurface(const CreateFileFromSurfaceParams& params);
 
 } // namespace TGA

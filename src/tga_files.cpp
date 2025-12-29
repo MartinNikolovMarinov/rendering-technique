@@ -42,7 +42,7 @@ const char* errorToCstr(TGAError err) {
     }
 }
 
-core::expected<TGAError> TGAFile::header(const Header*& out) const {
+core::expected<TGAError> TGAImage::header(const Header*& out) const {
     if (fileHeaderOff < 0) {
         return core::unexpected(TGAError::ApplicationBug);
     }
@@ -51,7 +51,7 @@ core::expected<TGAError> TGAFile::header(const Header*& out) const {
     return {};
 }
 
-core::expected<TGAError> TGAFile::footer(const Footer*& out) const {
+core::expected<TGAError> TGAImage::footer(const Footer*& out) const {
     if (footerOff < 0) {
         return core::unexpected(TGAError::OldFormat);
     }
@@ -60,11 +60,11 @@ core::expected<TGAError> TGAFile::footer(const Footer*& out) const {
     return {};
 }
 
-FileType TGAFile::fileType() const {
+FileType TGAImage::fileType() const {
     return footerOff != -1 ? FileType::New : FileType::Original;
 }
 
-bool TGAFile::isValid() const {
+bool TGAImage::isValid() const {
     bool ok = imageDataOff > 0 && memory.data() != nullptr && memory.length > 0;
     if (fileType() == TGA::FileType::New) {
         const TGA::Footer* f = nullptr;
@@ -80,15 +80,15 @@ bool TGAFile::isValid() const {
     return ok;
 }
 
-void TGAFile::free() {
+void TGAImage::free() {
     if (memory.data()) {
         actx->free(memory.data(), memory.len(), sizeof(u8));
         memory = {};
     }
 }
 
-core::expected<TGAFile, TGAError> loadFile(const char* path, core::AllocatorContext& actx) {
-    TGAFile tgaFile;
+core::expected<TGAImage, TGAError> loadFile(const char* path, core::AllocatorContext& actx) {
+    TGAImage tgaFile;
     tgaFile.actx = &actx;
 
     // Stat the file
@@ -165,7 +165,7 @@ core::expected<TGAFile, TGAError> loadFile(const char* path, core::AllocatorCont
     return tgaFile;
 }
 
-core::expected<Surface, TGAError> createSurfaceFromTgaFile(const TGA::TGAFile& tgaFile, core::AllocatorContext& actx) {
+core::expected<Surface, TGAError> createSurfaceFromTgaFile(const TGA::TGAImage& tgaFile, core::AllocatorContext& actx) {
     using namespace TGA;
 
     if (!tgaFile.isValid()) {

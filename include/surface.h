@@ -2,7 +2,7 @@
 
 #include "core_init.h"
 
-namespace TGA { struct TGAFile; }
+namespace TGA { struct TGAImage; }
 
 enum struct PixelFormat {
     Unknown,

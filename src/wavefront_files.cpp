@@ -1,5 +1,4 @@
 #include "wavefront_files.h"
-#include "mesh.h"
 #include "log_utils.h"
 
 #define WAVEFRONT_CONV_ERR_CHECK(x) \
@@ -33,7 +32,21 @@ const char* errorToCstr(WavefrontError err) {
     }
 }
 
-core::expected<Mesh3D, WavefrontError> loadMesh(const char* path, core::AllocatorContext& actx) {
+void WavefrontObj::free() {
+    if (actx) {
+        core::memoryFree(std::move(objects), *actx);
+        core::memoryFree(std::move(groups), *actx);
+        core::memoryFree(std::move(vertices), *actx);
+        core::memoryFree(std::move(faces), *actx);
+    }
+
+    objectsCount = 0;
+    groupsCount = 0;
+    verticesCount = 0;
+    facesCount = 0;
+}
+
+core::expected<WavefrontObj, WavefrontError> loadFile(const char* path, core::AllocatorContext& actx) {
     core::FileStat fileStat;
     auto statRes = core::fileStat(path, fileStat);
     WAVEFRONT_PLT_ERR_CHECK(statRes, WavefrontError::FailedToStatFile);
@@ -45,8 +58,8 @@ core::expected<Mesh3D, WavefrontError> loadMesh(const char* path, core::Allocato
     auto readEntireRes = core::fileReadEntire(path, fileMemoryRaw);
     WAVEFRONT_PLT_ERR_CHECK(readEntireRes, WavefrontError::FailedToReadFile);
 
-    Mesh3D mesh;
-    mesh.setAllocator(actx);
+    WavefrontObj obj = {};
+    obj.actx = &actx;
 
     core::StrView rest = core::sv(fileMemoryRaw);
     core::StrView currLine;
@@ -60,14 +73,16 @@ core::expected<Mesh3D, WavefrontError> loadMesh(const char* path, core::Allocato
             // vertex
             auto res = parseVertex(currLine);
             if (res.hasErr()) return core::unexpected(res.err());
-            mesh.addVertex(res.value());
+
+            obj.vertices = core::memorySet(obj.vertices, addr_size(obj.verticesCount), std::move(res.value()), *obj.actx);
+            obj.verticesCount++;
         }
         else if (core::startsWith(currLine, "f ")) {
             // TODO: parse faces
         }
     }
 
-    return mesh;
+    return obj;
 }
 
 namespace {
