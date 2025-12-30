@@ -18,6 +18,50 @@ void logErr_ConvErrorCode(core::ConversionError convErrCode) {
     logErr("Conversion Error; reason: {}", errMg);
 }
 
+namespace {
+
+template<addr_size Dim, typename T>
+void logInfoVectorFloat(core::vec<Dim, T> v) {
+    constexpr const char* fmt = core::same_as<T, f64> ? "\"{}\": {:f.6}, " : "\"{}\": {:f.3}, ";
+    constexpr const char* fmtLast = core::same_as<T, f64> ? "\"{}\": {:f.6}" : "\"{}\": {:f.3}";
+
+    constexpr addr_size bufferLen = 255;
+    char buff[bufferLen] = {};
+    char* p = buff;
+
+    constexpr const char* prefix = "{{ \"vec{}{}\": {{";
+    p += core::Unpack(
+        core::format(p, bufferLen, prefix, v.dimensions(), core::same_as<T, f64> ? 'd' : 'f'),
+        "BUG: likely buffer overflow"
+    );
+
+    constexpr char symbols[] = { 'x', 'y', 'z', 'w' };
+    for (addr_size i = 0; i < v.dimensions(); i++) {
+        if (i < v.dimensions() - 1) {
+            p += core::Unpack(core::format(p, bufferLen, fmt, symbols[i], v.data[i]), "BUG: likely buffer overflow");
+        }
+        else {
+            p += core::Unpack(core::format(p, bufferLen, fmtLast, symbols[i], v.data[i]), "BUG: likely buffer overflow");
+        }
+    }
+
+    constexpr const char* postfix = "} }";
+    p += core::memcopy(p, postfix, core::cstrLen(postfix));
+
+    logInfo("{}", buff);
+}
+
+} // namespace
+
+void logInfo_Vector(core::vec4f v) { logInfoVectorFloat(v); }
+void logInfo_Vector(core::vec3f v) { logInfoVectorFloat(v); }
+void logInfo_Vector(core::vec2f v) { logInfoVectorFloat(v); }
+void logInfo_Vector(core::vec1f v) { logInfoVectorFloat(v); }
+void logInfo_Vector(core::vec4d v) { logInfoVectorFloat(v); }
+void logInfo_Vector(core::vec3d v) { logInfoVectorFloat(v); }
+void logInfo_Vector(core::vec2d v) { logInfoVectorFloat(v); }
+void logInfo_Vector(core::vec1d v) { logInfoVectorFloat(v); }
+
 void logInfo_Surface(const Surface& surface) {
     logInfo(
         "\n{{\n"

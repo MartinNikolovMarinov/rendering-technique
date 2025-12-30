@@ -7,9 +7,9 @@ namespace Wavefront {
 enum struct WavefrontError {
     Undefined,
 
+    UnsupportedVersion,
     FailedToStatFile,
     FailedToReadFile,
-
     InvalidFileFormat,
 
     SENTINEL
@@ -21,10 +21,13 @@ const char* errorToCstr(WavefrontError err);
     # The Wavefront format ASCII 3.0 version has the following file structure.
 
     Vertex data:
-        * geometric vertices (v) - (supported ✅)
+        * geometric vertices (v) - (supported ✅) - Polygonal and free-form geometry statement.
         * texture vertices (vt) - (support planned ⚠️)
         * vertex normals (vn) - (support planned ⚠️)
         * parameter space vertices (vp) - (support planned ⚠️)
+
+        NOTE: The vertex data is represented by four vertex lists; one for each type of vertex coordinate. A right-hand
+        coordinate system is used to specify the coordinate locations.
 
     Free-form curve/surface attributes:
         * rational or non-rational forms of curve or surface type (cstype) - basis matrix, Bezier, B-spline, Cardinal, Taylor
@@ -88,33 +91,14 @@ enum struct WavefrontVersion {
 };
 
 struct WavefrontObj {
-    struct Object {
-        const char* objectName;
-        i32 groupsCount;
-        i32 groupsOff;
-    };
-
-    struct Group {
-        const char* groupName;
-        i32 facesCount;
-        i32 facesOff;
-    };
-
     core::AllocatorContext* actx;
-    core::Memory<Object> objects;
-    i32 objectsCount;
-    core::Memory<Group> groups;
-    i32 groupsCount;
-    core::Memory<core::vec3f> vertices;
+
+    core::Memory<core::vec4f> vertices;
     i32 verticesCount;
     core::Memory<i32> faces;
     i32 facesCount;
 
     constexpr inline void setAllocator(core::AllocatorContext& _actx) { actx = &_actx; }
-
-    // TODO: does this api make sense ??
-    // Get all faces for object and group
-    bool nextObj(Object& obj, Group& group, core::Memory<i32>& faces);
 
     void free();
 };

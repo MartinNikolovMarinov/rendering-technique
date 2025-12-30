@@ -156,7 +156,7 @@ void create5MillionLines(const char* path) {
 }
 
 void testLoadingMesh(const char* path) {
-    auto obj = core::Unpack(Wavefront::loadFile(path));
+    auto obj = core::Unpack(Wavefront::loadFile(path, Wavefront::WavefrontVersion::VERSION_3_0));
     defer { obj.free(); };
     logInfo("verts={}, faces={}", obj.verticesCount, obj.facesCount);
 }
@@ -165,8 +165,8 @@ int main() {
     {
         coreInit(core::LogLevel::L_DEBUG);
         defer { coreShutdown(); };
-        Panic(initializeDebugRendering(), "Failed to initialize debug rendering!");
-        defer { shutdownDebugRendering(); };
+        // Panic(initializeDebugRendering(), "Failed to initialize debug rendering!");
+        // defer { shutdownDebugRendering(); };
 
         // testLoadingMesh(ASSETS_DIRECTORY "/obj-files/diablo3_pose.obj");
         testLoadingMesh(ASSETS_DIRECTORY "/obj-files/simple/floor.obj");
