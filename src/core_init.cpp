@@ -35,12 +35,24 @@ void assertHandler(const char* failedExpr, const char* file, i32 line, const cha
     throw std::runtime_error("Assertion failed!");
 }
 
-core::StdStatsAllocator __debug_g_GlobalAllocator{};
+core::StdStatsAllocator g_statsStdAllocator{};
+core::StdAllocator g_stdAllocator{};
+
+core::AllocatorContext createDefautAllocatorCtx() {
+#if defined(IS_DEBUG)
+    return core::createAllocatorCtx(&g_statsStdAllocator);
+#else
+    return core::createAllocatorCtx(&g_stdAllocator);
+#endif
+}
 
 void coreInit(core::LogLevel globalLogLevel) {
     core::LoggerCreateInfo loggerInfo = core::LoggerCreateInfo::createDefault();
     core::loggerSetLevel(globalLogLevel);
-    core::initProgramCtx(assertHandler, &loggerInfo, core::createAllocatorCtx(&__debug_g_GlobalAllocator));
+    core::initProgramCtx(assertHandler, &loggerInfo, createDefautAllocatorCtx());
+
+    core::registerAllocator(core::createAllocatorCtx(&g_stdAllocator), RA_STD_ALLOCATOR_ID);
+    core::registerAllocator(core::createAllocatorCtx(&g_statsStdAllocator), RA_STD_STATS_ALLOCATOR_ID);
 }
 
 void coreShutdown() {

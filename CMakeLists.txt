@@ -76,6 +76,7 @@ set(src_test
 
     tests/test.cpp
     tests/t-index.cpp
+    tests/t-wavefront.cpp
 )
 
 # ---------------------------------------- End Declare Source Files ----------------------------------------------------
@@ -141,5 +142,8 @@ common_target_setup(${target_sandbox})
 
 add_executable(${target_test} ${src_test})
 common_target_setup(${target_test})
+target_compile_definitions(${target_test} PUBLIC
+    "TEST_ASSETS_DIRECTORY=\"${CMAKE_CURRENT_SOURCE_DIR}/tests/test_assets\""
+)
 
 # ---------------------------------------- END Create Executable -------------------------------------------------------
