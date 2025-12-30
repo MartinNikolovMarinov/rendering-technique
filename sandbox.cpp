@@ -168,14 +168,14 @@ int main() {
         Panic(initializeDebugRendering(), "Failed to initialize debug rendering!");
         defer { shutdownDebugRendering(); };
 
-        // testLoadingMesh(ASSETS_DIRECTORY "/diablo3_pose.obj");
-        testLoadingMesh(ASSETS_DIRECTORY "/floor.obj");
+        // testLoadingMesh(ASSETS_DIRECTORY "/obj-files/diablo3_pose.obj");
+        testLoadingMesh(ASSETS_DIRECTORY "/obj-files/simple/floor.obj");
 
-        // create5MillionLines(ASSETS_DIRECTORY "/example.tga");
-        // createFileTest(ASSETS_DIRECTORY "/example.tga");
+        // create5MillionLines(ASSETS_DIRECTORY "/output.tga");
+        // createFileTest(ASSETS_DIRECTORY "/output.tga");
 
         // testAllFilesInDirectory(ASSETS_DIRECTORY "/tga-test-suite/my_test_suite/");
-        // testOneFile(ASSETS_DIRECTORY "/example.tga", true);
+        // testOneFile(ASSETS_DIRECTORY "/output.tga", true);
     }
     return 0;
 }
