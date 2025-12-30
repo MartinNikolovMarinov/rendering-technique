@@ -2,6 +2,7 @@ cmake_minimum_required(VERSION 3.5)
 project(rendering-techniques VERSION 0.0.1 LANGUAGES C CXX)
 
 set(target_sandbox sandbox)
+set(target_test tests)
 
 # Standard Requirements:
 
@@ -54,9 +55,7 @@ log_info("---------------------------------------------")
 
 # ---------------------------------------- Begin Declare Source Files --------------------------------------------------
 
-set(src_sandbox
-    sandbox.cpp
-
+set(src_common
     src/core_init.cpp
     src/tga_files.cpp
     src/log_utils.cpp
@@ -64,6 +63,19 @@ set(src_sandbox
     src/debug_rendering_glfw.cpp
     src/surface_renderer.cpp
     src/wavefront_files.cpp
+)
+
+set(src_sandbox
+    ${src_common}
+
+    sandbox.cpp
+)
+
+set(src_test
+    ${src_common}
+
+    tests/test.cpp
+    tests/t-index.cpp
 )
 
 # ---------------------------------------- End Declare Source Files ----------------------------------------------------
@@ -124,7 +136,10 @@ endmacro()
 #     common_target_setup(${target_gui})
 # endif()
 
-add_executable(${target_sandbox} sandbox.cpp ${src_sandbox})
+add_executable(${target_sandbox} ${src_sandbox})
 common_target_setup(${target_sandbox})
+
+add_executable(${target_test} ${src_test})
+common_target_setup(${target_test})
 
 # ---------------------------------------- END Create Executable -------------------------------------------------------
