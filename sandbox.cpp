@@ -29,7 +29,7 @@ void testOneFile(const char* path, bool debugRender = false) {
 
         if (h->imageType == 2) {
 
-            auto surface = core::Unpack(createSurfaceFromTgaFile(tgaFile), "Failed to create surface from TGA file.");
+            auto surface = core::Unpack(createSurfaceFromTgaImage(tgaFile), "Failed to create surface from TGA file.");
             defer { surface.free(); };
             logInfo_Surface(surface);
 

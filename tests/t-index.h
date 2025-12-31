@@ -3,5 +3,6 @@
 // ##################### TEST SUITES ###################################################################################
 
 i32 runWavefrontTestsSuite(const core::testing::TestSuiteInfo& suiteInfo);
+i32 runTgaTestsSuite(const core::testing::TestSuiteInfo& suiteInfo);
 
 i32 runAllTests();

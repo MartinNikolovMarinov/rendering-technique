@@ -208,12 +208,11 @@ enum struct FileType {
 };
 
 struct TGAImage {
-    core::AllocatorContext* actx;
+    core::AllocatorContext* actx = nullptr;
 
     core::Memory<u8> memory;
 
     constexpr static addr_off fileHeaderOff = 0;
-
     constexpr static addr_off imageColorMapDataAreaOff = sizeof(Header);
     addr_off imageIdOff = -1;
     addr_off colorMapDataOff = -1;
@@ -223,13 +222,21 @@ struct TGAImage {
     addr_off extAreaOff = -1;
     addr_off footerOff = -1;
 
+    NO_COPY(TGAImage);
+
+    TGAImage() = default;
+    TGAImage(TGAImage&& other) = default;
+    TGAImage& operator=(TGAImage&&) = default;
+
+    void free();
+
     core::expected<TGAError> header(const Header*& out) const;
     core::expected<TGAError> footer(const Footer*& out) const;
 
+    core::expected<i32, TGAError> imageType() const;
+
     FileType fileType() const;
     bool isValid() const;
-
-    void free();
 };
 
 struct CreateFileFromSurfaceParams {
@@ -242,7 +249,7 @@ struct CreateFileFromSurfaceParams {
 const char* errorToCstr(TGAError err);
 
 [[nodiscard]] core::expected<TGAImage, TGAError> loadFile(const char* path, core::AllocatorContext& actx = DEF_ALLOC);
-[[nodiscard]] core::expected<Surface, TGAError> createSurfaceFromTgaFile(const TGA::TGAImage& tgaFile, core::AllocatorContext& actx = DEF_ALLOC);
+[[nodiscard]] core::expected<Surface, TGAError> createSurfaceFromTgaImage(const TGA::TGAImage& tgaImage, core::AllocatorContext& actx = DEF_ALLOC);
 [[nodiscard]] core::expected<TGAError> createFileFromSurface(const CreateFileFromSurfaceParams& params);
 
 } // namespace TGA

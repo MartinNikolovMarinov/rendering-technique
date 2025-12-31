@@ -75,23 +75,18 @@ enum struct Origin {
 };
 
 struct Surface {
-    core::AllocatorContext* actx;
+    NO_COPY(Surface);
+    Surface() = default;
+    Surface(Surface&& other) = default;
+    Surface& operator=(Surface&&) = default;
 
-    Surface()
-        : actx(nullptr)
-        , origin(Origin::Undefined)
-        , pixelFormat(PixelFormat::Unknown)
-        , width(0)
-        , height(0)
-        , pitch(0)
-        , data(nullptr) {}
-
-    Origin origin;
-    PixelFormat pixelFormat;
-    i32 width;
-    i32 height;
-    i32 pitch;
-    u8* data;
+    core::AllocatorContext* actx = nullptr;
+    Origin origin = Origin::Undefined;
+    PixelFormat pixelFormat = PixelFormat::Unknown;
+    i32 width = 0;
+    i32 height = 0;
+    i32 pitch = 0;
+    u8* data = nullptr;
 
     constexpr i32 size() const { return height * pitch; }
     constexpr i32 bpp() const { return pixelFormatBytesPerPixel(pixelFormat); }

@@ -1,46 +1,94 @@
 #include "t-index.h"
 
+using namespace core::testing;
+
 namespace {
 
-core::AllocatorId allAllocatorsArr[RegisteredAllocators::RA_SENTINEL - 1];
-auto allAllocators = core::Memory<const core::AllocatorId>(allAllocatorsArr, RegisteredAllocators::RA_SENTINEL - 1);
+core::AllocatorId allRegisteredAllocators[RegisteredAllocators::RA_SENTINEL - 1] = {};
+auto allAllocators = core::Memory<const core::AllocatorId>(allRegisteredAllocators, CORE_C_ARRLEN(allRegisteredAllocators));
 
-template <typename TSuite>
-i32 runWithNAllocators(core::testing::TestSuiteInfo& sInfo, core::Memory<const core::AllocatorId> allocatorIds, TSuite suite) {
-    using namespace core::testing;
+template<i32 N>
+struct TestManager {
+    using TestFn = i32 (*)(const core::testing::TestSuiteInfo&);
 
-    for (addr_size i = 0; i < allocatorIds.len(); i++) {
-        auto aid = allocatorIds[i];
-        sInfo.actx = &core::getAllocator(aid);
-        if (runTestSuite(sInfo, suite) != 0) {
-            return -1;
-        }
+    // FIXME: Create an output directory. Make sure it's clean after each test run..
+
+    struct TestSuite {
+        TestSuiteInfo suiteInfo = TestSuiteInfo();
+        bool only = false;
+        bool skip = false;
+        TestFn testFn = nullptr;
+        core::Memory<const core::AllocatorId> allocators = {};
+    };
+
+    core::ArrStatic<TestSuite, N> testSuites;
+    bool hasOnly = false;
+
+    void addTest(TestSuite&& t) {
+        Assert(testSuites.cap() > testSuites.len(), "overflow");
+        if (t.only) hasOnly = true;
+        testSuites.push(t);
     }
 
-    return 0;
-}
+    i32 runTests() {
+        for (addr_size i = 0; i < testSuites.len(); i++) {
+            auto& ts = testSuites[i];
+
+            if (hasOnly && !ts.only) continue;
+            if (ts.skip) continue;
+
+            TestSuiteInfo suteInfo = ts.suiteInfo;
+
+            if (ts.allocators.empty()) {
+                CT_CHECK(runTestSuite(suteInfo, ts.testFn) == 0);
+            }
+            else {
+                suteInfo.expectZeroAllocations = false;
+                u64 start = beginTestSuiteGroup(suteInfo);
+                for (addr_size j = 0; j < ts.allocators.len(); j++) {
+                    suteInfo.actx = &core::getAllocator(ts.allocators[j]);
+                    i32 returnCode = executeTestSuteInGroup(suteInfo, ts.testFn);
+                    CT_CHECK(returnCode == 0);
+                }
+                endTestSuiteGroup(suteInfo, 0, start);
+            }
+        }
+
+        return 0;
+    }
+};
 
 } // namespace
 
-i32 runAllTests() {
-    using namespace core::testing;
+constexpr bool useAnsiColors = true;
 
+i32 runAllTests() {
     coreInit(core::LogLevel::L_DEBUG);
     defer { coreShutdown(); };
 
     // Set all allocators array
     for (auto i = RegisteredAllocators::RA_DEFAULT + 1; i < RegisteredAllocators::RA_SENTINEL; i++) {
-        allAllocatorsArr[i-1] = i;
+        allRegisteredAllocators[i-1] = i;
     }
 
-    i32 ret = 0;
+    TestManager<255> testManager;
 
-    TestSuiteInfo sInfo;
-    sInfo.useAnsiColors = true;
-    sInfo.trackTime = true;
+    testManager.addTest({
+        .suiteInfo = TestSuiteInfo("Wavefront Tests Suite", useAnsiColors),
+        .only = false,
+        .skip = false,
+        .testFn = runWavefrontTestsSuite,
+        .allocators = allAllocators
+    });
 
-    sInfo.name = FN_NAME_TO_CPTR(runWavefrontTestsSuite);
-    if (runWithNAllocators(sInfo, allAllocators, runWavefrontTestsSuite) != 0) { ret = -1; }
+    testManager.addTest({
+        .suiteInfo = TestSuiteInfo("TGA Tests Suite", useAnsiColors),
+        .only = false,
+        .skip = false,
+        .testFn = runTgaTestsSuite,
+        .allocators = allAllocators
+    });
 
+    i32 ret = testManager.runTests();
     return ret;
 }

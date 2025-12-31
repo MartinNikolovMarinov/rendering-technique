@@ -77,6 +77,7 @@ set(src_test
     tests/test.cpp
     tests/t-index.cpp
     tests/t-wavefront.cpp
+    tests/t-tga.cpp
 )
 
 # ---------------------------------------- End Declare Source Files ----------------------------------------------------

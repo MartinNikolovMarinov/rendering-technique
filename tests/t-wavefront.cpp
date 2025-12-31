@@ -10,11 +10,11 @@ struct VertexTestCase {
     bool checkW;
 };
 
-i32 simpleVerticesTest() {
-    constexpr const char* vertices1_valid_path = TEST_ASSETS_DIRECTORY "/vertices1_valid.obj";
+i32 simpleVerticesTest(const core::testing::TestSuiteInfo& suiteInfo) {
+    constexpr const char* vertices1_valid_path = TEST_ASSETS_DIRECTORY "/obj/vertices1_valid.obj";
 
     auto obj = core::Unpack(
-        Wavefront::loadFile(vertices1_valid_path, Wavefront::WavefrontVersion::VERSION_3_0),
+        Wavefront::loadFile(vertices1_valid_path, Wavefront::WavefrontVersion::VERSION_3_0, *suiteInfo.actx),
         "Failed to load file: \"{}\"", vertices1_valid_path
     );
     defer { obj.free(); };
@@ -55,14 +55,10 @@ i32 simpleVerticesTest() {
 i32 runWavefrontTestsSuite(const core::testing::TestSuiteInfo& suiteInfo) {
     using namespace core::testing;
 
-    TestInfo tInfo = {};
-    tInfo.trackMemory = suiteInfo.actx->tracksMemory();
-    tInfo.detectLeaks = suiteInfo.actx->canDetectLeaks();
-    tInfo.description = suiteInfo.actx->name();
-    tInfo.actx = suiteInfo.actx;
+    TestInfo tInfo = createTestInfo(suiteInfo);
 
     tInfo.name = FN_NAME_TO_CPTR(simpleVerticesTest);
-    if (runTest(tInfo, simpleVerticesTest) != 0) { return -1; }
+    if (runTest(tInfo, simpleVerticesTest, suiteInfo) != 0) { return -1; }
 
     return 0;
 }
