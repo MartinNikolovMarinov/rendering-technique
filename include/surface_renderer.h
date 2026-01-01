@@ -20,6 +20,8 @@ constexpr Color BLUE = Color { .rgba = { 0, 0, 255, 255 } };
 constexpr Color RED = Color { .rgba = { 255, 0, 0, 255 } };
 constexpr Color GREEN = Color { .rgba = { 0, 255, 0, 255 } };
 constexpr Color YELLOW = Color { .rgba = { 255, 255, 0, 255 } };
+constexpr Color WHITE = Color { .rgba = { 255, 255, 255, 255 } };
+constexpr Color BLACK = Color { .rgba = { 0, 0, 0, 0 } };
 
 void fillPixel(Surface& surface, i32 x, i32 y, Color color);
 void fillRect(Surface& surface, i32 x, i32 y, Color color, i32 width, i32 height);

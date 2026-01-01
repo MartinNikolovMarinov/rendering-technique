@@ -155,10 +155,69 @@ void create5MillionLines(const char* path) {
     core::Expect(TGA::createFileFromSurface(params));
 }
 
-void testLoadingMesh(const char* path) {
+void renderObjFile(const char* path) {
     auto obj = core::Unpack(Wavefront::loadFile(path, Wavefront::WavefrontVersion::VERSION_3_0));
     defer { obj.free(); };
     logInfo("verts={}, faces={}", obj.verticesCount, obj.facesCount);
+
+    constexpr PixelFormat pixelFormat = PixelFormat::BGR888;
+    constexpr i32 bpp = pixelFormatBytesPerPixel(pixelFormat);
+
+    constexpr addr_size WIDTH = 1024;
+    constexpr addr_size HEIGHT = 1024;
+
+    static u8 buf[WIDTH*HEIGHT*bpp] = {}; // This might be big
+    Surface s = Surface();
+    s.actx = nullptr;
+    s.origin = Origin::BottomLeft;
+    s.pixelFormat = pixelFormat;
+    s.width = WIDTH;
+    s.height = HEIGHT;
+    s.pitch = s.width * bpp;
+    s.data = buf;
+
+    fillRect(s, 0, 0, BLACK, s.width, s.height);
+
+    auto orthogonalProjection = [](core::vec4f& normVec, i32 width, i32 height) -> core::vec2i {
+        i32 ax = i32((normVec.x() + 1.0f) * (f32(width - 1)/2.0f));
+        i32 ay = i32((normVec.y() + 1.0f) * (f32(height - 1)/2.0f));
+        return core::v(ax, ay);
+    };
+
+    for (i32 i = 0; i < obj.facesCount; i++) {
+        auto& f = obj.faces[i];
+
+        i32 vert1Idx = f.v.x() - 1;
+        i32 vert2Idx = f.v.y() - 1;
+        i32 vert3Idx = f.v.z() - 1;
+
+        core::vec4f& v1 = obj.vertices[vert1Idx];
+        core::vec4f& v2 = obj.vertices[vert2Idx];
+        core::vec4f& v3 = obj.vertices[vert3Idx];
+
+        core::vec2i a = orthogonalProjection(v1, s.width, s.height);
+        core::vec2i b = orthogonalProjection(v2, s.width, s.height);
+        core::vec2i c = orthogonalProjection(v3, s.width, s.height);
+
+        // Draw triangle
+        fillLine(s, a.x(), a.y(), b.x(), b.y(), RED);
+        fillLine(s, b.x(), b.y(), c.x(), c.y(), RED);
+        fillLine(s, c.x(), c.y(), a.x(), a.y(), RED);
+    }
+
+    for (i32 i = 0; i < obj.verticesCount; i++) {
+        auto& v = obj.vertices[i];
+        core::vec2i a = orthogonalProjection(v, s.width, s.height);
+        fillPixel(s, a.x(), a.y(), WHITE);
+    }
+
+    TGA::CreateFileFromSurfaceParams params = {
+        .surface = s,
+        .path = ASSETS_DIRECTORY "/output.tga",
+        .imageType = 2,
+        .fileType = TGA::FileType::New,
+    };
+    core::Expect(TGA::createFileFromSurface(params));
 }
 
 int main() {
@@ -168,8 +227,8 @@ int main() {
         // Panic(initializeDebugRendering(), "Failed to initialize debug rendering!");
         // defer { shutdownDebugRendering(); };
 
-        // testLoadingMesh(ASSETS_DIRECTORY "/obj-files/diablo3_pose.obj");
-        testLoadingMesh("/home/good-mood14/repos/rendering-technique/tests/test_assets/obj/faces1_valid.obj");
+        // renderObjFile(ASSETS_DIRECTORY "/obj-files/simple/floor.obj");
+        renderObjFile(ASSETS_DIRECTORY "/obj-files/diablo3_pose.obj");
 
         // create5MillionLines(ASSETS_DIRECTORY "/output.tga");
         // createFileTest(ASSETS_DIRECTORY "/output.tga");
