@@ -8,14 +8,18 @@ namespace TGA { struct TGAImage; }
 void logErr_PltErrorCode(core::PltErrCode pltErrCode);
 void logErr_ConvErrorCode(core::ConversionError convErrCode);
 
-void logInfo_Vector(core::vec4f v);
-void logInfo_Vector(core::vec3f v);
-void logInfo_Vector(core::vec2f v);
-void logInfo_Vector(core::vec1f v);
-void logInfo_Vector(core::vec4d v);
-void logInfo_Vector(core::vec3d v);
-void logInfo_Vector(core::vec2d v);
-void logInfo_Vector(core::vec1d v);
+void logDirect_Vector(core::vec4f v);
+void logDirect_Vector(core::vec3f v);
+void logDirect_Vector(core::vec2f v);
+void logDirect_Vector(core::vec1f v);
+void logDirect_Vector(core::vec4d v);
+void logDirect_Vector(core::vec3d v);
+void logDirect_Vector(core::vec2d v);
+void logDirect_Vector(core::vec1d v);
+void logDirect_Vector(core::vec4i v);
+void logDirect_Vector(core::vec3i v);
+void logDirect_Vector(core::vec2i v);
+void logDirect_Vector(core::vec1i v);
 
 void logInfo_Surface(const Surface& surface);
 

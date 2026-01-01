@@ -2,6 +2,8 @@
 #include "testing/testing_framework.h"
 #include "wavefront_files.h"
 
+using namespace Wavefront;
+
 namespace {
 
 struct VertexTestCase {
@@ -10,11 +12,16 @@ struct VertexTestCase {
     bool checkW;
 };
 
+struct FacesTestCase {
+    addr_size index;
+    WavefrontObj::Face expected;
+};
+
 i32 simpleVerticesTest(const core::testing::TestSuiteInfo& suiteInfo) {
     constexpr const char* vertices1_valid_path = TEST_ASSETS_DIRECTORY "/obj/vertices1_valid.obj";
 
     auto obj = core::Unpack(
-        Wavefront::loadFile(vertices1_valid_path, Wavefront::WavefrontVersion::VERSION_3_0, *suiteInfo.actx),
+        Wavefront::loadFile(vertices1_valid_path, WavefrontVersion::VERSION_3_0, *suiteInfo.actx),
         "Failed to load file: \"{}\"", vertices1_valid_path
     );
     defer { obj.free(); };
@@ -50,6 +57,49 @@ i32 simpleVerticesTest(const core::testing::TestSuiteInfo& suiteInfo) {
     return 0;
 }
 
+i32 simpleFacesTest(const core::testing::TestSuiteInfo& suiteInfo) {
+    constexpr const char* vertices1_valid_path = TEST_ASSETS_DIRECTORY "/obj/faces1_valid.obj";
+
+    auto obj = core::Unpack(
+        Wavefront::loadFile(vertices1_valid_path, Wavefront::WavefrontVersion::VERSION_3_0, *suiteInfo.actx),
+        "Failed to load file: \"{}\"", vertices1_valid_path
+    );
+    defer { obj.free(); };
+
+    CT_CHECK(obj.facesCount == 11);
+
+    FacesTestCase cases[] = {
+        { 0, WavefrontObj::Face{  .v=core::v(1,2,3),                   .vt=core::v(-1,-1,-1),  .vn=core::v(-1,-1,-1) } },
+        { 1, WavefrontObj::Face{  .v=core::v(1,2,3),                   .vt=core::v(1,2,3),     .vn=core::v(-1,-1,-1) } },
+        { 2, WavefrontObj::Face{  .v=core::v(1,2,3),                   .vt=core::v(-1,-1,-1),  .vn=core::v(1,2,3)    } },
+        { 3, WavefrontObj::Face{  .v=core::v(1,2,3),                   .vt=core::v(1,2,3),     .vn=core::v(1,2,3)    } },
+        { 4, WavefrontObj::Face{  .v=core::v(1,2,3),                   .vt=core::v(1,-1,-1),   .vn=core::v(4,2,3)    } },
+        { 5, WavefrontObj::Face{  .v=core::v(1,2,3),                   .vt=core::v(-1,2,3),    .vn=core::v(-1,-1,3)  } },
+        { 6, WavefrontObj::Face{  .v=core::v(1000000,2000000,3000000), .vt=core::v(-1,-1,-1),  .vn=core::v(-1,-1,-1) } },
+        { 7, WavefrontObj::Face{  .v=core::v(-9,-2,-3),                .vt=core::v(-1,-1,-1),  .vn=core::v(-1,-1,-1) } },
+        { 8, WavefrontObj::Face{  .v=core::v(-9,-2,-3),                .vt=core::v(-9,-2,-3),  .vn=core::v(-1,-1,-1) } },
+        { 9, WavefrontObj::Face{  .v=core::v(1,2,3),                   .vt=core::v(1,-1,3),    .vn=core::v(-1,-1,-1) } },
+        { 10, WavefrontObj::Face{ .v=core::v(1,2,3),                   .vt=core::v(-1,2,-1),   .vn=core::v(1,-1,-1)  } },
+    };
+
+    i32 ret = core::testing::executeTestTable("simpleFacesTest failed at: ", cases, [&](const auto& tc, const char* cErr) {
+        CT_CHECK(tc.index < addr_size(obj.facesCount), cErr);
+
+        auto& got = obj.faces[tc.index];
+        auto& exp = tc.expected;
+
+        CT_CHECK(got.v  == exp.v,  cErr);
+        CT_CHECK(got.vt == exp.vt, cErr);
+        CT_CHECK(got.vn == exp.vn, cErr);
+
+        return 0;
+    });
+    CT_CHECK(ret == 0);
+
+    return 0;
+}
+
+
 } // namespace
 
 i32 runWavefrontTestsSuite(const core::testing::TestSuiteInfo& suiteInfo) {
@@ -59,6 +109,8 @@ i32 runWavefrontTestsSuite(const core::testing::TestSuiteInfo& suiteInfo) {
 
     tInfo.name = FN_NAME_TO_CPTR(simpleVerticesTest);
     if (runTest(tInfo, simpleVerticesTest, suiteInfo) != 0) { return -1; }
+    tInfo.name = FN_NAME_TO_CPTR(simpleFacesTest);
+    if (runTest(tInfo, simpleFacesTest, suiteInfo) != 0) { return -1; }
 
     return 0;
 }

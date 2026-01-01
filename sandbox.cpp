@@ -169,7 +169,7 @@ int main() {
         // defer { shutdownDebugRendering(); };
 
         // testLoadingMesh(ASSETS_DIRECTORY "/obj-files/diablo3_pose.obj");
-        testLoadingMesh(ASSETS_DIRECTORY "/obj-files/simple/floor.obj");
+        testLoadingMesh("/home/good-mood14/repos/rendering-technique/tests/test_assets/obj/faces1_valid.obj");
 
         // create5MillionLines(ASSETS_DIRECTORY "/output.tga");
         // createFileTest(ASSETS_DIRECTORY "/output.tga");

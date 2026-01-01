@@ -222,12 +222,6 @@ struct TGAImage {
     addr_off extAreaOff = -1;
     addr_off footerOff = -1;
 
-    NO_COPY(TGAImage);
-
-    TGAImage() = default;
-    TGAImage(TGAImage&& other) = default;
-    TGAImage& operator=(TGAImage&&) = default;
-
     void free();
 
     core::expected<TGAError> header(const Header*& out) const;

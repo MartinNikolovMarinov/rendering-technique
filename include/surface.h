@@ -75,11 +75,6 @@ enum struct Origin {
 };
 
 struct Surface {
-    NO_COPY(Surface);
-    Surface() = default;
-    Surface(Surface&& other) = default;
-    Surface& operator=(Surface&&) = default;
-
     core::AllocatorContext* actx = nullptr;
     Origin origin = Origin::Undefined;
     PixelFormat pixelFormat = PixelFormat::Unknown;

@@ -20,47 +20,68 @@ void logErr_ConvErrorCode(core::ConversionError convErrCode) {
 
 namespace {
 
-template<addr_size Dim, typename T>
-void logInfoVectorFloat(core::vec<Dim, T> v) {
-    constexpr const char* fmt = core::same_as<T, f64> ? "\"{}\": {:f.6}, " : "\"{}\": {:f.3}, ";
-    constexpr const char* fmtLast = core::same_as<T, f64> ? "\"{}\": {:f.6}" : "\"{}\": {:f.3}";
+template<typename T>
+constexpr const char* vecTypeSuffix() {
+    if constexpr (core::same_as<T, f64>)      return "d";
+    else if constexpr (core::same_as<T, f32>) return "f";
+    else if constexpr (core::is_signed_v<T>)  return "i";
+    else                                      return "u";
+}
 
+template<typename T>
+constexpr const char* elemFmtMid() {
+    if constexpr (core::same_as<T, f64>)      return "\"{}\": {:f.6}, ";
+    else if constexpr (core::same_as<T, f32>) return "\"{}\": {:f.3}, ";
+    else                                      return "\"{}\": {}, ";
+}
+
+template<typename T>
+constexpr const char* elemFmtLast() {
+    if constexpr (core::same_as<T, f64>)      return "\"{}\": {:f.6}";
+    else if constexpr (core::same_as<T, f32>) return "\"{}\": {:f.3}";
+    else                                      return "\"{}\": {}";
+}
+
+template<addr_size Dim, typename T>
+void logInfoVector(core::vec<Dim, T> v) {
     constexpr addr_size bufferLen = 255;
     char buff[bufferLen] = {};
     char* p = buff;
 
-    constexpr const char* prefix = "{{ \"vec{}{}\": {{";
+    // prefix: { "vec<Dim><suffix>": {
     p += core::Unpack(
-        core::format(p, bufferLen, prefix, v.dimensions(), core::same_as<T, f64> ? 'd' : 'f'),
+        core::format(p, bufferLen, "{{ \"vec{}{}\": {{", v.dimensions(), vecTypeSuffix<T>()),
         "BUG: likely buffer overflow"
     );
 
     constexpr char symbols[] = { 'x', 'y', 'z', 'w' };
     for (addr_size i = 0; i < v.dimensions(); i++) {
-        if (i < v.dimensions() - 1) {
-            p += core::Unpack(core::format(p, bufferLen, fmt, symbols[i], v.data[i]), "BUG: likely buffer overflow");
-        }
-        else {
-            p += core::Unpack(core::format(p, bufferLen, fmtLast, symbols[i], v.data[i]), "BUG: likely buffer overflow");
-        }
+        const bool last = (i + 1 == v.dimensions());
+        p += core::Unpack(
+            core::format(p, bufferLen, last ? elemFmtLast<T>() : elemFmtMid<T>(),
+                         symbols[i], v.data[i]),
+            "BUG: likely buffer overflow"
+        );
     }
 
-    constexpr const char* postfix = "} }";
-    p += core::memcopy(p, postfix, core::cstrLen(postfix));
-
-    logInfo("{}", buff);
+    p += core::memcopy(p, "} }", 3);
+    core::logDirectStd("{}", buff);
 }
 
 } // namespace
 
-void logInfo_Vector(core::vec4f v) { logInfoVectorFloat(v); }
-void logInfo_Vector(core::vec3f v) { logInfoVectorFloat(v); }
-void logInfo_Vector(core::vec2f v) { logInfoVectorFloat(v); }
-void logInfo_Vector(core::vec1f v) { logInfoVectorFloat(v); }
-void logInfo_Vector(core::vec4d v) { logInfoVectorFloat(v); }
-void logInfo_Vector(core::vec3d v) { logInfoVectorFloat(v); }
-void logInfo_Vector(core::vec2d v) { logInfoVectorFloat(v); }
-void logInfo_Vector(core::vec1d v) { logInfoVectorFloat(v); }
+void logDirect_Vector(core::vec4f v) { logInfoVector(v); }
+void logDirect_Vector(core::vec3f v) { logInfoVector(v); }
+void logDirect_Vector(core::vec2f v) { logInfoVector(v); }
+void logDirect_Vector(core::vec1f v) { logInfoVector(v); }
+void logDirect_Vector(core::vec4d v) { logInfoVector(v); }
+void logDirect_Vector(core::vec3d v) { logInfoVector(v); }
+void logDirect_Vector(core::vec2d v) { logInfoVector(v); }
+void logDirect_Vector(core::vec1d v) { logInfoVector(v); }
+void logDirect_Vector(core::vec4i v) { logInfoVector(v); }
+void logDirect_Vector(core::vec3i v) { logInfoVector(v); }
+void logDirect_Vector(core::vec2i v) { logInfoVector(v); }
+void logDirect_Vector(core::vec1i v) { logInfoVector(v); }
 
 void logInfo_Surface(const Surface& surface) {
     logInfo(

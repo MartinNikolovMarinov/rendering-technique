@@ -38,7 +38,7 @@ const char* errorToCstr(WavefrontError err);
     Elements:
         * point (p)
         * line (l)
-        * face (f) - (support planned ⚠️)
+        * face (f) - (supported ✅) - only 3 dimensions!
         * curve (curv)
         * 2D curve (curv2)
         * surface (surf)
@@ -93,9 +93,15 @@ enum struct WavefrontVersion {
 struct WavefrontObj {
     core::AllocatorContext* actx;
 
+    struct Face {
+        core::vec3i v;
+        core::vec3i vt;
+        core::vec3i vn;
+    };
+
     core::Memory<core::vec4f> vertices;
     i32 verticesCount;
-    core::Memory<i32> faces;
+    core::Memory<Face> faces;
     i32 facesCount;
 
     constexpr inline void setAllocator(core::AllocatorContext& _actx) { actx = &_actx; }
