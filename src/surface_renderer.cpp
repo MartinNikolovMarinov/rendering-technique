@@ -85,6 +85,12 @@ void fillLine(Surface& surface, i32 ax, i32 ay, i32 bx, i32 by, Color color) {
     }
 }
 
+void strokeTriangle(Surface& surface, i32 ax, i32 ay, i32 bx, i32 by, i32 cx, i32 cy, Color color) {
+    fillLine(surface, ax, ay, bx, by, color);
+    fillLine(surface, bx, by, cx, cy, color);
+    fillLine(surface, cx, cy, ax, ay, color);
+}
+
 namespace {
 
 constexpr inline void setPixelTopLeft_BGRA8888(u8* data, i32 idx, Color color) {

@@ -187,9 +187,9 @@ void renderObjFile(const char* path) {
     for (i32 i = 0; i < obj.facesCount; i++) {
         auto& f = obj.faces[i];
 
-        i32 vert1Idx = f.v.x() - 1;
-        i32 vert2Idx = f.v.y() - 1;
-        i32 vert3Idx = f.v.z() - 1;
+        i32 vert1Idx = f.v()[0] - 1;
+        i32 vert2Idx = f.v()[1] - 1;
+        i32 vert3Idx = f.v()[2] - 1;
 
         core::vec4f& v1 = obj.vertices[vert1Idx];
         core::vec4f& v2 = obj.vertices[vert2Idx];
@@ -200,9 +200,7 @@ void renderObjFile(const char* path) {
         core::vec2i c = orthogonalProjection(v3, s.width, s.height);
 
         // Draw triangle
-        fillLine(s, a.x(), a.y(), b.x(), b.y(), RED);
-        fillLine(s, b.x(), b.y(), c.x(), c.y(), RED);
-        fillLine(s, c.x(), c.y(), a.x(), a.y(), RED);
+        strokeTriangle(s, a.x(), a.y(), b.x(), b.y(), c.x(), c.y(), RED);
     }
 
     for (i32 i = 0; i < obj.verticesCount; i++) {

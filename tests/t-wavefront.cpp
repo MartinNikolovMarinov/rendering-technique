@@ -17,6 +17,21 @@ struct FacesTestCase {
     WavefrontObj::Face expected;
 };
 
+i32 facesAreEqual(const WavefrontObj::Face& f1, const WavefrontObj::Face& f2) {
+    CT_CHECK(f1.setFieldsMask == f2.setFieldsMask);
+
+    for (i32 i = 0; i < f1.DIMMENTIONS; i++) {
+        for (i32 j = 0; j < 3; j++) {
+            CT_CHECK(f1.isSet(i, j) == f2.isSet(i, j));
+            if (f1.isSet(i, j)) {
+                CT_CHECK(f1.data[i][j] == f2.data[i][j]);
+            }
+        }
+    }
+
+    return 0;
+}
+
 i32 simpleVerticesTest(const core::testing::TestSuiteInfo& suiteInfo) {
     constexpr const char* vertices1_valid_path = TEST_ASSETS_DIRECTORY "/obj/vertices1_valid.obj";
 
@@ -69,17 +84,17 @@ i32 simpleFacesTest(const core::testing::TestSuiteInfo& suiteInfo) {
     CT_CHECK(obj.facesCount == 11);
 
     FacesTestCase cases[] = {
-        { 0, WavefrontObj::Face{  .v=core::v(1,2,3),                   .vt=core::v(-1,-1,-1),  .vn=core::v(-1,-1,-1) } },
-        { 1, WavefrontObj::Face{  .v=core::v(1,2,3),                   .vt=core::v(1,2,3),     .vn=core::v(-1,-1,-1) } },
-        { 2, WavefrontObj::Face{  .v=core::v(1,2,3),                   .vt=core::v(-1,-1,-1),  .vn=core::v(1,2,3)    } },
-        { 3, WavefrontObj::Face{  .v=core::v(1,2,3),                   .vt=core::v(1,2,3),     .vn=core::v(1,2,3)    } },
-        { 4, WavefrontObj::Face{  .v=core::v(1,2,3),                   .vt=core::v(1,-1,-1),   .vn=core::v(4,2,3)    } },
-        { 5, WavefrontObj::Face{  .v=core::v(1,2,3),                   .vt=core::v(-1,2,3),    .vn=core::v(-1,-1,3)  } },
-        { 6, WavefrontObj::Face{  .v=core::v(1000000,2000000,3000000), .vt=core::v(-1,-1,-1),  .vn=core::v(-1,-1,-1) } },
-        { 7, WavefrontObj::Face{  .v=core::v(-9,-2,-3),                .vt=core::v(-1,-1,-1),  .vn=core::v(-1,-1,-1) } },
-        { 8, WavefrontObj::Face{  .v=core::v(-9,-2,-3),                .vt=core::v(-9,-2,-3),  .vn=core::v(-1,-1,-1) } },
-        { 9, WavefrontObj::Face{  .v=core::v(1,2,3),                   .vt=core::v(1,-1,3),    .vn=core::v(-1,-1,-1) } },
-        { 10, WavefrontObj::Face{ .v=core::v(1,2,3),                   .vt=core::v(-1,2,-1),   .vn=core::v(1,-1,-1)  } },
+        { 0,  { .data={ {1,2,3},                   {-99,-99,-99}, {-99,-99,-99} }, .setFieldsMask=0b000000111 } },
+        { 1,  { .data={ {1,2,3},                   {1,2,3},       {-99,-99,-99} }, .setFieldsMask=0b000111111 } },
+        { 2,  { .data={ {1,2,3},                   {-99,-99,-99}, {1,2,3}       }, .setFieldsMask=0b111000111 } },
+        { 3,  { .data={ {1,2,3},                   {1,2,3},       {1,2,3}       }, .setFieldsMask=0b111111111 } },
+        { 4,  { .data={ {1,2,3},                   {1,-99,-99},   {4,2,3}       }, .setFieldsMask=0b111001111 } },
+        { 5,  { .data={ {1,2,3},                   {-99,2,3},     {-99,-99,3}   }, .setFieldsMask=0b100110111 } },
+        { 6,  { .data={ {1000000,2000000,3000000}, {-99,-99,-99}, {-99,-99,-99} }, .setFieldsMask=0b000000111 } },
+        { 7,  { .data={ {-9,-2,-3},                {-99,-99,-99}, {-99,-99,-99} }, .setFieldsMask=0b000000111 } },
+        { 8,  { .data={ {-9,-2,-3},                {-9,-2,-3},    {-99,-99,-99} }, .setFieldsMask=0b000111111 } },
+        { 9,  { .data={ {1,2,3},                   {1,-99,3},     {-99,-99,-99} }, .setFieldsMask=0b000101111 } },
+        { 10, { .data={ {1,2,3},                   {-99,2,-99},   {1,-99,-99}   }, .setFieldsMask=0b001010111 } },
     };
 
     i32 ret = core::testing::executeTestTable("simpleFacesTest failed at: ", cases, [&](const auto& tc, const char* cErr) {
@@ -88,9 +103,7 @@ i32 simpleFacesTest(const core::testing::TestSuiteInfo& suiteInfo) {
         auto& got = obj.faces[tc.index];
         auto& exp = tc.expected;
 
-        CT_CHECK(got.v  == exp.v,  cErr);
-        CT_CHECK(got.vt == exp.vt, cErr);
-        CT_CHECK(got.vn == exp.vn, cErr);
+        CT_CHECK(facesAreEqual(got, exp) == 0, cErr);
 
         return 0;
     });

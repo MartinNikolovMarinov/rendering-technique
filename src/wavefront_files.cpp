@@ -187,97 +187,84 @@ core::expected<core::vec4f, WavefrontError> parseVertexLine(core::StrView currLi
 }
 
 [[nodiscard]] core::expected<WavefrontObj::Face, WavefrontError> parseFaces(core::StrView currLine) {
+    using WavefrontObj = WavefrontObj;
+    using Face = WavefrontObj::Face;
+    constexpr i32 DIMMENTIONS = WavefrontObj::Face::DIMMENTIONS;
+
     Assert(currLine[0] == 'f', "BUG: failed a basic sanity check");
 
-    auto parseFaces = [](core::StrView faces) -> core::expected<core::vec3i, WavefrontError> {
-        core::StrView faceComponents[3];
+    auto parseFaceComponent = [](core::StrView component, Face& face, i32 faceIdx) -> core::expected<WavefrontError> {
+        core::StrView faceComponents[DIMMENTIONS];
         addr_size faceComponentsCount = 0;
-        bool ok = core::split(faces, '/', faceComponents, 3, faceComponentsCount);
+        bool ok = core::split(component, '/', faceComponents, DIMMENTIONS, faceComponentsCount);
         if (!ok) {
             return core::unexpected(WavefrontError::InvalidFileFormat);
         }
 
-        core::vec3i ret = core::vec3i::uniform(-1);
         for (addr_size i = 0; i < faceComponentsCount; i++) {
-            auto fc = faceComponents[i];
-            if (fc.len() > 0) {
-                auto res = core::cstrToInt<i32>(fc.data(), u32(fc.len()));
+            auto fcSv = faceComponents[i];
+            if (fcSv.len() > 0) {
+                auto res = core::cstrToInt<i32>(fcSv.data(), u32(fcSv.len()));
                 WAVEFRONT_CONV_ERR_CHECK(res);
-                ret[i] = res.value();
-            }
-            else {
-                ret[i] = -1;
+                face.data[i][faceIdx] = res.value();
+                face.set(i32(i), faceIdx);
             }
         }
 
-        return ret;
+        return {};
     };
 
-    // TODO: [WAVEFRONT][BUG] Using -1 for sentinel is technically incorrect, because wavefront format supports negative values.
-    core::vec3i v = core::vec3i::uniform(-1);
-    core::vec3i vt = core::vec3i::uniform(-1);
-    core::vec3i vn = core::vec3i::uniform(-1);
+    WavefrontObj::Face face = {};
 
     // Skip 'f '
     currLine = skipToken(currLine, ' ');
 
     i32 componentsCount = countTokens(currLine, ' ');
 
-    if (componentsCount != 2) {
-        logErr("TODO: [WAVEFRONT] Face components with more than 3 dimensions are not supported yet");
+    if (componentsCount != DIMMENTIONS - 1) {
+        logErr(
+            "TODO: [WAVEFRONT] Face components with more than {} dimensions are not supported yet; or maybe never will.",
+            DIMMENTIONS
+        );
         return core::unexpected(WavefrontError::InvalidFileFormat);
     }
 
     // Parse vertex indices
     {
-        core::StrView faces = {};
-        currLine = nextToken(currLine, { ' ' }, faces);
-        if (faces.empty()) {
+        core::StrView component = {};
+        currLine = nextToken(currLine, { ' ' }, component);
+        if (component.empty()) {
             return core::unexpected(WavefrontError::InvalidFileFormat);
         }
-        auto res = parseFaces(faces);
+        auto res = parseFaceComponent(component, face, 0);
         if (res.hasErr()) return core::unexpected(res.err());
-        v.x() = res.value().x();
-        vt.x() = res.value().y();
-        vn.x() = res.value().z();
         componentsCount--;
     }
 
     // Parse vertex texture indices
     {
-        core::StrView faces = {};
-        currLine = nextToken(currLine, { ' ' }, faces);
-        if (faces.empty()) {
+        core::StrView component = {};
+        currLine = nextToken(currLine, { ' ' }, component);
+        if (component.empty()) {
             return core::unexpected(WavefrontError::InvalidFileFormat);
         }
-        auto res = parseFaces(faces);
+        auto res = parseFaceComponent(component, face, 1);
         if (res.hasErr()) return core::unexpected(res.err());
-        v.y() = res.value().x();
-        vt.y() = res.value().y();
-        vn.y() = res.value().z();
         componentsCount--;
     }
 
     // Parse vertex normal indices
     {
-        core::StrView faces = {};
-        currLine = nextToken(currLine, { ' ', '\n' }, faces);
-        if (faces.empty()) {
+        core::StrView component = {};
+        currLine = nextToken(currLine, { ' ', '\n' }, component);
+        if (component.empty()) {
             return core::unexpected(WavefrontError::InvalidFileFormat);
         }
-        auto res = parseFaces(faces);
+        auto res = parseFaceComponent(component, face, 2);
         if (res.hasErr()) return core::unexpected(res.err());
-        v.z() = res.value().x();
-        vt.z() = res.value().y();
-        vn.z() = res.value().z();
         componentsCount--;
     }
 
-    WavefrontObj::Face face = {
-        .v = v,
-        .vt = vt,
-        .vn = vn,
-    };
     return face;
 }
 

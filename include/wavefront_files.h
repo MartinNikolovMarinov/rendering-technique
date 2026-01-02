@@ -94,9 +94,22 @@ struct WavefrontObj {
     core::AllocatorContext* actx;
 
     struct Face {
-        core::vec3i v;
-        core::vec3i vt;
-        core::vec3i vn;
+        using FaceComponent = i32[3];
+        static constexpr i32 DIMMENTIONS = 3;
+
+        constexpr FaceComponent& v() { return data[0]; }
+        constexpr FaceComponent& vt() { return data[1]; }
+        constexpr FaceComponent& vn() { return data[2]; }
+
+        constexpr bool isSet(i32 dimmensionIdx, i32 idx) const {
+            return setFieldsMask & ((1 << idx) << (dimmensionIdx * DIMMENTIONS));
+        }
+        constexpr void set(i32 dimmensionIdx, i32 idx) {
+            setFieldsMask |= (1 << idx) << (dimmensionIdx * DIMMENTIONS);
+        }
+
+        FaceComponent data[DIMMENTIONS];
+        i32 setFieldsMask;
     };
 
     core::Memory<core::vec4f> vertices;
@@ -114,4 +127,3 @@ struct WavefrontObj {
                                                                     core::AllocatorContext& actx = DEF_ALLOC);
 
 } // Wavefront
-
