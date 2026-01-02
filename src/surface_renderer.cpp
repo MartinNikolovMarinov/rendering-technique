@@ -92,7 +92,42 @@ void strokeTriangle(Surface& surface, i32 ax, i32 ay, i32 bx, i32 by, i32 cx, i3
     fillLine(surface, cx, cy, ax, ay, color);
 }
 
-void renderModelWireframe(Surface& surface, const Model3D& model) {
+void fillTriangle(Surface& surface, i32 ax, i32 ay, i32 bx, i32 by, i32 cx, i32 cy, Color color) {
+    // Calculate the bounding box for the triangle:
+    i32 minx = core::core_min(core::core_min(ax, bx), cx);
+    i32 miny = core::core_min(core::core_min(ay, by), cy);
+    i32 maxx = core::core_max(core::core_max(ax, bx), cx);
+    i32 maxy = core::core_max(core::core_max(ay, by), cy);
+
+    auto calculateTriangleArea = [](i32 ax, i32 ay, i32 bx, i32 by, i32 cx, i32 cy) -> f64 {
+        return 0.5 * f64((by-ay)*(bx+ax) + (cy-by)*(cx+bx) + (ay-cy)*(ax+cx));
+    };
+
+    f64 totalArea = calculateTriangleArea(ax, ay, bx, by, cx, cy);
+
+    if (totalArea < 1) {
+        // Naive backface culling + discarding triangles that cover less than a pixel
+        return;
+    }
+
+    // TODO: Parallelize this loop:
+    for (i32 x= minx; x <= maxx; x++) {
+        for (i32 y= miny; y<= maxy; y++) {
+            f64 alpha = calculateTriangleArea(x, y, bx, by, cx, cy) / totalArea;
+            f64 beta  = calculateTriangleArea(x, y, cx, cy, ax, ay) / totalArea;
+            f64 gamma = calculateTriangleArea(x, y, ax, ay, bx, by) / totalArea;
+
+            if (alpha < 0 || beta < 0 || gamma < 0) {
+                // negative barycentric coordinate => the pixel is outside the triangle
+                continue;
+            }
+
+            fillPixel(surface, x, y, color);
+        }
+    }
+}
+
+void renderModel(Surface& surface, const Model3D& model, bool wireframe) {
     i32 width = surface.width;
     i32 height = surface.height;
 
@@ -101,6 +136,8 @@ void renderModelWireframe(Surface& surface, const Model3D& model) {
         i32 ay = i32((normVec.y() + 1.0f) * (f32(height - 1)/2.0f));
         return core::v(ax, ay);
     };
+
+    core::rndInit();
 
     for (addr_size i = 0; i < model.faces.len(); i++) {
         auto& f = model.faces[i];
@@ -113,13 +150,25 @@ void renderModelWireframe(Surface& surface, const Model3D& model) {
         core::vec2i b = orthogonalProjection(v2, width, height);
         core::vec2i c = orthogonalProjection(v3, width, height);
 
-        strokeTriangle(surface, a.x(), a.y(), b.x(), b.y(), c.x(), c.y(), RED);
+        if (wireframe) {
+            strokeTriangle(surface, a.x(), a.y(), b.x(), b.y(), c.x(), c.y(), RED);
+        }
+        else {
+            Color color;
+            color.rgba.r = u8(core::rndU32() % 255);
+            color.rgba.g = u8(core::rndU32() % 255);
+            color.rgba.b = u8(core::rndU32() % 255);
+            color.rgba.a = 255;
+            fillTriangle(surface, a.x(), a.y(), b.x(), b.y(), c.x(), c.y(), color);
+        }
     }
 
-    for (addr_size i = 0; i < model.vertices.len(); i++) {
-        auto& v = model.vertices[i];
-        core::vec2i a = orthogonalProjection(v, width, height);
-        fillPixel(surface, a.x(), a.y(), WHITE);
+    if (wireframe) {
+        for (addr_size i = 0; i < model.vertices.len(); i++) {
+            auto& v = model.vertices[i];
+            core::vec2i a = orthogonalProjection(v, width, height);
+            fillPixel(surface, a.x(), a.y(), WHITE);
+        }
     }
 }
 

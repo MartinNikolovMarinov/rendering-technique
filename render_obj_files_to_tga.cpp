@@ -7,14 +7,14 @@
 #include "wavefront_files.h"
 #include "model.h"
 
-void renderObjFileIntoASurface(Surface& s, const char* objFilePath) {
+void renderObjFileIntoASurface(Surface& s, const char* objFilePath, bool wireframe) {
     auto obj = core::Unpack(Wavefront::loadFile(objFilePath, Wavefront::WavefrontVersion::VERSION_3_0));
     logInfo("verts={}, faces={}", obj.verticesCount, obj.facesCount);
 
     auto model = Wavefront::createModelFromWavefrontObj(obj);
     obj.free();
 
-    renderModelWireframe(s, model);
+    renderModel(s, model, wireframe);
     model.free();
 }
 
@@ -38,7 +38,7 @@ void renderObjFilesToTga(const char** objFiles, i32 objFilesLen, const char* out
     fillRect(s, 0, 0, BLACK, s.width, s.height);
 
     for (i32 i = 0; i < objFilesLen; i++) {
-        renderObjFileIntoASurface(s, objFiles[i]);
+        renderObjFileIntoASurface(s, objFiles[i], false);
     }
 
     TGA::CreateFileFromSurfaceParams params = {
@@ -56,9 +56,9 @@ i32 main() {
         defer { coreShutdown(); };
 
         const char* filesToRender[] = {
-            // ASSETS_DIRECTORY "/obj-files/diablo3_pose.obj",
+            ASSETS_DIRECTORY "/obj-files/diablo3_pose.obj",
 
-            ASSETS_DIRECTORY "/obj-files/african_head.obj",
+            // ASSETS_DIRECTORY "/obj-files/african_head.obj",
 
             // ASSETS_DIRECTORY "/obj-files/multipart/body.obj",
             // ASSETS_DIRECTORY "/obj-files/multipart/head.obj",

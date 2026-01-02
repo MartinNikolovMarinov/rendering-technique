@@ -117,7 +117,7 @@ void create5MillionLines(const char* path) {
     core::Expect(TGA::createFileFromSurface(params));
 }
 
-void createFileTest(const char* path) {
+void writeSurfaceToFile(const char* path) {
     constexpr PixelFormat f = PixelFormat::BGRA8888;
     constexpr i32 bpp = pixelFormatBytesPerPixel(f);
 
@@ -134,11 +134,15 @@ void createFileTest(const char* path) {
     s.pitch = s.width * bpp;
     s.data = buf;
 
-    fillRect(s, 0, 0, BLACK, s.width, s.height);
+    fillRect(s, 0, 0, BLACK, s.width - 1, s.height - 1);
 
-    strokeTriangle(s,   7, 45, 35, 100, 45,  60, RED);
-    strokeTriangle(s, 120, 35, 90,   5, 45, 110, WHITE);
-    strokeTriangle(s, 115, 83, 80,  90, 85, 120, GREEN);
+    // strokeTriangle(s,   7, 45, 35, 100, 45,  60, RED);
+    // strokeTriangle(s, 120, 35, 90,   5, 45, 110, WHITE);
+    // strokeTriangle(s, 115, 83, 80,  90, 85, 120, GREEN);
+
+    fillTriangle(s,   7, 45, 35, 100, 45,  60, RED);
+    fillTriangle(s, 120, 35, 90,   5, 45, 110, WHITE);
+    fillTriangle(s, 115, 83, 80,  90, 85, 120, GREEN);
 
     TGA::CreateFileFromSurfaceParams params = {
         .surface = s,
@@ -157,7 +161,7 @@ i32 main() {
         // defer { shutdownDebugRendering(); };
 
         // create5MillionLines(ASSETS_DIRECTORY "/output.tga");
-        createFileTest(ASSETS_DIRECTORY "/output.tga");
+        writeSurfaceToFile(ASSETS_DIRECTORY "/output.tga");
 
         // testAllFilesInDirectory(ASSETS_DIRECTORY "/tga-test-suite/my_test_suite/");
         // testOneFile(ASSETS_DIRECTORY "/output.tga", true);
