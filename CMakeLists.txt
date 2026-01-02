@@ -2,6 +2,7 @@ cmake_minimum_required(VERSION 3.5)
 project(rendering-techniques VERSION 0.0.1 LANGUAGES C CXX)
 
 set(target_sandbox sandbox)
+set(target_render_obj_files_to_tga render_obj_files_to_tga)
 set(target_test tests)
 
 # Standard Requirements:
@@ -70,6 +71,12 @@ set(src_sandbox
     ${src_common}
 
     sandbox.cpp
+)
+
+set(src_render_obj_files_to_tga
+    ${src_common}
+
+    render_obj_files_to_tga.cpp
 )
 
 set(src_test
@@ -141,6 +148,9 @@ endmacro()
 
 add_executable(${target_sandbox} ${src_sandbox})
 common_target_setup(${target_sandbox})
+
+add_executable(${target_render_obj_files_to_tga} ${src_render_obj_files_to_tga})
+common_target_setup(${target_render_obj_files_to_tga})
 
 add_executable(${target_test} ${src_test})
 common_target_setup(${target_test})

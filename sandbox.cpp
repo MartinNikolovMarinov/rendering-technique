@@ -4,10 +4,7 @@
 #include "log_utils.h"
 #include "debug_rendering.h"
 #include "surface_renderer.h"
-#include "wavefront_files.h"
 #include "model.h"
-
-// TODO: Write tests.
 
 core::Profiler profiler_1;
 
@@ -17,7 +14,7 @@ enum ProfilePoints {
     PP_DRAW_LINE,
 };
 
-void testOneFile(const char* path, bool debugRender = false) {
+void openAndTestOneTGAFile(const char* path, bool debugRender = false) {
     logInfo("Parsing File: {}", path);
 
     auto tgaFile = core::Unpack(TGA::loadFile(path));
@@ -40,7 +37,7 @@ void testOneFile(const char* path, bool debugRender = false) {
     }
 }
 
-void testAllFilesInDirectory(const char* directoryPath) {
+void openAllTGAFilesInDirectory(const char* directoryPath) {
     auto ret = core::dirWalk(directoryPath, [](const core::DirEntry& entry, addr_size, void* userData) -> bool {
         if (entry.type == core::FileType::Regular) {
             const addr_size nameLen = core::cstrLen(entry.name);
@@ -59,7 +56,7 @@ void testAllFilesInDirectory(const char* directoryPath) {
             addr_size idx = core::memcopy(pathBuffer, basePath, core::cstrLen(basePath));
             core::memcopy(pathBuffer + idx, entry.name, nameLen);
 
-            testOneFile(pathBuffer, true);
+            openAndTestOneTGAFile(pathBuffer, true);
         }
 
         return true;
@@ -69,42 +66,6 @@ void testAllFilesInDirectory(const char* directoryPath) {
         logErr_PltErrorCode(ret.err());
         PanicFmt(false, "failed to walk direcotry: {}", directoryPath);
     }
-}
-
-void createFileTest(const char* path) {
-    constexpr PixelFormat f = PixelFormat::BGRA8888;
-    constexpr i32 bpp = pixelFormatBytesPerPixel(f);
-
-    u8 buf[64*64*bpp] = {};
-    Surface s = Surface();
-    s.actx = nullptr;
-    s.origin = Origin::TopRight;
-    s.pixelFormat = f;
-    s.width = 64;
-    s.height = 64;
-    s.pitch = s.width * bpp;
-    s.data = buf;
-
-    fillRect(s, 0, 0, { .rgba = {0, 0, 0, 255} }, s.width, s.height);
-
-    fillRect(s, 5, 5, { .rgba = {255, 0, 255, 255} }, s.width - 5, s.height - 5);
-
-    int ax =  7, ay =  3;
-    int bx = 12, by = 37;
-    int cx = 62, cy = 53;
-
-    fillLine(s, ax, ay, bx, by, BLUE);
-    fillLine(s, cx, cy, bx, by, GREEN);
-    fillLine(s, cx, cy, ax, ay, YELLOW);
-    fillLine(s, ax, ay, cx, cy, RED);
-
-    TGA::CreateFileFromSurfaceParams params = {
-        .surface = s,
-        .path = path,
-        .imageType = 2,
-        .fileType = TGA::FileType::New,
-    };
-    core::Expect(TGA::createFileFromSurface(params));
 }
 
 void create5MillionLines(const char* path) {
@@ -156,54 +117,47 @@ void create5MillionLines(const char* path) {
     core::Expect(TGA::createFileFromSurface(params));
 }
 
-void renderObjFileToTga(const char* path, const char* outputPath) {
-    auto obj = core::Unpack(Wavefront::loadFile(path, Wavefront::WavefrontVersion::VERSION_3_0));
-    logInfo("verts={}, faces={}", obj.verticesCount, obj.facesCount);
+void createFileTest(const char* path) {
+    constexpr PixelFormat f = PixelFormat::BGRA8888;
+    constexpr i32 bpp = pixelFormatBytesPerPixel(f);
 
-    auto model = Wavefront::createModelFromWavefrontObj(obj);
-    obj.free();
+    constexpr addr_size WIDTH = 800;
+    constexpr addr_size HEIGHT = 800;
 
-    constexpr PixelFormat pixelFormat = PixelFormat::BGR888;
-    constexpr i32 bpp = pixelFormatBytesPerPixel(pixelFormat);
-
-    constexpr addr_size WIDTH = 1024;
-    constexpr addr_size HEIGHT = 1024;
-
-    static u8 buf[WIDTH*HEIGHT*bpp] = {}; // This might be big
+    u8 buf[WIDTH*HEIGHT*bpp] = {};
     Surface s = Surface();
     s.actx = nullptr;
     s.origin = Origin::BottomLeft;
-    s.pixelFormat = pixelFormat;
+    s.pixelFormat = f;
     s.width = WIDTH;
     s.height = HEIGHT;
     s.pitch = s.width * bpp;
     s.data = buf;
 
     fillRect(s, 0, 0, BLACK, s.width, s.height);
-    renderModelWireframe(s, model);
-    model.free();
+
+    strokeTriangle(s,   7, 45, 35, 100, 45,  60, RED);
+    strokeTriangle(s, 120, 35, 90,   5, 45, 110, WHITE);
+    strokeTriangle(s, 115, 83, 80,  90, 85, 120, GREEN);
 
     TGA::CreateFileFromSurfaceParams params = {
         .surface = s,
-        .path = outputPath,
+        .path = path,
         .imageType = 2,
         .fileType = TGA::FileType::New,
     };
     core::Expect(TGA::createFileFromSurface(params));
 }
 
-int main() {
+i32 main() {
     {
         coreInit(core::LogLevel::L_DEBUG);
         defer { coreShutdown(); };
         // Panic(initializeDebugRendering(), "Failed to initialize debug rendering!");
         // defer { shutdownDebugRendering(); };
 
-        // renderObjFile(ASSETS_DIRECTORY "/obj-files/simple/floor.obj");
-        renderObjFileToTga(ASSETS_DIRECTORY "/obj-files/diablo3_pose.obj", ASSETS_DIRECTORY "/output.tga");
-
         // create5MillionLines(ASSETS_DIRECTORY "/output.tga");
-        // createFileTest(ASSETS_DIRECTORY "/output.tga");
+        createFileTest(ASSETS_DIRECTORY "/output.tga");
 
         // testAllFilesInDirectory(ASSETS_DIRECTORY "/tga-test-suite/my_test_suite/");
         // testOneFile(ASSETS_DIRECTORY "/output.tga", true);
