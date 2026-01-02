@@ -5,6 +5,7 @@
 #include "debug_rendering.h"
 #include "surface_renderer.h"
 #include "wavefront_files.h"
+#include "model.h"
 
 // TODO: Write tests.
 
@@ -155,10 +156,12 @@ void create5MillionLines(const char* path) {
     core::Expect(TGA::createFileFromSurface(params));
 }
 
-void renderObjFile(const char* path) {
+void renderObjFileToTga(const char* path, const char* outputPath) {
     auto obj = core::Unpack(Wavefront::loadFile(path, Wavefront::WavefrontVersion::VERSION_3_0));
-    defer { obj.free(); };
     logInfo("verts={}, faces={}", obj.verticesCount, obj.facesCount);
+
+    auto model = Wavefront::createModelFromWavefrontObj(obj);
+    obj.free();
 
     constexpr PixelFormat pixelFormat = PixelFormat::BGR888;
     constexpr i32 bpp = pixelFormatBytesPerPixel(pixelFormat);
@@ -177,41 +180,12 @@ void renderObjFile(const char* path) {
     s.data = buf;
 
     fillRect(s, 0, 0, BLACK, s.width, s.height);
-
-    auto orthogonalProjection = [](core::vec4f& normVec, i32 width, i32 height) -> core::vec2i {
-        i32 ax = i32((normVec.x() + 1.0f) * (f32(width - 1)/2.0f));
-        i32 ay = i32((normVec.y() + 1.0f) * (f32(height - 1)/2.0f));
-        return core::v(ax, ay);
-    };
-
-    for (i32 i = 0; i < obj.facesCount; i++) {
-        auto& f = obj.faces[i];
-
-        i32 vert1Idx = f.v()[0] - 1;
-        i32 vert2Idx = f.v()[1] - 1;
-        i32 vert3Idx = f.v()[2] - 1;
-
-        core::vec4f& v1 = obj.vertices[vert1Idx];
-        core::vec4f& v2 = obj.vertices[vert2Idx];
-        core::vec4f& v3 = obj.vertices[vert3Idx];
-
-        core::vec2i a = orthogonalProjection(v1, s.width, s.height);
-        core::vec2i b = orthogonalProjection(v2, s.width, s.height);
-        core::vec2i c = orthogonalProjection(v3, s.width, s.height);
-
-        // Draw triangle
-        strokeTriangle(s, a.x(), a.y(), b.x(), b.y(), c.x(), c.y(), RED);
-    }
-
-    for (i32 i = 0; i < obj.verticesCount; i++) {
-        auto& v = obj.vertices[i];
-        core::vec2i a = orthogonalProjection(v, s.width, s.height);
-        fillPixel(s, a.x(), a.y(), WHITE);
-    }
+    renderModelWireframe(s, model);
+    model.free();
 
     TGA::CreateFileFromSurfaceParams params = {
         .surface = s,
-        .path = ASSETS_DIRECTORY "/output.tga",
+        .path = outputPath,
         .imageType = 2,
         .fileType = TGA::FileType::New,
     };
@@ -226,7 +200,7 @@ int main() {
         // defer { shutdownDebugRendering(); };
 
         // renderObjFile(ASSETS_DIRECTORY "/obj-files/simple/floor.obj");
-        renderObjFile(ASSETS_DIRECTORY "/obj-files/diablo3_pose.obj");
+        renderObjFileToTga(ASSETS_DIRECTORY "/obj-files/diablo3_pose.obj", ASSETS_DIRECTORY "/output.tga");
 
         // create5MillionLines(ASSETS_DIRECTORY "/output.tga");
         // createFileTest(ASSETS_DIRECTORY "/output.tga");

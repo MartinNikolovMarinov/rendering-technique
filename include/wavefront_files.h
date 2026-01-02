@@ -2,6 +2,8 @@
 
 #include "core_init.h"
 
+struct Model3D;
+
 namespace Wavefront {
 
 enum struct WavefrontError {
@@ -122,8 +124,11 @@ struct WavefrontObj {
     void free();
 };
 
-[[nodiscard]] core::expected<WavefrontObj, WavefrontError> loadFile(const char* path,
-                                                                    WavefrontVersion fileVersion,
-                                                                    core::AllocatorContext& actx = DEF_ALLOC);
+[[nodiscard]] core::expected<WavefrontObj, WavefrontError> loadFile(
+    const char* path,
+    WavefrontVersion fileVersion,
+    core::AllocatorContext& actx = DEF_ALLOC
+);
+Model3D createModelFromWavefrontObj(const WavefrontObj& obj, core::AllocatorContext& modelActx = DEF_ALLOC);
 
 } // Wavefront

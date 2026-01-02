@@ -1,5 +1,6 @@
 #include "wavefront_files.h"
 #include "log_utils.h"
+#include "model.h"
 
 // TODO: [WAVEFRONT] This code expects spaces if a wavefront file with tabs for delimiters is ever passed it will fail.
 
@@ -50,9 +51,10 @@ void WavefrontObj::free() {
     *this = {};
 }
 
-core::expected<WavefrontObj, WavefrontError> loadFile(const char* path,
-                                                      WavefrontVersion fileVersion,
-                                                      core::AllocatorContext& actx
+core::expected<WavefrontObj, WavefrontError> loadFile(
+    const char* path,
+    WavefrontVersion fileVersion,
+    core::AllocatorContext& actx
 ) {
     if (fileVersion != WavefrontVersion::VERSION_3_0) {
         return core::unexpected(WavefrontError::UnsupportedVersion);
@@ -100,6 +102,28 @@ core::expected<WavefrontObj, WavefrontError> loadFile(const char* path,
     }
 
     return obj;
+}
+
+Model3D createModelFromWavefrontObj(const WavefrontObj& obj, core::AllocatorContext& modelActx) {
+    Model3D model;
+    model.actx = &modelActx;
+
+    model.vertices = core::memoryZeroAllocate<core::vec4f>(addr_size(obj.verticesCount), modelActx);
+    for (i32 i = 0; i < obj.verticesCount; i++) {
+        model.vertices[i] = obj.vertices[i];
+    }
+    Assert(i32(model.vertices.len()) == obj.verticesCount);
+
+    model.faces = core::memoryZeroAllocate<Model3D::Face>(addr_size(obj.facesCount), modelActx);
+    for (i32 i = 0; i < obj.facesCount; i++) {
+        auto& v = obj.faces[i].v();
+        model.faces[i][0] = v[0] - 1;
+        model.faces[i][1] = v[1] - 1;
+        model.faces[i][2] = v[2] - 1;
+    }
+    Assert(i32(model.faces.len()) == obj.facesCount);
+
+    return model;
 }
 
 namespace {

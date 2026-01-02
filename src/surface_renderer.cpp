@@ -1,5 +1,6 @@
 #include "surface_renderer.h"
 #include "surface.h"
+#include "model.h"
 
 namespace {
 
@@ -89,6 +90,37 @@ void strokeTriangle(Surface& surface, i32 ax, i32 ay, i32 bx, i32 by, i32 cx, i3
     fillLine(surface, ax, ay, bx, by, color);
     fillLine(surface, bx, by, cx, cy, color);
     fillLine(surface, cx, cy, ax, ay, color);
+}
+
+void renderModelWireframe(Surface& surface, const Model3D& model) {
+    i32 width = surface.width;
+    i32 height = surface.height;
+
+    auto orthogonalProjection = [](core::vec4f normVec, i32 width, i32 height) -> core::vec2i {
+        i32 ax = i32((normVec.x() + 1.0f) * (f32(width - 1)/2.0f));
+        i32 ay = i32((normVec.y() + 1.0f) * (f32(height - 1)/2.0f));
+        return core::v(ax, ay);
+    };
+
+    for (addr_size i = 0; i < model.faces.len(); i++) {
+        auto& f = model.faces[i];
+
+        core::vec4f& v1 = model.vertices[f[0]];
+        core::vec4f& v2 = model.vertices[f[1]];
+        core::vec4f& v3 = model.vertices[f[2]];
+
+        core::vec2i a = orthogonalProjection(v1, width, height);
+        core::vec2i b = orthogonalProjection(v2, width, height);
+        core::vec2i c = orthogonalProjection(v3, width, height);
+
+        strokeTriangle(surface, a.x(), a.y(), b.x(), b.y(), c.x(), c.y(), RED);
+    }
+
+    for (addr_size i = 0; i < model.vertices.len(); i++) {
+        auto& v = model.vertices[i];
+        core::vec2i a = orthogonalProjection(v, width, height);
+        fillPixel(surface, a.x(), a.y(), WHITE);
+    }
 }
 
 namespace {
