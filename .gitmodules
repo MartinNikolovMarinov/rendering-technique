@@ -1,3 +1,6 @@
 [submodule "cmake"]
 	path = cmake
 	url = https://github.com/MartinNikolovMarinov/CMake-scripts.git
+[submodule "assets/test_assets"]
+	path = assets/test_assets
+	url = git@github.com:MartinNikolovMarinov/test_assets.git

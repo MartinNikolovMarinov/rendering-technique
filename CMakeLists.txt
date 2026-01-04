@@ -108,6 +108,7 @@ macro(common_target_setup target)
         "USE_ANSI_LOGGING=$<BOOL:${USE_ANSI_LOGGING}>"
         "IS_DEBUG=$<BOOL:${RENDERING_TECHNIQUES_DEBUG}>"
         "ASSETS_DIRECTORY=\"${CMAKE_CURRENT_SOURCE_DIR}/assets\""
+        "OUT_DIRECTORY=\"${PROJECT_BINARY_DIR}\""
     )
 
     rendering_techniques_target_set_default_flags(${target} ${RENDERING_TECHNIQUES_DEBUG} false)

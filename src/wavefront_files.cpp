@@ -116,6 +116,13 @@ Model3D createModelFromWavefrontObj(const WavefrontObj& obj, core::AllocatorCont
 
     model.faces = core::memoryZeroAllocate<Model3D::Face>(addr_size(obj.facesCount), modelActx);
     for (i32 i = 0; i < obj.facesCount; i++) {
+        bool faceHasVertexIndices =
+            obj.faces[i].isSet(0, 0) &&
+            obj.faces[i].isSet(0, 1) &&
+            obj.faces[i].isSet(0, 2);
+
+        Assert(faceHasVertexIndices, "wavefront face is missing vertex indices, which are required by the standard");
+
         auto& v = obj.faces[i].v();
         model.faces[i][0] = v[0] - 1;
         model.faces[i][1] = v[1] - 1;

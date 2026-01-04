@@ -161,7 +161,8 @@ i32 main() {
         // defer { shutdownDebugRendering(); };
 
         // create5MillionLines(ASSETS_DIRECTORY "/output.tga");
-        writeSurfaceToFile(ASSETS_DIRECTORY "/output.tga");
+        const char* output = OUT_DIRECTORY "/output.tga";
+        writeSurfaceToFile(output);
 
         // testAllFilesInDirectory(ASSETS_DIRECTORY "/tga-test-suite/my_test_suite/");
         // testOneFile(ASSETS_DIRECTORY "/output.tga", true);
