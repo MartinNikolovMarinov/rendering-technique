@@ -135,16 +135,38 @@ void writeSurfaceToFile(const char* path) {
 
     fillRect(s, 0, 0, BLACK, s.width, s.height);
 
-    i32 ax = 17, ay =  4;
-    i32 bx = 55, by = 39;
-    i32 cx = 23, cy = 59;
+    constexpr f32 scale = 0.3f;
+    i32 ax = 290, ay = 170;
+    i32 bx = 500, by = 240;
+    i32 cx = 130, cy = 650;
+    auto a = core::v(ax, ay);
+    auto b = core::v(bx, by);
+    auto c = core::v(cx, cy);
 
-    // fillTriangle(s, ax, ay, az, bx, by, bz, cx, cy, cz);
-    fillTriangle(s, core::v(cx, cy), core::v(bx, by), core::v(ax, ay), RED, GREEN, BLUE);
+    fillTriangle(s, a, b, c, RED, GREEN, BLUE);
+    strokeTriangleInset(s, a, b, c, BLUE, RED, GREEN, scale);
 
-    // fillTriangle(s, 7, 45, 35, 100, 45, 60, RED);
-    // fillTriangle(s, 120, 35, 90,   5, 45, 110, WHITE);
-    // fillTriangle(s, 115, 83, 80,  90, 85, 120, GREEN);
+    // Outline inner triangle
+    {
+        const f32 centerX = (f32(a.x()) + f32(b.x()) + f32(c.x())) / 3.0f;
+        const f32 centerY = (f32(a.y()) + f32(b.y()) + f32(c.y())) / 3.0f;
+        core::vec2i aInner = core::v(
+            i32(centerX + (f32(a.x()) - centerX) * (1.0f - scale)),
+            i32(centerY + (f32(a.y()) - centerY) * (1.0f - scale))
+        );
+        core::vec2i bInner = core::v(
+            i32(centerX + (f32(b.x()) - centerX) * (1.0f - scale)),
+            i32(centerY + (f32(b.y()) - centerY) * (1.0f - scale))
+        );
+        core::vec2i cInner = core::v(
+            i32(centerX + (f32(c.x()) - centerX) * (1.0f - scale)),
+            i32(centerY + (f32(c.y()) - centerY) * (1.0f - scale))
+        );
+        strokeTriangleFast(s, aInner, bInner, cInner, WHITE);
+    }
+
+    // Outline outer triangle:
+    strokeTriangleFast(s, a, b, c, WHITE);
 
     TGA::CreateFileFromSurfaceParams params = {
         .surface = s,

@@ -194,8 +194,18 @@ void renderModel(Surface& surface, const Model3D& model, bool wireframe) {
         core::vec2i b = orthogonalProjection(v2, width, height);
         core::vec2i c = orthogonalProjection(v3, width, height);
 
+        f32 totalArea = core::calcTriangleAreaF32(a.x(), a.y(), b.x(), b.y(), c.x(), c.y());
+        if (totalArea < 1) {
+            // TODO: Do z-buffer test instead.
+            // Naive backface culling;
+            continue;
+        }
+
         if (wireframe) {
-            strokeTriangle(surface, a.x(), a.y(), b.x(), b.y(), c.x(), c.y(), RED);
+            strokeTriangleFast(surface, a, b, c, RED);
+            fillPixel(surface, a.x(), a.y(), BLUE);
+            fillPixel(surface, b.x(), b.y(), BLUE);
+            fillPixel(surface, c.x(), c.y(), BLUE);
         }
         else {
             Color color;
@@ -203,23 +213,7 @@ void renderModel(Surface& surface, const Model3D& model, bool wireframe) {
             color.rgba.g = u8(core::rndU32() % 255);
             color.rgba.b = u8(core::rndU32() % 255);
             color.rgba.a = 255;
-
-            f32 totalArea = core::calcTriangleAreaF32(a.x(), a.y(), b.x(), b.y(), c.x(), c.y());
-            if (totalArea < 1) {
-                // Naive backface culling;
-                continue;
-            }
-
-            // fillTriangle(surface, a.x(), a.y(), b.x(), b.y(), c.x(), c.y(), color);
-            fillTriangle(surface, a, b, c, RED, YELLOW, GRAY);
-        }
-    }
-
-    if (wireframe) {
-        for (addr_size i = 0; i < model.vertices.len(); i++) {
-            auto& v = model.vertices[i];
-            core::vec2i a = orthogonalProjection(v, width, height);
-            fillPixel(surface, a.x(), a.y(), WHITE);
+            fillTriangle(surface, a, b, c, color, color, color);
         }
     }
 }
