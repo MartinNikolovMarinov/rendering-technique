@@ -57,13 +57,13 @@ i32 main() {
         defer { coreShutdown(); };
 
         const char* filesToRender[] = {
-            // ASSETS_DIRECTORY "/test_assets/obj/single_file_models/diablo3_pose.obj",
+            ASSETS_DIRECTORY "/test_assets/obj/single_file_models/diablo3_pose.obj",
 
             // ASSETS_DIRECTORY "/test_assets/obj/single_file_models/african_head.obj",
 
-            ASSETS_DIRECTORY "/test_assets/obj/multipart/body.obj",
-            ASSETS_DIRECTORY "/test_assets/obj/multipart/head.obj",
-            ASSETS_DIRECTORY "/test_assets/obj/multipart/eyes.obj",
+            // ASSETS_DIRECTORY "/test_assets/obj/multipart/body.obj",
+            // ASSETS_DIRECTORY "/test_assets/obj/multipart/head.obj",
+            // ASSETS_DIRECTORY "/test_assets/obj/multipart/eyes.obj",
         };
         const char* output = OUT_DIRECTORY "/output.tga";
         renderObjFilesToTga(filesToRender, CORE_C_ARRLEN(filesToRender), output);

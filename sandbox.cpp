@@ -133,11 +133,18 @@ void writeSurfaceToFile(const char* path) {
     s.pitch = s.width * bpp;
     s.data = buf;
 
-    fillRect(s, 0, 0, BLUE, s.width, s.height);
+    fillRect(s, 0, 0, BLACK, s.width, s.height);
 
-    fillTriangle(s,   7, 45, 35, 100, 45,  60, RED);
-    fillTriangle(s, 120, 35, 90,   5, 45, 110, WHITE);
-    fillTriangle(s, 115, 83, 80,  90, 85, 120, GREEN);
+    i32 ax = 17, ay =  4;
+    i32 bx = 55, by = 39;
+    i32 cx = 23, cy = 59;
+
+    // fillTriangle(s, ax, ay, az, bx, by, bz, cx, cy, cz);
+    fillTriangle(s, core::v(cx, cy), core::v(bx, by), core::v(ax, ay), RED, GREEN, BLUE);
+
+    // fillTriangle(s, 7, 45, 35, 100, 45, 60, RED);
+    // fillTriangle(s, 120, 35, 90,   5, 45, 110, WHITE);
+    // fillTriangle(s, 115, 83, 80,  90, 85, 120, GREEN);
 
     TGA::CreateFileFromSurfaceParams params = {
         .surface = s,

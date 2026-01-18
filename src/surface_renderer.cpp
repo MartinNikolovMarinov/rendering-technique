@@ -95,43 +95,80 @@ void strokeRect(Surface& surface, i32 x, i32 y, Color color, i32 width, i32 heig
     fillLine(surface, x, endY, x, y, color);
 }
 
-void strokeTriangle(Surface& surface, i32 ax, i32 ay, i32 bx, i32 by, i32 cx, i32 cy, Color color) {
-    fillLine(surface, ax, ay, bx, by, color);
-    fillLine(surface, bx, by, cx, cy, color);
-    fillLine(surface, cx, cy, ax, ay, color);
-}
+namespace {
 
-void fillTriangle(Surface& surface, i32 ax, i32 ay, i32 bx, i32 by, i32 cx, i32 cy, Color color) {
-    f32 totalArea = core::calcTriangleAreaF32(ax, ay, bx, by, cx, cy);
-    if (core::absGeneric(totalArea) < 1) return; // 1 pixel triangle
-    fillTriangle(surface, ax, ay, bx, by, cx, cy, totalArea, color);
-}
+void fillTriangleBarycentric(
+    Surface& surface,
+    core::vec2i a, core::vec2i b, core::vec2i c,
+    Color colorA, Color colorB, Color colorC,
+    f32 holeInsetRatio
+) {
+    core::Bbox2D<i32> bbox = core::calcTriangleBBox(a, b, c);
 
-void fillTriangle(Surface& surface, i32 ax, i32 ay, i32 bx, i32 by, i32 cx, i32 cy, f32 triangleArea, Color color) {
-    // Calculate the bounding box for the triangle:
-    i32 minx = core::core_min(core::core_min(ax, bx), cx);
-    i32 miny = core::core_min(core::core_min(ay, by), cy);
-    i32 maxx = core::core_max(core::core_max(ax, bx), cx);
-    i32 maxy = core::core_max(core::core_max(ay, by), cy);
-
-    f32 totalArea = triangleArea;
+    f32 totalArea = core::calcTriangleAreaF32(a, b, c);
     Assert(core::absGeneric(totalArea) >= 1, "Trying to draw triangle with area less than a pixel");
 
-    // TODO: Parallelize this loop:
-    for (i32 x = minx; x <= maxx; x++) {
-        for (i32 y = miny; y<= maxy; y++) {
-            f32 alpha = core::calcTriangleAreaF32(x, y, bx, by, cx, cy) / totalArea;
-            f32 beta  = core::calcTriangleAreaF32(x, y, cx, cy, ax, ay) / totalArea;
-            f32 gamma = core::calcTriangleAreaF32(x, y, ax, ay, bx, by) / totalArea;
+    // TODO: [PERFORMANCE] Parallelize this loop:
+    for (i32 x = bbox.min.x(); x <= bbox.max.x(); x++) {
+        for (i32 y = bbox.min.y(); y <= bbox.max.y(); y++) {
+            f32 alpha = core::calcTriangleAreaF32(x, y, b.x(), b.y(), c.x(), c.y()) / totalArea;
+            f32 beta  = core::calcTriangleAreaF32(x, y, c.x(), c.y(), a.x(), a.y()) / totalArea;
+            f32 gamma = core::calcTriangleAreaF32(x, y, a.x(), a.y(), b.x(), b.y()) / totalArea;
 
-            if (alpha < 0 || beta < 0 || gamma < 0) {
+            if (alpha < 0.0f || beta < 0.0f || gamma < 0.0f) {
                 // negative barycentric coordinate => the pixel is outside the triangle
                 continue;
             }
 
-            fillPixel(surface, x, y, color);
+            if (holeInsetRatio > 0.0f) {
+                f32 t = holeInsetRatio / 3.0f;
+                if (alpha >= t && beta >= t && gamma >= t) {
+                    continue;
+                }
+            }
+
+            Color blendedColor = {
+                .rgba {
+                    .r = u8(alpha * f32(colorA.r()) + beta * f32(colorB.r()) + gamma * f32(colorC.r())),
+                    .g = u8(alpha * f32(colorA.g()) + beta * f32(colorB.g()) + gamma * f32(colorC.g())),
+                    .b = u8(alpha * f32(colorA.b()) + beta * f32(colorB.b()) + gamma * f32(colorC.b())),
+                    .a = u8(alpha * f32(colorA.a()) + beta * f32(colorB.a()) + gamma * f32(colorC.a()))
+                }
+            };
+
+            fillPixel(surface, x, y, blendedColor);
         }
     }
+}
+
+} // namespace
+
+void strokeTriangleFast(
+    Surface& surface,
+    core::vec2i a, core::vec2i b, core::vec2i c,
+    Color color
+) {
+    fillLine(surface, a.x(), a.y(), b.x(), b.y(), color);
+    fillLine(surface, b.x(), b.y(), c.x(), c.y(), color);
+    fillLine(surface, c.x(), c.y(), a.x(), a.y(), color);
+}
+
+void fillTriangle(
+    Surface& surface,
+    core::vec2i a, core::vec2i b, core::vec2i c,
+    Color colorA, Color colorB, Color colorC
+) {
+    fillTriangleBarycentric(surface, a, b, c, colorA, colorB, colorC, 0.0f);
+}
+
+void strokeTriangleInset(
+    Surface& surface,
+    core::vec2i a, core::vec2i b, core::vec2i c,
+    Color colorA, Color colorB, Color colorC,
+    f32 boarderRatio
+) {
+    f32 clampedRatio = core::core_max(0.0f, core::core_min(boarderRatio, 1.0f));
+    fillTriangleBarycentric(surface, a, b, c, colorA, colorB, colorC, clampedRatio);
 }
 
 void renderModel(Surface& surface, const Model3D& model, bool wireframe) {
@@ -173,7 +210,8 @@ void renderModel(Surface& surface, const Model3D& model, bool wireframe) {
                 continue;
             }
 
-            fillTriangle(surface, a.x(), a.y(), b.x(), b.y(), c.x(), c.y(), totalArea, color);
+            // fillTriangle(surface, a.x(), a.y(), b.x(), b.y(), c.x(), c.y(), color);
+            fillTriangle(surface, a, b, c, RED, YELLOW, GRAY);
         }
     }
 
