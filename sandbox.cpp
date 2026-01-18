@@ -120,7 +120,6 @@ void create5MillionLines(const char* path) {
 void writeSurfaceToFile(const char* path) {
     constexpr PixelFormat f = PixelFormat::BGRA8888;
     constexpr i32 bpp = pixelFormatBytesPerPixel(f);
-
     constexpr addr_size WIDTH = 800;
     constexpr addr_size HEIGHT = 800;
 
@@ -134,11 +133,7 @@ void writeSurfaceToFile(const char* path) {
     s.pitch = s.width * bpp;
     s.data = buf;
 
-    fillRect(s, 0, 0, BLACK, s.width - 1, s.height - 1);
-
-    // strokeTriangle(s,   7, 45, 35, 100, 45,  60, RED);
-    // strokeTriangle(s, 120, 35, 90,   5, 45, 110, WHITE);
-    // strokeTriangle(s, 115, 83, 80,  90, 85, 120, GREEN);
+    fillRect(s, 0, 0, BLUE, s.width, s.height);
 
     fillTriangle(s,   7, 45, 35, 100, 45,  60, RED);
     fillTriangle(s, 120, 35, 90,   5, 45, 110, WHITE);
@@ -151,6 +146,7 @@ void writeSurfaceToFile(const char* path) {
         .fileType = TGA::FileType::New,
     };
     core::Expect(TGA::createFileFromSurface(params));
+    logInfo("Wrote to file {}", path);
 }
 
 i32 main() {

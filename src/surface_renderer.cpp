@@ -27,22 +27,6 @@ void fillPixel(Surface& surface, i32 x, i32 y, Color color) {
     setPixelFn(surface.data, idx, color);
 }
 
-void fillRect(Surface& surface, i32 x, i32 y, Color color, i32 width, i32 height) {
-    Assert(surface.data != nullptr, "surface data is null");
-    Assert(width > 0 && height > 0, "rect has non-positive size");
-    Assert(x >= 0 && y >= 0, "rect origin out of bounds");
-    Assert(y + height <= surface.height, "rect extends past surface height");
-    Assert(x + width  <= surface.width,  "rect extends past surface width");
-
-    SetPixelFn setPixelFn = pickSetPixelFunction(surface.pixelFormat);
-    for (i32 row = y; row < y + height; row++) {
-        for (i32 col = x; col < x + width; col++) {
-            i32 idx = row * surface.pitch + col * surface.bpp();
-            setPixelFn(surface.data, idx, color);
-        }
-    }
-}
-
 void fillLine(Surface& surface, i32 ax, i32 ay, i32 bx, i32 by, Color color) {
     Assert(surface.data != nullptr, "surface data is null");
     Assert(ax >= 0 && ay >= 0 && bx >= 0 && by >= 0, "line start/end out of bounds (negative)");
@@ -86,6 +70,31 @@ void fillLine(Surface& surface, i32 ax, i32 ay, i32 bx, i32 by, Color color) {
     }
 }
 
+void fillRect(Surface& surface, i32 x, i32 y, Color color, i32 width, i32 height) {
+    Assert(surface.data != nullptr, "surface data is null");
+    Assert(width > 0 && height > 0, "rect has non-positive size");
+    Assert(x >= 0 && y >= 0, "rect origin out of bounds");
+    Assert(y + height <= surface.height, "rect extends past surface height");
+    Assert(x + width  <= surface.width,  "rect extends past surface width");
+
+    SetPixelFn setPixelFn = pickSetPixelFunction(surface.pixelFormat);
+    for (i32 row = y; row < y + height; row++) {
+        for (i32 col = x; col < x + width; col++) {
+            i32 idx = row * surface.pitch + col * surface.bpp();
+            setPixelFn(surface.data, idx, color);
+        }
+    }
+}
+
+void strokeRect(Surface& surface, i32 x, i32 y, Color color, i32 width, i32 height) {
+    i32 endX = x + width - 1;
+    i32 endY = y + height - 1;
+    fillLine(surface, x, y, endX, y, color);
+    fillLine(surface, endX, y, endX, endY, color);
+    fillLine(surface, endX, endY, x, endY, color);
+    fillLine(surface, x, endY, x, y, color);
+}
+
 void strokeTriangle(Surface& surface, i32 ax, i32 ay, i32 bx, i32 by, i32 cx, i32 cy, Color color) {
     fillLine(surface, ax, ay, bx, by, color);
     fillLine(surface, bx, by, cx, cy, color);
@@ -93,29 +102,27 @@ void strokeTriangle(Surface& surface, i32 ax, i32 ay, i32 bx, i32 by, i32 cx, i3
 }
 
 void fillTriangle(Surface& surface, i32 ax, i32 ay, i32 bx, i32 by, i32 cx, i32 cy, Color color) {
+    f32 totalArea = core::calcTriangleAreaF32(ax, ay, bx, by, cx, cy);
+    if (core::absGeneric(totalArea) < 1) return; // 1 pixel triangle
+    fillTriangle(surface, ax, ay, bx, by, cx, cy, totalArea, color);
+}
+
+void fillTriangle(Surface& surface, i32 ax, i32 ay, i32 bx, i32 by, i32 cx, i32 cy, f32 triangleArea, Color color) {
     // Calculate the bounding box for the triangle:
     i32 minx = core::core_min(core::core_min(ax, bx), cx);
     i32 miny = core::core_min(core::core_min(ay, by), cy);
     i32 maxx = core::core_max(core::core_max(ax, bx), cx);
     i32 maxy = core::core_max(core::core_max(ay, by), cy);
 
-    auto calculateTriangleArea = [](i32 ax, i32 ay, i32 bx, i32 by, i32 cx, i32 cy) -> f64 {
-        return 0.5 * f64((by-ay)*(bx+ax) + (cy-by)*(cx+bx) + (ay-cy)*(ax+cx));
-    };
-
-    f64 totalArea = calculateTriangleArea(ax, ay, bx, by, cx, cy);
-
-    if (totalArea < 1) {
-        // Naive backface culling + discarding triangles that cover less than a pixel
-        return;
-    }
+    f32 totalArea = triangleArea;
+    Assert(core::absGeneric(totalArea) >= 1, "Trying to draw triangle with area less than a pixel");
 
     // TODO: Parallelize this loop:
-    for (i32 x= minx; x <= maxx; x++) {
-        for (i32 y= miny; y<= maxy; y++) {
-            f64 alpha = calculateTriangleArea(x, y, bx, by, cx, cy) / totalArea;
-            f64 beta  = calculateTriangleArea(x, y, cx, cy, ax, ay) / totalArea;
-            f64 gamma = calculateTriangleArea(x, y, ax, ay, bx, by) / totalArea;
+    for (i32 x = minx; x <= maxx; x++) {
+        for (i32 y = miny; y<= maxy; y++) {
+            f32 alpha = core::calcTriangleAreaF32(x, y, bx, by, cx, cy) / totalArea;
+            f32 beta  = core::calcTriangleAreaF32(x, y, cx, cy, ax, ay) / totalArea;
+            f32 gamma = core::calcTriangleAreaF32(x, y, ax, ay, bx, by) / totalArea;
 
             if (alpha < 0 || beta < 0 || gamma < 0) {
                 // negative barycentric coordinate => the pixel is outside the triangle
@@ -159,7 +166,14 @@ void renderModel(Surface& surface, const Model3D& model, bool wireframe) {
             color.rgba.g = u8(core::rndU32() % 255);
             color.rgba.b = u8(core::rndU32() % 255);
             color.rgba.a = 255;
-            fillTriangle(surface, a.x(), a.y(), b.x(), b.y(), c.x(), c.y(), color);
+
+            f32 totalArea = core::calcTriangleAreaF32(a.x(), a.y(), b.x(), b.y(), c.x(), c.y());
+            if (totalArea < 1) {
+                // Naive backface culling;
+                continue;
+            }
+
+            fillTriangle(surface, a.x(), a.y(), b.x(), b.y(), c.x(), c.y(), totalArea, color);
         }
     }
 
