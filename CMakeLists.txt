@@ -57,13 +57,14 @@ log_info("---------------------------------------------")
 # ---------------------------------------- Begin Declare Source Files --------------------------------------------------
 
 set(src_common
+    src/color.cpp
     src/core_init.cpp
-    src/tga_files.cpp
-    src/log_utils.cpp
-    src/surface.cpp
-    src/model.cpp
     src/debug_rendering_glfw.cpp
+    src/log_utils.cpp
+    src/model.cpp
     src/surface_renderer.cpp
+    src/surface.cpp
+    src/tga_files.cpp
     src/wavefront_files.cpp
 )
 

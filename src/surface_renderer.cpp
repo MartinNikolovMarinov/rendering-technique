@@ -153,14 +153,6 @@ void strokeTriangleFast(
     fillLine(surface, c.x(), c.y(), a.x(), a.y(), color);
 }
 
-void fillTriangle(
-    Surface& surface,
-    core::vec2i a, core::vec2i b, core::vec2i c,
-    Color colorA, Color colorB, Color colorC
-) {
-    fillTriangleBarycentric(surface, a, b, c, colorA, colorB, colorC, 0.0f);
-}
-
 void strokeTriangleInset(
     Surface& surface,
     core::vec2i a, core::vec2i b, core::vec2i c,
@@ -169,6 +161,14 @@ void strokeTriangleInset(
 ) {
     f32 clampedRatio = core::core_max(0.0f, core::core_min(boarderRatio, 1.0f));
     fillTriangleBarycentric(surface, a, b, c, colorA, colorB, colorC, clampedRatio);
+}
+
+void fillTriangle(
+    Surface& surface,
+    core::vec2i a, core::vec2i b, core::vec2i c,
+    Color colorA, Color colorB, Color colorC
+) {
+    fillTriangleBarycentric(surface, a, b, c, colorA, colorB, colorC, 0.0f);
 }
 
 void renderModel(Surface& surface, const Model3D& model, bool wireframe) {
@@ -180,8 +180,6 @@ void renderModel(Surface& surface, const Model3D& model, bool wireframe) {
         i32 ay = i32((normVec.y() + 1.0f) * (f32(height - 1)/2.0f));
         return core::v(ax, ay);
     };
-
-    core::rndInit();
 
     for (addr_size i = 0; i < model.faces.len(); i++) {
         auto& f = model.faces[i];
@@ -208,12 +206,10 @@ void renderModel(Surface& surface, const Model3D& model, bool wireframe) {
             fillPixel(surface, c.x(), c.y(), BLUE);
         }
         else {
-            Color color;
-            color.rgba.r = u8(core::rndU32() % 255);
-            color.rgba.g = u8(core::rndU32() % 255);
-            color.rgba.b = u8(core::rndU32() % 255);
-            color.rgba.a = 255;
-            fillTriangle(surface, a, b, c, color, color, color);
+            Color color1 = randomColor();
+            Color color2 = randomColor();
+            Color color3 = randomColor();
+            fillTriangle(surface, a, b, c, color1, color2, color3);
         }
     }
 }

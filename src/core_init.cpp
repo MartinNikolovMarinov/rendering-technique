@@ -47,6 +47,8 @@ core::AllocatorContext createDefautAllocatorCtx() {
 }
 
 void coreInit(core::LogLevel globalLogLevel) {
+    core::rndInit();
+
     core::LoggerCreateInfo loggerInfo = core::LoggerCreateInfo::createDefault();
     core::loggerSetLevel(globalLogLevel);
     core::initProgramCtx(assertHandler, &loggerInfo, createDefautAllocatorCtx());

@@ -130,6 +130,29 @@ Model3D createModelFromWavefrontObj(const WavefrontObj& obj, core::AllocatorCont
     }
     Assert(i32(model.faces.len()) == obj.facesCount);
 
+    // Sort by minz:
+    core::quickSort(model.faces, [&](Model3D::Face& f1, Model3D::Face& f2) -> addr_off {
+        f32 minF1;
+        {
+            core::vec4f& v1 = model.vertices[f1[0]];
+            core::vec4f& v2 = model.vertices[f1[1]];
+            core::vec4f& v3 = model.vertices[f1[2]];
+            minF1 = core::core_min(v1.z(), v2.z());
+            minF1 = core::core_min(minF1, v3.z());
+        }
+
+        f32 minF2;
+        {
+            core::vec4f& v1 = model.vertices[f2[0]];
+            core::vec4f& v2 = model.vertices[f2[1]];
+            core::vec4f& v3 = model.vertices[f2[2]];
+            minF2 = core::core_min(v1.z(), v2.z());
+            minF2 = core::core_min(minF2, v3.z());
+        }
+
+        return (minF1 > minF2) - (minF1 < minF2);
+    });
+
     return model;
 }
 

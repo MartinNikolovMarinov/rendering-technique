@@ -23,3 +23,5 @@ constexpr Color YELLOW = Color { .rgba = { 255, 255, 0, 255 } };
 constexpr Color WHITE = Color { .rgba = { 255, 255, 255, 255 } };
 constexpr Color BLACK = Color { .rgba = { 0, 0, 0, 255 } };
 constexpr Color GRAY = Color { .rgba = { 128, 128, 128, 255 } };
+
+Color randomColor();

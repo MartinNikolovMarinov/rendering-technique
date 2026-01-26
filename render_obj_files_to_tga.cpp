@@ -38,7 +38,7 @@ void renderObjFilesToTga(const char** objFiles, i32 objFilesLen, const char* out
     fillRect(s, 0, 0, BLACK, s.width, s.height);
 
     for (i32 i = 0; i < objFilesLen; i++) {
-        renderObjFileIntoASurface(s, objFiles[i], true);
+        renderObjFileIntoASurface(s, objFiles[i], false);
     }
 
     TGA::CreateFileFromSurfaceParams params = {
@@ -57,9 +57,9 @@ i32 main() {
         defer { coreShutdown(); };
 
         const char* filesToRender[] = {
-            // ASSETS_DIRECTORY "/test_assets/obj/single_file_models/diablo3_pose.obj",
+            ASSETS_DIRECTORY "/test_assets/obj/single_file_models/diablo3_pose.obj",
 
-            ASSETS_DIRECTORY "/test_assets/obj/single_file_models/african_head.obj",
+            // ASSETS_DIRECTORY "/test_assets/obj/single_file_models/african_head.obj",
 
             // ASSETS_DIRECTORY "/test_assets/obj/multipart/body.obj",
             // ASSETS_DIRECTORY "/test_assets/obj/multipart/head.obj",

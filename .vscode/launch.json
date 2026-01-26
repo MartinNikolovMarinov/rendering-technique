@@ -5,7 +5,7 @@
             "name": "Debug Sandbox with LLDB",
             "type": "lldb",
             "request": "launch",
-            "program": "${workspaceFolder}/build/sandbox",
+            "program": "${workspaceFolder}/build/render_obj_files_to_tga",
             "args": [],
             "cwd": "${workspaceFolder}",
             "stopOnEntry": false,
