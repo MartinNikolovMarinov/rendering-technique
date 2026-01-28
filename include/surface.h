@@ -44,7 +44,7 @@ constexpr i32 pixelFormatAlphaBits(PixelFormat pixelFormat) {
         case PixelFormat::SENTINEL: [[fallthrough]];
         default:
             Assert(false, "invalid pixel format");
-            return false;
+            return -1;
     }
 }
 

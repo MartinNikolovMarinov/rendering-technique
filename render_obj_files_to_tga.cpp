@@ -6,6 +6,7 @@
 #include "surface_renderer.h"
 #include "wavefront_files.h"
 #include "model.h"
+#include "color.h"
 
 void renderObjFileIntoASurface(Surface& s, const char* objFilePath, bool wireframe) {
     auto obj = core::Unpack(Wavefront::loadFile(objFilePath, Wavefront::WavefrontVersion::VERSION_3_0));

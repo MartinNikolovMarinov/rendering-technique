@@ -130,7 +130,8 @@ Model3D createModelFromWavefrontObj(const WavefrontObj& obj, core::AllocatorCont
     }
     Assert(i32(model.faces.len()) == obj.facesCount);
 
-    // Sort by minz:
+#if 0
+    // Sort by minz - experimental code needed only for validations.
     core::quickSort(model.faces, [&](Model3D::Face& f1, Model3D::Face& f2) -> addr_off {
         f32 minF1;
         {
@@ -152,6 +153,7 @@ Model3D createModelFromWavefrontObj(const WavefrontObj& obj, core::AllocatorCont
 
         return (minF1 > minF2) - (minF1 < minF2);
     });
+#endif
 
     return model;
 }

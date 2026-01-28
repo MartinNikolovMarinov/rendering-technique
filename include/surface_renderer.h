@@ -1,10 +1,10 @@
 #pragma once
 
 #include "core_init.h"
-#include "surface.h"
-#include "color.h"
 
 struct Model3D;
+struct Surface;
+struct Color;
 
 void fillPixel(Surface& surface, i32 x, i32 y, Color color);
 
@@ -15,19 +15,19 @@ void strokeRect(Surface& surface, i32 x, i32 y, Color color, i32 width, i32 heig
 
 void strokeTriangleFast(
     Surface& surface,
-    core::vec2i a, core::vec2i b, core::vec2i c,
-    Color color
+    const core::vec2i& a, const core::vec2i& b, const core::vec2i& c,
+    const Color& color
 );
 void strokeTriangleInset(
     Surface& surface,
-    core::vec2i a, core::vec2i b, core::vec2i c,
-    Color colorA, Color colorB, Color colorC,
+    const core::vec2i& a, const core::vec2i& b, const core::vec2i& c,
+    const Color& colorA, const Color& colorB, const Color& colorC,
     f32 boarderRatio
 );
 void fillTriangle(
     Surface& surface,
-    core::vec2i a, core::vec2i b, core::vec2i c,
-    Color colorA, Color colorB, Color colorC
+    const core::vec2i& a, const core::vec2i& b, const core::vec2i& c,
+    const Color& colorA, const Color& colorB, const Color& colorC
 );
 
 // TODO: pass mvp matrix ?

@@ -5,6 +5,7 @@
 #include "debug_rendering.h"
 #include "surface_renderer.h"
 #include "model.h"
+#include "color.h"
 
 core::Profiler profiler_1;
 

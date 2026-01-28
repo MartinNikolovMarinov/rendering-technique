@@ -15,6 +15,7 @@ struct Color {
     constexpr u8 b() const { return rgba.b; }
     constexpr u8 a() const { return rgba.a; }
 };
+static_assert(std::is_standard_layout_v<Color>);
 
 constexpr Color BLUE = Color { .rgba = { 0, 0, 255, 255 } };
 constexpr Color RED = Color { .rgba = { 255, 0, 0, 255 } };

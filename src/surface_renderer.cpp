@@ -1,5 +1,6 @@
 #include "surface_renderer.h"
 #include "surface.h"
+#include "color.h"
 #include "model.h"
 
 namespace {
@@ -99,14 +100,17 @@ namespace {
 
 void fillTriangleBarycentric(
     Surface& surface,
-    core::vec2i a, core::vec2i b, core::vec2i c,
-    Color colorA, Color colorB, Color colorC,
+    const core::vec2i& a, const core::vec2i& b, const core::vec2i& c,
+    const Color& colorA, const Color& colorB, const Color& colorC,
     f32 holeInsetRatio
 ) {
     core::Bbox2D<i32> bbox = core::calcTriangleBBox(a, b, c);
 
     f32 totalArea = core::calcTriangleAreaF32(a, b, c);
-    Assert(core::absGeneric(totalArea) >= 1, "Trying to draw triangle with area less than a pixel");
+    if (core::absGeneric(totalArea) < 1) {
+        // Trying to draw triangle with area less than a pixel
+        return;
+    }
 
     // TODO: [PERFORMANCE] Parallelize this loop:
     for (i32 x = bbox.min.x(); x <= bbox.max.x(); x++) {
@@ -145,8 +149,8 @@ void fillTriangleBarycentric(
 
 void strokeTriangleFast(
     Surface& surface,
-    core::vec2i a, core::vec2i b, core::vec2i c,
-    Color color
+    const core::vec2i& a, const core::vec2i& b, const core::vec2i& c,
+    const Color& color
 ) {
     fillLine(surface, a.x(), a.y(), b.x(), b.y(), color);
     fillLine(surface, b.x(), b.y(), c.x(), c.y(), color);
@@ -155,8 +159,8 @@ void strokeTriangleFast(
 
 void strokeTriangleInset(
     Surface& surface,
-    core::vec2i a, core::vec2i b, core::vec2i c,
-    Color colorA, Color colorB, Color colorC,
+    const core::vec2i& a, const core::vec2i& b, const core::vec2i& c,
+    const Color& colorA, const Color& colorB, const Color& colorC,
     f32 boarderRatio
 ) {
     f32 clampedRatio = core::core_max(0.0f, core::core_min(boarderRatio, 1.0f));
@@ -165,8 +169,8 @@ void strokeTriangleInset(
 
 void fillTriangle(
     Surface& surface,
-    core::vec2i a, core::vec2i b, core::vec2i c,
-    Color colorA, Color colorB, Color colorC
+    const core::vec2i& a, const core::vec2i& b, const core::vec2i& c,
+    const Color& colorA, const Color& colorB, const Color& colorC
 ) {
     fillTriangleBarycentric(surface, a, b, c, colorA, colorB, colorC, 0.0f);
 }
@@ -175,10 +179,13 @@ void renderModel(Surface& surface, const Model3D& model, bool wireframe) {
     i32 width = surface.width;
     i32 height = surface.height;
 
-    auto orthogonalProjection = [](core::vec4f normVec, i32 width, i32 height) -> core::vec2i {
-        i32 ax = i32((normVec.x() + 1.0f) * (f32(width - 1)/2.0f));
-        i32 ay = i32((normVec.y() + 1.0f) * (f32(height - 1)/2.0f));
-        return core::v(ax, ay);
+    i32 tmpDepth = 256; // TODO: This should probably be part of the model? A 3D bounding box? Or what?
+
+    auto orthogonalProjection = [](core::vec4f normVec, i32 width, i32 height, i32 depth) -> core::vec3i {
+        i32 x = i32((normVec.x() + 1.0f) * (f32(width - 1)/2.0f));
+        i32 y = i32((normVec.y() + 1.0f) * (f32(height - 1)/2.0f));
+        i32 z = i32((normVec.z() + 1.0f) * (f32(depth - 1)/2.0f));
+        return core::v(x, y, z);
     };
 
     for (addr_size i = 0; i < model.faces.len(); i++) {
@@ -188,28 +195,19 @@ void renderModel(Surface& surface, const Model3D& model, bool wireframe) {
         core::vec4f& v2 = model.vertices[f[1]];
         core::vec4f& v3 = model.vertices[f[2]];
 
-        core::vec2i a = orthogonalProjection(v1, width, height);
-        core::vec2i b = orthogonalProjection(v2, width, height);
-        core::vec2i c = orthogonalProjection(v3, width, height);
-
-        f32 totalArea = core::calcTriangleAreaF32(a.x(), a.y(), b.x(), b.y(), c.x(), c.y());
-        if (totalArea < 1) {
-            // TODO: Do z-buffer test instead.
-            // Naive backface culling;
-            continue;
-        }
+        core::vec3i a = orthogonalProjection(v1, width, height, tmpDepth);
+        core::vec3i b = orthogonalProjection(v2, width, height, tmpDepth);
+        core::vec3i c = orthogonalProjection(v3, width, height, tmpDepth);
 
         if (wireframe) {
-            strokeTriangleFast(surface, a, b, c, RED);
-            fillPixel(surface, a.x(), a.y(), BLUE);
-            fillPixel(surface, b.x(), b.y(), BLUE);
-            fillPixel(surface, c.x(), c.y(), BLUE);
+            strokeTriangleFast(surface, a.xy(), b.xy(), c.xy(), RED);
+            fillPixel(surface, a.x(), a.y(), WHITE);
+            fillPixel(surface, b.x(), b.y(), WHITE);
+            fillPixel(surface, c.x(), c.y(), WHITE);
         }
         else {
-            Color color1 = randomColor();
-            Color color2 = randomColor();
-            Color color3 = randomColor();
-            fillTriangle(surface, a, b, c, color1, color2, color3);
+            Color depthColor = { .rgba = { u8(a.z()), u8(b.z()), u8(c.z()), 255 } };
+            fillTriangle(surface, a.xy(), b.xy(), c.xy(), depthColor, depthColor, depthColor);
         }
     }
 }
