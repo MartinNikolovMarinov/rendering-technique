@@ -140,12 +140,22 @@ void writeSurfaceToFile(const char* path) {
     i32 ax = 290, ay = 170;
     i32 bx = 500, by = 240;
     i32 cx = 130, cy = 650;
-    auto a = core::v(ax, ay);
-    auto b = core::v(bx, by);
-    auto c = core::v(cx, cy);
+    auto a = core::v(ax, ay, 1);
+    auto b = core::v(bx, by, 1);
+    auto c = core::v(cx, cy, 1);
 
-    fillTriangle(s, a, b, c, RED, GREEN, BLUE);
-    strokeTriangleInset(s, a, b, c, BLUE, RED, GREEN, scale);
+    u8 buf2[WIDTH*HEIGHT*bpp] = {};
+    Surface depthBuffer = Surface();
+    depthBuffer.actx = nullptr;
+    depthBuffer.origin = Origin::BottomLeft;
+    depthBuffer.pixelFormat = f;
+    depthBuffer.width = WIDTH;
+    depthBuffer.height = HEIGHT;
+    depthBuffer.pitch = depthBuffer.width * bpp;
+    depthBuffer.data = buf2;
+
+    fillTriangle(s, depthBuffer, a, b, c, RED, GREEN, BLUE);
+    strokeTriangleInset(s, depthBuffer, a, b, c, BLUE, RED, GREEN, scale);
 
     // Outline inner triangle
     {
@@ -167,7 +177,7 @@ void writeSurfaceToFile(const char* path) {
     }
 
     // Outline outer triangle:
-    strokeTriangleFast(s, a, b, c, WHITE);
+    strokeTriangleFast(s, a.xy(), b.xy(), c.xy(), WHITE);
 
     TGA::CreateFileFromSurfaceParams params = {
         .surface = s,

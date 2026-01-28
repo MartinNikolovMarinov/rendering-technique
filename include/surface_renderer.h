@@ -20,15 +20,20 @@ void strokeTriangleFast(
 );
 void strokeTriangleInset(
     Surface& surface,
-    const core::vec2i& a, const core::vec2i& b, const core::vec2i& c,
+    const Surface& depthBuffer,
+    const core::vec3i& a, const core::vec3i& b, const core::vec3i& c,
     const Color& colorA, const Color& colorB, const Color& colorC,
     f32 boarderRatio
 );
 void fillTriangle(
     Surface& surface,
-    const core::vec2i& a, const core::vec2i& b, const core::vec2i& c,
+    const Surface& depthBuffer,
+    const core::vec3i& a, const core::vec3i& b, const core::vec3i& c,
     const Color& colorA, const Color& colorB, const Color& colorC
 );
 
-// TODO: pass mvp matrix ?
-void renderModel(Surface& surface, const Model3D& model, bool wireframe = false);
+void rendererBeginFrame(i32 frameBufferWidth, i32 frameBufferHeight, Surface& depthBuffer, bool wireframe = false);
+
+void renderModel(const Model3D& model);
+
+void rendererEndFrame(Surface& out);

@@ -2,7 +2,7 @@
 
 #include "core_init.h"
 
-namespace TGA { struct TGAImage; }
+// FIXME: Add a pixel format for 8 bit grayscale
 
 enum struct PixelFormat {
     Unknown,

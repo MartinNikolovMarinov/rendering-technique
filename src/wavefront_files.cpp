@@ -114,7 +114,7 @@ Model3D createModelFromWavefrontObj(const WavefrontObj& obj, core::AllocatorCont
     }
     Assert(i32(model.vertices.len()) == obj.verticesCount);
 
-    model.faces = core::memoryZeroAllocate<Model3D::Face>(addr_size(obj.facesCount), modelActx);
+    model.faces = core::memoryZeroAllocate<Face>(addr_size(obj.facesCount), modelActx);
     for (i32 i = 0; i < obj.facesCount; i++) {
         bool faceHasVertexIndices =
             obj.faces[i].isSet(0, 0) &&
@@ -132,7 +132,7 @@ Model3D createModelFromWavefrontObj(const WavefrontObj& obj, core::AllocatorCont
 
 #if 0
     // Sort by minz - experimental code needed only for validations.
-    core::quickSort(model.faces, [&](Model3D::Face& f1, Model3D::Face& f2) -> addr_off {
+    core::quickSort(model.faces, [&](auto& f1, auto& f2) -> addr_off {
         f32 minF1;
         {
             core::vec4f& v1 = model.vertices[f1[0]];

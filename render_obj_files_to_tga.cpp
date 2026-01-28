@@ -8,18 +8,7 @@
 #include "model.h"
 #include "color.h"
 
-void renderObjFileIntoASurface(Surface& s, const char* objFilePath, bool wireframe) {
-    auto obj = core::Unpack(Wavefront::loadFile(objFilePath, Wavefront::WavefrontVersion::VERSION_3_0));
-    logInfo("verts={}, faces={}", obj.verticesCount, obj.facesCount);
-
-    auto model = Wavefront::createModelFromWavefrontObj(obj);
-    obj.free();
-
-    renderModel(s, model, wireframe);
-    model.free();
-}
-
-void renderObjFilesToTga(const char** objFiles, i32 objFilesLen, const char* outputPath) {
+void renderObjFilesToTga(const char** objFiles, i32 objFilesLen, const char* outputPath, const char* outputDepth) {
     constexpr PixelFormat pixelFormat = PixelFormat::BGR888;
     constexpr i32 bpp = pixelFormatBytesPerPixel(pixelFormat);
 
@@ -36,20 +25,55 @@ void renderObjFilesToTga(const char** objFiles, i32 objFilesLen, const char* out
     s.pitch = s.width * bpp;
     s.data = buf;
 
+    static u8 buf2[WIDTH*HEIGHT*bpp] = {}; // This might be big
+    Surface depthBuffer = Surface();
+    depthBuffer.actx = nullptr;
+    depthBuffer.origin = Origin::BottomLeft;
+    depthBuffer.pixelFormat = pixelFormat;
+    depthBuffer.width = WIDTH;
+    depthBuffer.height = HEIGHT;
+    depthBuffer.pitch = depthBuffer.width * bpp;
+    depthBuffer.data = buf2;
+
+    // Clear rendering target surface:
     fillRect(s, 0, 0, BLACK, s.width, s.height);
 
     for (i32 i = 0; i < objFilesLen; i++) {
-        renderObjFileIntoASurface(s, objFiles[i], false);
+        constexpr bool wireframe = false;
+        rendererBeginFrame(s.width, s.height, depthBuffer, wireframe);
+
+        auto obj = core::Unpack(Wavefront::loadFile(objFiles[i], Wavefront::WavefrontVersion::VERSION_3_0));
+        defer { obj.free(); };
+        logInfo("verts={}, faces={}", obj.verticesCount, obj.facesCount);
+
+        auto model = Wavefront::createModelFromWavefrontObj(obj);
+        defer { model.free(); };
+
+        renderModel(model);
+
+        rendererEndFrame(s);
     }
 
-    TGA::CreateFileFromSurfaceParams params = {
-        .surface = s,
-        .path = outputPath,
-        .imageType = 2,
-        .fileType = TGA::FileType::New,
-    };
-    core::Expect(TGA::createFileFromSurface(params));
-    logInfo("Create a file in \"{}\"", outputPath);
+    {
+        TGA::CreateFileFromSurfaceParams params = {
+            .surface = s,
+            .path = outputPath,
+            .imageType = 2,
+            .fileType = TGA::FileType::New,
+        };
+        core::Expect(TGA::createFileFromSurface(params));
+        logInfo("Create an output file in \"{}\"", outputPath);
+    }
+    {
+        TGA::CreateFileFromSurfaceParams params = {
+            .surface = depthBuffer,
+            .path = outputDepth,
+            .imageType = 2,
+            .fileType = TGA::FileType::New,
+        };
+        core::Expect(TGA::createFileFromSurface(params));
+        logInfo("Create a depth output file in \"{}\"", outputDepth);
+    }
 }
 
 i32 main() {
@@ -67,7 +91,8 @@ i32 main() {
             // ASSETS_DIRECTORY "/test_assets/obj/multipart/eyes.obj",
         };
         const char* output = OUT_DIRECTORY "/output.tga";
-        renderObjFilesToTga(filesToRender, CORE_C_ARRLEN(filesToRender), output);
+        const char* outputDepth = OUT_DIRECTORY "/output-depth.tga";
+        renderObjFilesToTga(filesToRender, CORE_C_ARRLEN(filesToRender), output, outputDepth);
     }
     return 0;
 }
