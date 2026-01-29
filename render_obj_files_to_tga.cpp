@@ -14,34 +14,42 @@ void renderObjFilesToTga(const char** objFiles, i32 objFilesLen, const char* out
     // Initialize Surfaces
     //==================================================================================================================
 
-    constexpr PixelFormat pixelFormat = PixelFormat::BGR888;
-    constexpr i32 bpp = pixelFormatBytesPerPixel(pixelFormat);
     constexpr addr_size WIDTH = 1024;
     constexpr addr_size HEIGHT = 1024;
     constexpr bool wireFrameMode = false;
 
-    static u8 outbuf[WIDTH*HEIGHT*bpp] = {};
-    Surface outputSurface = {
-        .actx = nullptr,
-        .origin = Origin::BottomLeft,
-        .pixelFormat = pixelFormat,
-        .width = WIDTH,
-        .height = HEIGHT,
-        .pitch = WIDTH * bpp,
-        .data = outbuf,
-    };
+    Surface outputSurface;
+    {
+        constexpr PixelFormat pixelFormat = PixelFormat::BGR888;
+        constexpr i32 bpp = pixelFormatBytesPerPixel(pixelFormat);
+        static u8 outbuf[WIDTH*HEIGHT*bpp] = {};
+        outputSurface = {
+            .actx = nullptr,
+            .origin = Origin::BottomLeft,
+            .pixelFormat = pixelFormat,
+            .width = WIDTH,
+            .height = HEIGHT,
+            .pitch = WIDTH * bpp,
+            .data = outbuf,
+        };
+    }
     defer { outputSurface.free(); };
 
-    static u8 depthbuf[WIDTH*HEIGHT*bpp] = {};
-    Surface depthBuffer = {
-        .actx = nullptr,
-        .origin = Origin::BottomLeft,
-        .pixelFormat = pixelFormat,
-        .width = WIDTH,
-        .height = HEIGHT,
-        .pitch = WIDTH * bpp,
-        .data = depthbuf,
-    };
+    Surface depthBuffer;
+    {
+        constexpr PixelFormat pixelFormat = PixelFormat::GRAY8;
+        constexpr i32 bpp = pixelFormatBytesPerPixel(pixelFormat);
+        static u8 depthbuf[WIDTH*HEIGHT*bpp] = {};
+        depthBuffer = {
+            .actx = nullptr,
+            .origin = Origin::BottomLeft,
+            .pixelFormat = pixelFormat,
+            .width = WIDTH,
+            .height = HEIGHT,
+            .pitch = WIDTH * bpp,
+            .data = depthbuf,
+        };
+    }
     defer { depthBuffer.free(); };
 
     //==================================================================================================================
@@ -109,7 +117,7 @@ void renderObjFilesToTga(const char** objFiles, i32 objFilesLen, const char* out
         TGA::CreateFileFromSurfaceParams params = {
             .surface = depthBuffer,
             .path = outputDepth,
-            .imageType = 2,
+            .imageType = 3,
             .fileType = TGA::FileType::New,
         };
         core::Expect(TGA::createFileFromSurface(params));
@@ -123,9 +131,9 @@ i32 main() {
         defer { coreShutdown(); };
 
         const char* filesToRender[] = {
-            // ASSETS_DIRECTORY "/test_assets/obj/single_file_models/diablo3_pose.obj",
+            ASSETS_DIRECTORY "/test_assets/obj/single_file_models/diablo3_pose.obj",
 
-            ASSETS_DIRECTORY "/test_assets/obj/single_file_models/african_head.obj",
+            // ASSETS_DIRECTORY "/test_assets/obj/single_file_models/african_head.obj",
 
             // ASSETS_DIRECTORY "/test_assets/obj/multipart/body.obj",
             // ASSETS_DIRECTORY "/test_assets/obj/multipart/head.obj",

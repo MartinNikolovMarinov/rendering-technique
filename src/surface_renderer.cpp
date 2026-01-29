@@ -9,22 +9,16 @@
 namespace {
 
 using SetPixelFn = void (*)(u8* data, i32 idx, Color color);
-using GetPixelFn = Color (*)(u8* data, i32 idx);
 
-constexpr inline void setPixelTopLeft_BGRA8888(u8* data, i32 idx, Color color);
-constexpr inline void setPixelTopLeft_BGR888(u8* data, i32 idx, Color color);
-constexpr inline void setPixelTopLeft_BGRA5551(u8* data, i32 idx, Color color);
-constexpr inline void setPixelTopLeft_BGR555(u8* data, i32 idx, Color color);
+constexpr inline void setPixelRaw_BGRA8888(u8* data, i32 idx, Color color);
+constexpr inline void setPixelRaw_BGRX8888(u8* data, i32 idx, Color color);
+constexpr inline void setPixelRaw_BGR888(u8* data, i32 idx, Color color);
+constexpr inline void setPixelRaw_BGRA5551(u8* data, i32 idx, Color color);
+constexpr inline void setPixelRaw_BGR555(u8* data, i32 idx, Color color);
+constexpr inline void setPixelRaw_GRAY8(u8* data, i32 idx, Color color);
+constexpr inline void setPixelRaw_GRAYA88(u8* data, i32 idx, Color color);
 
 constexpr inline SetPixelFn pickSetPixelFunction(PixelFormat pixelFormat);
-
-constexpr inline Color getPixelTopLeft_BGRA8888(u8* data, i32 idx);
-constexpr inline Color getPixelTopLeft_BGRX8888(u8* data, i32 idx);
-constexpr inline Color getPixelTopLeft_BGR888(u8* data, i32 idx);
-constexpr inline Color getPixelTopLeft_BGRA5551(u8* data, i32 idx);
-constexpr inline Color getPixelTopLeft_BGR555(u8* data, i32 idx);
-
-constexpr inline GetPixelFn pickGetPixelFunction(PixelFormat pixelFormat);
 
 } // namespace
 
@@ -40,19 +34,6 @@ void fillPixel(Surface& surface, i32 x, i32 y, Color color) {
     setPixelFn(surface.data, idx, color);
 }
 
-// FIXME: Remove this
-Color getPixelAt(const Surface& surface, i32 x, i32 y) {
-    i32 idx = y * surface.pitch + x * surface.bpp();
-
-    Assert(surface.data != nullptr, "surface data is null");
-    Assert(y >= 0 && y < surface.height, "y out of bounds");
-    Assert(x >= 0 && x < surface.width, "x out of bounds");
-    Assert(idx + surface.bpp() <= surface.size(), "pixel write past end of surface");
-
-    GetPixelFn getPixelAt = pickGetPixelFunction(surface.pixelFormat);
-    auto ret = getPixelAt(surface.data, idx);
-    return ret;
-}
 
 void fillLine(Surface& surface, i32 ax, i32 ay, i32 bx, i32 by, Color color) {
     Assert(surface.data != nullptr, "surface data is null");
@@ -151,10 +132,10 @@ void fillTriangleBarycentric(
                 continue;
             }
 
+            // Check point agains depth buffer:
             u8 z = u8(alpha * f32(a.z()) + beta * f32(b.z()) + gamma * f32(c.z()));
-
-            // TODO: Remove this get pixel function it's trash..
-            u8 depth = getPixelAt(depthBuffer, x, y).g();
+            i32 idxInDepthBuffer = y * depthBuffer.pitch + x * depthBuffer.bpp();
+            u8 depth = depthBuffer.data[idxInDepthBuffer];
             if (z < depth) {
                 continue;
             }
@@ -205,8 +186,8 @@ void fillDepthBuffer(
             }
 
             u8 z = u8(alpha * f32(a.z()) + beta * f32(b.z()) + gamma * f32(c.z()));
-
-            u8 depth = getPixelAt(depthBuffer, x, y).g();
+            i32 idxInDepthBuffer = y * depthBuffer.pitch + x * depthBuffer.bpp();
+            u8 depth = depthBuffer.data[idxInDepthBuffer];
             if (z <= depth) {
                 continue;
             }
@@ -255,10 +236,10 @@ void fillTriangle(
 
 namespace {
 
-constexpr inline core::vec3i orthogonalProjection(core::vec4f normVec, i32 width, i32 height, i32 depth) {
+constexpr inline core::vec3i orthogonalProjection(core::vec4f normVec, i32 width, i32 height) {
     i32 x = i32((normVec.x() + 1.0f) * (f32(width - 1)/2.0f));
     i32 y = i32((normVec.y() + 1.0f) * (f32(height - 1)/2.0f));
-    i32 z = i32((normVec.z() + 1.0f) * (f32(depth - 1)/2.0f));
+    i32 z = i32((normVec.z() + 1.0f) * (255.f/2.0f));
     return core::v(x, y, z);
 }
 
@@ -325,6 +306,8 @@ void rendererSetIndexBuffer(RendererHandle r, core::Memory<Face3i> indices) {
 }
 
 void rendererCalculateDepthBuffer(RendererHandle r, Surface& depthBuffer) {
+    Assert(depthBuffer.pixelFormat == PixelFormat::GRAY8, "The depth buffer must be in grayscale format!");
+
     r->renderPass.depthBuffer = &depthBuffer;
 
     bool wireframeMode = r->wireframe;
@@ -344,10 +327,9 @@ void rendererCalculateDepthBuffer(RendererHandle r, Surface& depthBuffer) {
             core::vec4f& v2 = vertices[f[1]];
             core::vec4f& v3 = vertices[f[2]];
 
-            // TODO: I need to think about this hardcoded 256 value..
-            core::vec3i a = orthogonalProjection(v1, width, height, 256);
-            core::vec3i b = orthogonalProjection(v2, width, height, 256);
-            core::vec3i c = orthogonalProjection(v3, width, height, 256);
+            core::vec3i a = orthogonalProjection(v1, width, height);
+            core::vec3i b = orthogonalProjection(v2, width, height);
+            core::vec3i c = orthogonalProjection(v3, width, height);
 
             fillDepthBuffer(depthBuffer, a, b, c);
         }
@@ -373,10 +355,9 @@ void rendererEndFrame(RendererHandle r) {
         core::vec4f& v2 = vertices[f[1]];
         core::vec4f& v3 = vertices[f[2]];
 
-        // TODO: I need to think about this hardcoded 256 value..
-        core::vec3i a = orthogonalProjection(v1, width, height, 256);
-        core::vec3i b = orthogonalProjection(v2, width, height, 256);
-        core::vec3i c = orthogonalProjection(v3, width, height, 256);
+        core::vec3i a = orthogonalProjection(v1, width, height);
+        core::vec3i b = orthogonalProjection(v2, width, height);
+        core::vec3i c = orthogonalProjection(v3, width, height);
 
         if (wireframe) {
             strokeTriangleFast(surface, a.xy(), b.xy(), c.xy(), RED);
@@ -395,27 +376,27 @@ void rendererEndFrame(RendererHandle r) {
 
 namespace {
 
-constexpr inline void setPixelTopLeft_BGRA8888(u8* data, i32 idx, Color color) {
+constexpr inline void setPixelRaw_BGRA8888(u8* data, i32 idx, Color color) {
     data[idx + 0] = color.b();
     data[idx + 1] = color.g();
     data[idx + 2] = color.r();
     data[idx + 3] = color.a();
 }
 
-constexpr inline void setPixelTopLeft_BGRX8888(u8* data, i32 idx, Color color) {
+constexpr inline void setPixelRaw_BGRX8888(u8* data, i32 idx, Color color) {
     data[idx + 0] = color.b();
     data[idx + 1] = color.g();
     data[idx + 2] = color.r();
     data[idx + 3] = 0;
 }
 
-constexpr inline void setPixelTopLeft_BGR888(u8* data, i32 idx, Color color) {
+constexpr inline void setPixelRaw_BGR888(u8* data, i32 idx, Color color) {
     data[idx + 0] = color.b();
     data[idx + 1] = color.g();
     data[idx + 2] = color.r();
 }
 
-constexpr inline void setPixelTopLeft_BGRA5551(u8* data, i32 idx, Color color) {
+constexpr inline void setPixelRaw_BGRA5551(u8* data, i32 idx, Color color) {
     // Packed as: bits 0-4 blue, 5-9 green, 10-14 red, 15 alpha.
     u16 b = u16(color.b() >> 3);
     u16 g = u16(color.g() >> 3);
@@ -426,7 +407,7 @@ constexpr inline void setPixelTopLeft_BGRA5551(u8* data, i32 idx, Color color) {
     data[idx + 1] = u8(packed >> 8);
 }
 
-constexpr inline void setPixelTopLeft_BGR555(u8* data, i32 idx, Color color) {
+constexpr inline void setPixelRaw_BGR555(u8* data, i32 idx, Color color) {
     // Packed as: bits 0-4 blue, 5-9 green, 10-14 red, bit 15 cleared.
     u16 b = u16(color.b() >> 3);
     u16 g = u16(color.g() >> 3);
@@ -436,16 +417,27 @@ constexpr inline void setPixelTopLeft_BGR555(u8* data, i32 idx, Color color) {
     data[idx + 1] = u8(packed >> 8);
 }
 
+constexpr inline void setPixelRaw_GRAY8(u8* data, i32 idx, Color color) {
+    // Use red channel as luminance source.
+    data[idx + 0] = color.r();
+}
+
+constexpr inline void setPixelRaw_GRAYA88(u8* data, i32 idx, Color color) {
+    // Use red channel as luminance source, alpha in second byte.
+    data[idx + 0] = color.r();
+    data[idx + 1] = color.a();
+}
+
 constexpr inline SetPixelFn pickSetPixelFunction(PixelFormat pixelFormat) {
     switch (pixelFormat) {
-        case PixelFormat::BGRA8888: return setPixelTopLeft_BGRA8888;
-        case PixelFormat::BGRX8888: return setPixelTopLeft_BGRX8888;
-        case PixelFormat::BGR888:   return setPixelTopLeft_BGR888;
-        case PixelFormat::BGRA5551: return setPixelTopLeft_BGRA5551;
-        case PixelFormat::BGR555:   return setPixelTopLeft_BGR555;
+        case PixelFormat::BGRA8888: return setPixelRaw_BGRA8888;
+        case PixelFormat::BGRX8888: return setPixelRaw_BGRX8888;
+        case PixelFormat::BGR888:   return setPixelRaw_BGR888;
+        case PixelFormat::BGRA5551: return setPixelRaw_BGRA5551;
+        case PixelFormat::BGR555:   return setPixelRaw_BGR555;
 
-        case PixelFormat::GRAY8:    Assert(false, "TODO:"); return nullptr;
-        case PixelFormat::GRAYA88:  Assert(false, "TODO:"); return nullptr;
+        case PixelFormat::GRAY8:    return setPixelRaw_GRAY8;
+        case PixelFormat::GRAYA88:  return setPixelRaw_GRAYA88;
 
         case PixelFormat::Unknown: [[fallthrough]];
         case PixelFormat::SENTINEL: [[fallthrough]];
@@ -454,62 +446,5 @@ constexpr inline SetPixelFn pickSetPixelFunction(PixelFormat pixelFormat) {
             return nullptr;
     }
 }
-
-constexpr inline Color getPixelTopLeft_BGRA8888(u8* data, i32 idx) {
-    Color ret = {
-        .rgba {
-            .r = data[idx + 2],
-            .g = data[idx + 1],
-            .b = data[idx + 0],
-            .a = data[idx + 3],
-        }
-    };
-    return ret;
-}
-
-constexpr inline Color getPixelTopLeft_BGRX8888(u8* data, i32 idx) {
-    Color ret = {
-        .rgba {
-            .r = data[idx + 2],
-            .g = data[idx + 1],
-            .b = data[idx + 0],
-            .a = 0,
-        }
-    };
-    return ret;
-}
-
-constexpr inline Color getPixelTopLeft_BGR888(u8* data, i32 idx) {
-    Color ret = {
-        .rgba {
-            .r = data[idx + 2],
-            .g = data[idx + 1],
-            .b = data[idx + 0],
-            .a = 0,
-        }
-    };
-    return ret;
-}
-
-
-constexpr inline GetPixelFn pickGetPixelFunction(PixelFormat pixelFormat) {
-    switch (pixelFormat) {
-        case PixelFormat::BGRA8888: return getPixelTopLeft_BGRA8888;
-        case PixelFormat::BGRX8888: return getPixelTopLeft_BGRX8888;
-        case PixelFormat::BGR888:   return getPixelTopLeft_BGR888;
-
-        case PixelFormat::GRAY8:      Assert(false, "TODO:"); return nullptr;
-        case PixelFormat::GRAYA88:    Assert(false, "TODO:"); return nullptr;
-
-        case PixelFormat::BGRA5551: [[fallthrough]];
-        case PixelFormat::BGR555:   [[fallthrough]];
-        case PixelFormat::Unknown:  [[fallthrough]];
-        case PixelFormat::SENTINEL: [[fallthrough]];
-        default:
-            Assert(false, "invalid pixel format");
-            return nullptr;
-    }
-}
-
 
 } // namespace

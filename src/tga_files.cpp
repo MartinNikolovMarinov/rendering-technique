@@ -239,8 +239,8 @@ core::expected<Surface, TGAError> createSurfaceFromTgaImage(const TGA::TGAImage&
             pixelFormat = pickPixelFormat(3, bytesPerPixel, alphaChannelSize);
             break;
 
-        // TODO2: [Support] Do I care about color mapped images?
-        // TODO2: [Support] Decode if run-length encoded (RLE).
+        // TODO2: [TGA Support] Do I care about color mapped images?
+        // TODO2: [TGA Support] Decode if run-length encoded (RLE).
 
         default:
             logErr("Unsupported tga image type: {}", i32(header->imageType));
