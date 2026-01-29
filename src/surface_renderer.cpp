@@ -1,7 +1,10 @@
 #include "surface_renderer.h"
-#include "surface.h"
+
 #include "color.h"
+#include "face.h"
 #include "model.h"
+#include "face.h"
+#include "surface.h"
 
 namespace {
 
@@ -246,27 +249,11 @@ void fillTriangle(
     fillTriangleBarycentric(surface, depthBuffer, a, b, c, colorA, colorB, colorC, 0.0f);
 }
 
+//======================================================================================================================
+// Statefull Rendering Section
+//======================================================================================================================
+
 namespace {
-
-[[maybe_unused]] bool g_beginFrame = false;
-
-bool g_wireframeMode = false;
-core::Memory<core::vec4f> g_vertices = {};
-core::Memory<Face> g_faces = {};
-Surface g_depthBuffer = {};
-
-i32 g_frameBufferWidth = 0;
-i32 g_frameBufferHeight = 0;
-
-inline void resetState() {
-    g_beginFrame = false;
-
-    g_vertices = {};
-    g_faces = {};
-    g_wireframeMode = false;
-    g_frameBufferWidth = 0;
-    g_frameBufferHeight = 0;
-}
 
 constexpr inline core::vec3i orthogonalProjection(core::vec4f normVec, i32 width, i32 height, i32 depth) {
     i32 x = i32((normVec.x() + 1.0f) * (f32(width - 1)/2.0f));
@@ -277,33 +264,78 @@ constexpr inline core::vec3i orthogonalProjection(core::vec4f normVec, i32 width
 
 }
 
-void rendererBeginFrame(i32 frameBufferWidth, i32 frameBufferHeight, Surface& depthBuffer, bool wireframe) {
-    Assert(!g_beginFrame);
-    Assert(depthBuffer.width == frameBufferWidth);
-    Assert(depthBuffer.height == frameBufferHeight);
+struct RenderPassState {
+    Surface* depthBuffer;
+    core::Memory<Vertex4f> vertices;
+    core::Memory<Face3i> faces;
+};
 
-    g_beginFrame = true;
+struct Renderer {
+    core::AllocatorContext* actx;
+    i32 frameBufferWidth;
+    i32 frameBufferHeight;
+    bool wireframe;
+    Surface* output;
 
-    g_wireframeMode = wireframe;
-    g_frameBufferWidth = frameBufferWidth;
-    g_frameBufferHeight = frameBufferHeight;
-    g_depthBuffer = depthBuffer;
+    RenderPassState renderPass;
+};
+
+RendererHandle rendererInit(core::AllocatorContext& actx) {
+    Renderer* ret = reinterpret_cast<Renderer*>(actx.alloc(1, sizeof(Renderer)));
+    *ret = {};
+    ret->actx = &actx;
+    return ret;
 }
 
-void renderModel(const Model3D& model) {
-    Assert(g_beginFrame);
-    g_vertices = model.vertices;
-    g_faces = model.faces;
+void rendererDestory(RendererHandle r) {
+    if (r && r->actx) {
+
+        // Finalize free the renderer itself and zero-out all fields:
+        r->actx->free(r, 1, sizeof(Renderer));
+        r = {};
+    }
+}
+
+void rendererSetFrameBuffer(RendererHandle r, i32 width, i32 height) {
+    r->frameBufferWidth = width;
+    r->frameBufferHeight = height;
+}
+
+void rendererSetWireframe(RendererHandle r, bool wireframe) {
+    r->wireframe = wireframe;
+}
+
+void rendererSetOutput(RendererHandle r, Surface& output) {
+    r->output = &output;
+}
+
+void rendererBeginFrame(RendererHandle) {
+}
+
+void rendererClear(RendererHandle r, const Color& c) {
+    fillRect(*r->output, 0, 0, c, r->frameBufferWidth, r->frameBufferHeight);
+}
+
+void rendererSetVertexBuffer(RendererHandle r, core::Memory<Vertex4f> vertices) {
+    r->renderPass.vertices = vertices;
+}
+
+void rendererSetIndexBuffer(RendererHandle r, core::Memory<Face3i> indices) {
+    r->renderPass.faces = indices;
+}
+
+void rendererCalculateDepthBuffer(RendererHandle r, Surface& depthBuffer) {
+    r->renderPass.depthBuffer = &depthBuffer;
+
+    bool wireframeMode = r->wireframe;
 
     // Calculate depth buffer:
-    if (!g_wireframeMode) {
-        // TODO: The depth buffer needs to be cleaned if I am going to call this more than once..
+    if (!wireframeMode) {
+        auto& vertices = r->renderPass.vertices;
+        auto& faces = r->renderPass.faces;
 
-        auto& vertices = g_vertices;
-        auto& faces = g_faces;
-
-        i32 width = g_frameBufferWidth;
-        i32 height = g_frameBufferHeight;
+        i32 width = r->frameBufferWidth;
+        i32 height = r->frameBufferHeight;
 
         for (addr_size i = 0; i < faces.len(); i++) {
             auto& f = faces[i];
@@ -317,22 +349,20 @@ void renderModel(const Model3D& model) {
             core::vec3i b = orthogonalProjection(v2, width, height, 256);
             core::vec3i c = orthogonalProjection(v3, width, height, 256);
 
-            fillDepthBuffer(g_depthBuffer, a, b, c);
+            fillDepthBuffer(depthBuffer, a, b, c);
         }
     }
 }
 
-void rendererEndFrame(Surface& out) {
-    Assert(g_beginFrame);
+void rendererEndFrame(RendererHandle r) {
+    auto& surface = *r->output;
+    bool wireframe = r->wireframe;
+    auto& vertices = r->renderPass.vertices;
+    auto& faces = r->renderPass.faces;
+    auto& depthBuffer = *r->renderPass.depthBuffer;
 
-    auto& surface = out;
-    auto& vertices = g_vertices;
-    auto& faces = g_faces;
-    bool wireframe = g_wireframeMode;
-    auto& depthBuffer = g_depthBuffer;
-
-    Assert(surface.width >= g_frameBufferWidth);
-    Assert(surface.height >= g_frameBufferHeight);
+    Assert(surface.width>= r->frameBufferWidth);
+    Assert(surface.height >= r->frameBufferHeight);
     i32 width = surface.width;
     i32 height = surface.height;
 
@@ -361,8 +391,6 @@ void rendererEndFrame(Surface& out) {
             fillTriangle(surface, depthBuffer, a, b, c, color1, color2, color3);
         }
     }
-
-    resetState();
 }
 
 namespace {

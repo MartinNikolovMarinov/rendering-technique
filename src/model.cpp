@@ -1,4 +1,5 @@
 #include "model.h"
+#include "face.h"
 
 void Model3D::free() {
     if (actx) {

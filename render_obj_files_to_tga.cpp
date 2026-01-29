@@ -5,64 +5,105 @@
 #include "debug_rendering.h"
 #include "surface_renderer.h"
 #include "wavefront_files.h"
+#include "face.h"
 #include "model.h"
 #include "color.h"
 
 void renderObjFilesToTga(const char** objFiles, i32 objFilesLen, const char* outputPath, const char* outputDepth) {
+    //==================================================================================================================
+    // Initialize Surfaces
+    //==================================================================================================================
+
     constexpr PixelFormat pixelFormat = PixelFormat::BGR888;
     constexpr i32 bpp = pixelFormatBytesPerPixel(pixelFormat);
-
     constexpr addr_size WIDTH = 1024;
     constexpr addr_size HEIGHT = 1024;
+    constexpr bool wireFrameMode = false;
 
-    static u8 buf[WIDTH*HEIGHT*bpp] = {}; // This might be big
-    Surface s = Surface();
-    s.actx = nullptr;
-    s.origin = Origin::BottomLeft;
-    s.pixelFormat = pixelFormat;
-    s.width = WIDTH;
-    s.height = HEIGHT;
-    s.pitch = s.width * bpp;
-    s.data = buf;
+    static u8 outbuf[WIDTH*HEIGHT*bpp] = {};
+    Surface outputSurface = {
+        .actx = nullptr,
+        .origin = Origin::BottomLeft,
+        .pixelFormat = pixelFormat,
+        .width = WIDTH,
+        .height = HEIGHT,
+        .pitch = WIDTH * bpp,
+        .data = outbuf,
+    };
+    defer { outputSurface.free(); };
 
-    static u8 buf2[WIDTH*HEIGHT*bpp] = {}; // This might be big
-    Surface depthBuffer = Surface();
-    depthBuffer.actx = nullptr;
-    depthBuffer.origin = Origin::BottomLeft;
-    depthBuffer.pixelFormat = pixelFormat;
-    depthBuffer.width = WIDTH;
-    depthBuffer.height = HEIGHT;
-    depthBuffer.pitch = depthBuffer.width * bpp;
-    depthBuffer.data = buf2;
+    static u8 depthbuf[WIDTH*HEIGHT*bpp] = {};
+    Surface depthBuffer = {
+        .actx = nullptr,
+        .origin = Origin::BottomLeft,
+        .pixelFormat = pixelFormat,
+        .width = WIDTH,
+        .height = HEIGHT,
+        .pitch = WIDTH * bpp,
+        .data = depthbuf,
+    };
+    defer { depthBuffer.free(); };
 
-    // Clear rendering target surface:
-    fillRect(s, 0, 0, BLACK, s.width, s.height);
+    //==================================================================================================================
+    // Read Wavefront Object Files and Create 3D Models
+    //==================================================================================================================
 
+    core::ArrStatic<Model3D, 10> models;
     for (i32 i = 0; i < objFilesLen; i++) {
-        constexpr bool wireframe = false;
-        rendererBeginFrame(s.width, s.height, depthBuffer, wireframe);
-
-        auto obj = core::Unpack(Wavefront::loadFile(objFiles[i], Wavefront::WavefrontVersion::VERSION_3_0));
+        Wavefront::WavefrontObj obj = core::Unpack(Wavefront::loadFile(objFiles[i], Wavefront::WavefrontVersion::VERSION_3_0));
         defer { obj.free(); };
         logInfo("verts={}, faces={}", obj.verticesCount, obj.facesCount);
 
-        auto model = Wavefront::createModelFromWavefrontObj(obj);
-        defer { model.free(); };
-
-        renderModel(model);
-
-        rendererEndFrame(s);
+        Model3D model = Wavefront::createModelFromWavefrontObj(obj);
+        models.push(std::move(model));
     }
+
+    defer {
+        for (i32 i = 0; i < objFilesLen; i++) {
+            models[addr_size(i)].free();
+        }
+    };
+
+    //==================================================================================================================
+    // Render
+    //==================================================================================================================
+
+    auto& actx = core::getAllocator(core::DEFAULT_ALLOCATOR_ID);
+    RendererHandle r = rendererInit(actx);
+    defer { rendererDestory(r); };
+
+    rendererSetFrameBuffer(r, WIDTH, HEIGHT);
+    rendererSetWireframe(r, wireFrameMode);
+
+    rendererSetOutput(r, outputSurface);
+    rendererClear(r, BLACK);
+
+    // Clear rendering target surface:
+    for (i32 i = 0; i < objFilesLen; i++) {
+        auto& model = models[addr_size(i)];
+
+        rendererBeginFrame(r);
+        {
+            rendererSetVertexBuffer(r, model.vertices);
+            rendererSetIndexBuffer(r, model.faces);
+            rendererCalculateDepthBuffer(r, depthBuffer);
+        }
+        rendererEndFrame(r);
+    }
+
+    //==================================================================================================================
+    // Write the Surfaces to Output Files
+    //==================================================================================================================
 
     {
         TGA::CreateFileFromSurfaceParams params = {
-            .surface = s,
+            .surface = outputSurface,
             .path = outputPath,
             .imageType = 2,
             .fileType = TGA::FileType::New,
         };
         core::Expect(TGA::createFileFromSurface(params));
-        logInfo("Create an output file in \"{}\"", outputPath);
+        logInfo("Created output file in \"{}\"", outputPath);
     }
     {
         TGA::CreateFileFromSurfaceParams params = {
@@ -72,7 +113,7 @@ void renderObjFilesToTga(const char** objFiles, i32 objFilesLen, const char* out
             .fileType = TGA::FileType::New,
         };
         core::Expect(TGA::createFileFromSurface(params));
-        logInfo("Create a depth output file in \"{}\"", outputDepth);
+        logInfo("Created depth output file in \"{}\"", outputDepth);
     }
 }
 
@@ -82,9 +123,9 @@ i32 main() {
         defer { coreShutdown(); };
 
         const char* filesToRender[] = {
-            ASSETS_DIRECTORY "/test_assets/obj/single_file_models/diablo3_pose.obj",
+            // ASSETS_DIRECTORY "/test_assets/obj/single_file_models/diablo3_pose.obj",
 
-            // ASSETS_DIRECTORY "/test_assets/obj/single_file_models/african_head.obj",
+            ASSETS_DIRECTORY "/test_assets/obj/single_file_models/african_head.obj",
 
             // ASSETS_DIRECTORY "/test_assets/obj/multipart/body.obj",
             // ASSETS_DIRECTORY "/test_assets/obj/multipart/head.obj",

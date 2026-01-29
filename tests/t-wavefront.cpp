@@ -112,7 +112,6 @@ i32 simpleFacesTest(const core::testing::TestSuiteInfo& suiteInfo) {
     return 0;
 }
 
-
 } // namespace
 
 i32 runWavefrontTestsSuite(const core::testing::TestSuiteInfo& suiteInfo) {

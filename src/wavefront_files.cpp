@@ -1,6 +1,7 @@
 #include "wavefront_files.h"
 #include "log_utils.h"
 #include "model.h"
+#include "face.h"
 
 // TODO: [WAVEFRONT] This code expects spaces if a wavefront file with tabs for delimiters is ever passed it will fail.
 
@@ -114,7 +115,7 @@ Model3D createModelFromWavefrontObj(const WavefrontObj& obj, core::AllocatorCont
     }
     Assert(i32(model.vertices.len()) == obj.verticesCount);
 
-    model.faces = core::memoryZeroAllocate<Face>(addr_size(obj.facesCount), modelActx);
+    model.faces = core::memoryZeroAllocate<Face3i>(addr_size(obj.facesCount), modelActx);
     for (i32 i = 0; i < obj.facesCount; i++) {
         bool faceHasVertexIndices =
             obj.faces[i].isSet(0, 0) &&

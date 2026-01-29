@@ -5,6 +5,13 @@
 struct Model3D;
 struct Surface;
 struct Color;
+struct Face3i;
+
+using Vertex4f = core::vec4f;
+
+//======================================================================================================================
+// Direct Rendering to a Surface Section
+//======================================================================================================================
 
 void fillPixel(Surface& surface, i32 x, i32 y, Color color);
 
@@ -32,8 +39,25 @@ void fillTriangle(
     const Color& colorA, const Color& colorB, const Color& colorC
 );
 
-void rendererBeginFrame(i32 frameBufferWidth, i32 frameBufferHeight, Surface& depthBuffer, bool wireframe = false);
+//======================================================================================================================
+// Statefull Rendering Section
+//======================================================================================================================
 
-void renderModel(const Model3D& model);
+struct Renderer;
+using RendererHandle = Renderer*;
 
-void rendererEndFrame(Surface& out);
+RendererHandle rendererInit(core::AllocatorContext& actx);
+void rendererDestory(RendererHandle r);
+
+void rendererSetFrameBuffer(RendererHandle r, i32 width, i32 height);
+void rendererSetWireframe(RendererHandle r, bool wireframe);
+void rendererSetOutput(RendererHandle r, Surface& output);
+
+void rendererBeginFrame(RendererHandle r);
+
+void rendererClear(RendererHandle r, const Color& c);
+void rendererSetVertexBuffer(RendererHandle r, core::Memory<Vertex4f> vertices);
+void rendererSetIndexBuffer(RendererHandle r, core::Memory<Face3i> indices);
+void rendererCalculateDepthBuffer(RendererHandle r, Surface& depthBuffer);
+
+void rendererEndFrame(RendererHandle r);

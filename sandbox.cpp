@@ -190,18 +190,26 @@ void writeSurfaceToFile(const char* path) {
 }
 
 i32 main() {
+    [[maybe_unused]] const char* output = OUT_DIRECTORY "/output.tga";
+    [[maybe_unused]] const char* depthPathOutput =  OUT_DIRECTORY "/depth-output.tga";
+
     {
         coreInit(core::LogLevel::L_DEBUG);
         defer { coreShutdown(); };
-        // Panic(initializeDebugRendering(), "Failed to initialize debug rendering!");
-        // defer { shutdownDebugRendering(); };
 
-        // create5MillionLines(ASSETS_DIRECTORY "/output.tga");
-        const char* output = OUT_DIRECTORY "/output.tga";
-        writeSurfaceToFile(output);
+        {
+            // Panic(initializeDebugRendering(), "Failed to initialize debug rendering!");
+            // defer { shutdownDebugRendering(); };
+        }
 
-        // testAllFilesInDirectory(ASSETS_DIRECTORY "/tga-test-suite/my_test_suite/");
-        // testOneFile(ASSETS_DIRECTORY "/output.tga", true);
+        {
+            // writeSurfaceToFile(output);
+        }
+
+        {
+            // testAllFilesInDirectory(ASSETS_DIRECTORY "/tga-test-suite/my_test_suite/");
+            // testOneFile(ASSETS_DIRECTORY "/output.tga", true);
+        }
     }
     return 0;
 }
