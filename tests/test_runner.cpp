@@ -1,7 +1,5 @@
 #include "test_runner.h"
 
-#include <iostream>
-
 const char* passedOrFailedStr(bool passed, bool useAnsiColors) {
     if (useAnsiColors) {
         return passed ? ANSI_GREEN("PASSED") : ANSI_RED("FAILED");
@@ -16,7 +14,7 @@ TestGroup& TestGroup::addTest(const TestCreateInfo& info) {
         .only = info.only,
         .skip = info.skip,
         .trackMemory = false, // Will set this later!
-        .detectLeaks = info.detectLeaks,
+        .detectLeaks = false, // Will set this later!
         .expectZeroAllocationsInGlobalAllocator = info.expectZeroAllocationsInGlobalAllocator,
         .testRunParams = {
             .name = info.name,
@@ -29,7 +27,7 @@ TestGroup& TestGroup::addTest(const TestCreateInfo& info) {
     return *this;
 }
 
-[[nodiscard]] i32 TestGroup::runTestGroup(i32& testCounter, bool useAnsiColors) {
+[[nodiscard]] i32 TestGroup::runTestGroup(i32& testCounter, bool useAnsiColors, u64 freq) {
     bool hasOnly = core::forAny(tests, [](const Test& t, addr_size) {
         return t.only == true && t.skip == false;
     });
@@ -51,6 +49,8 @@ TestGroup& TestGroup::addTest(const TestCreateInfo& info) {
             auto& actx = core::getAllocator(allocatorsToUse[allocatorIdx]);
             test.testRunParams.actx = &actx;
             test.testNumber = testCounter++;
+            test.trackMemory = actx.tracksMemory();
+            test.detectLeaks = actx.canDetectLeaks();
 
             AssertFmt(test.testRunParams.actx, "Test '{}' has no allocator context", test.testRunParams.name);
 
@@ -59,17 +59,15 @@ TestGroup& TestGroup::addTest(const TestCreateInfo& info) {
             auto& globalActx = core::getAllocator(core::DEFAULT_ALLOCATOR_ID);
             auto globalAllocatedBefore = globalActx.totalMemoryAllocated();
 
-            // Begin Test
             u64 startTsc = beginTest(test);
-
             i32 testResult = test.testFunction(test.testRunParams);
+            endTest(test, testResult, useAnsiColors, allocatedBefore, inUseBefore, globalAllocatedBefore, startTsc, freq);
+
             AssertFmt(testResult == 0, "Test {} failed", test.testRunParams.name);
+
             if (testResult != 0) {
                 return testResult;
             }
-
-            // End Test
-            endTest(test, testResult, useAnsiColors, allocatedBefore, inUseBefore, globalAllocatedBefore, startTsc);
         }
     }
 
@@ -95,7 +93,8 @@ void TestGroup::endTest(
     addr_size allocatedBefore,
     addr_size inUseBefore,
     addr_size globalAllocatedBefore,
-    u64 startTsc
+    u64 startTsc,
+    u64 freq
 ) {
     char buff[256];
     const char* testName = test.testRunParams.name;
@@ -105,13 +104,14 @@ void TestGroup::endTest(
     auto allocatedAfter = test.testRunParams.actx->totalMemoryAllocated();
     auto inUseAfter = test.testRunParams.actx->inUseMemory();
     auto& globalActx = core::getAllocator(core::DEFAULT_ALLOCATOR_ID);
+    bool sameAsGlobalAllocator = test.testRunParams.actx == &globalActx;
     auto globalAllocatedAfter = globalActx.totalMemoryAllocated();
     auto endTsc = core::getPerfCounter();
 
     auto deltaAllocatedMemory = allocatedAfter - allocatedBefore;
     auto deltaInUseMemory = inUseAfter - inUseBefore;
     auto deltaGlobalAllocatedMemory = globalAllocatedAfter - globalAllocatedBefore;
-    auto deltaTimeNs = endTsc - startTsc;
+    auto deltaTimeNs = u64(core::CORE_SECOND * (f64(endTsc - startTsc) / f64(freq)));
 
     std::cout << "\t[TEST " << "№ " << testNumber << " "
           << passedOrFailedStr(returnCode == 0, useAnsiColors) << "] "
@@ -121,15 +121,20 @@ void TestGroup::endTest(
     }
 
     if (test.detectLeaks && deltaInUseMemory != 0) {
-        std::cout << ANSI_RED(" !!LEAKED MEMORY!!");
-        returnCode = -1;
+        std::cout << (useAnsiColors ? ANSI_RED(" !!LEAKED MEMORY!!") : " !!LEAKED MEMORY!!") << std::endl;
         AssertFmt(false, "Test {} failed; reason: MEMORY LEAK DETECTED", testName);
     }
 
-    if (test.expectZeroAllocationsInGlobalAllocator && deltaGlobalAllocatedMemory > 0) {
-        std::cout << std::endl;
+    if (test.expectZeroAllocationsInGlobalAllocator &&
+        !sameAsGlobalAllocator &&
+        deltaGlobalAllocatedMemory > 0
+    ) {
+        std::cout << (useAnsiColors
+            ? ANSI_RED(" !!UNEXPECTED DYNAMIC MEMORY USAGE!!")
+            : " !!UNEXPECTED DYNAMIC MEMORY USAGE!!") << std::endl;
+
         AssertFmt(false,
-            "Test {} failed; reason: test expected zero allocations but allocated {}",
+            "Test {} failed; reason: Test Expected Zero Allocations But Allocated {}",
             testName,
             core::testing::memoryUsedToStr(buff, deltaGlobalAllocatedMemory)
         );

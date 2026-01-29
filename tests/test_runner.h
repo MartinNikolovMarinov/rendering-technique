@@ -2,9 +2,15 @@
 
 #include "core_init.h"
 
+#include <iostream>
+
 const char* passedOrFailedStr(bool passed, bool useAnsiColors);
 
 struct TestRunParams;
+struct TestCreateInfo;
+struct TestGroup;
+template<addr_size TTestGroupCount> struct TestRunner;
+
 using TestFunction = i32 (*)(const TestRunParams& input);
 
 struct TestRunParams {
@@ -13,30 +19,39 @@ struct TestRunParams {
     void* userData = nullptr;
 };
 
-struct Test {
-    i32 testNumber;
-
-    bool only = false;
-    bool skip = false;
-    bool trackMemory = true;
-    bool detectLeaks = true;
-    bool expectZeroAllocationsInGlobalAllocator = true;
-
-    TestRunParams testRunParams = {};
-    TestFunction testFunction = nullptr;
-};
-
 struct TestCreateInfo {
     const char* name = nullptr;
     TestFunction testFunction = nullptr;
-    bool detectLeaks = true;
     bool expectZeroAllocationsInGlobalAllocator = true;
     bool only = false;
     bool skip = false;
     void* userData = nullptr;
 };
 
+struct TestGroupCreateInfo {
+    const char* name = nullptr;
+    core::Memory<const core::AllocatorId> allocatorsToUse = {};
+    bool groupOnly = false;
+    bool groupSkip = false;
+};
+
 struct TestGroup {
+
+private:
+    struct Test {
+        i32 testNumber;
+
+        bool only;
+        bool skip;
+        bool trackMemory;
+        bool detectLeaks;
+        bool expectZeroAllocationsInGlobalAllocator;
+
+        TestRunParams testRunParams;
+        TestFunction testFunction;
+    };
+
+public:
     bool groupOnly = false;
     bool groupSkip = false;
     const char* name = nullptr;
@@ -45,7 +60,7 @@ struct TestGroup {
     core::ArrStatic<Test, 255> tests;
 
     TestGroup& addTest(const TestCreateInfo& info);
-    [[nodiscard]] i32 runTestGroup(i32& testCounter, bool useAnsiColors);
+    [[nodiscard]] i32 runTestGroup(i32& testCounter, bool useAnsiColors, u64 freq);
 
 private:
     [[nodiscard]] u64 beginTest(Test& test);
@@ -56,15 +71,9 @@ private:
         addr_size allocatedBefore,
         addr_size inUseBefore,
         addr_size globalAllocatedBefore,
-        u64 startTsc
+        u64 startTsc,
+        u64 freq
     );
-};
-
-struct TestGroupCreateInfo {
-    const char* name = nullptr;
-    core::Memory<const core::AllocatorId> allocatorsToUse = {};
-    bool groupOnly = false;
-    bool groupSkip = false;
 };
 
 template<addr_size TTestGroupCount>
@@ -85,6 +94,9 @@ struct TestRunner {
     }
 
     void runAllTestGroups() {
+        u64 freq = core::getCPUFrequencyHz();
+        Panic(freq != 0, "[BUG] CPU frequency is 0");
+
         bool hasOnly = core::forAny(testGroups, [](const TestGroup& t, addr_size) {
             return t.groupOnly == true && t.groupSkip == false;
         });
@@ -102,11 +114,10 @@ struct TestRunner {
             }
 
             u64 groupStartTsc = beginTestGroup(testGroup.name);
+            i32 testGroupResult = testGroup.runTestGroup(testCounter, useAnsiColors, freq);
+            endTestGroup(testGroup.name, testGroupResult, groupStartTsc, freq);
 
-            i32 testGroupResult = testGroup.runTestGroup(testCounter, useAnsiColors);
             AssertFmt(testGroupResult == 0, "Test {} failed", testGroup.name);
-
-            endTestGroup(testGroup.name, testGroupResult, groupStartTsc);
         }
     }
 
@@ -116,11 +127,11 @@ private:
         return core::getPerfCounter();
     }
 
-    void endTestGroup(const char* suiteName, i32 returnCode, u64 start) {
+    void endTestGroup(const char* suiteName, i32 returnCode, u64 startTsc, u64 freq) {
         std::cout << "[SUITE " << passedOrFailedStr(returnCode == 0, useAnsiColors) << "] " << suiteName;
 
-        auto end = core::getPerfCounter();
-        auto deltaTimeNs = end - start;
+        auto endTsc = core::getPerfCounter();
+        auto deltaTimeNs = u64(core::CORE_SECOND * (f64(endTsc - startTsc) / f64(freq)));
 
         char elapsedTimeBuffer[256];
         std::cout << " [ ";

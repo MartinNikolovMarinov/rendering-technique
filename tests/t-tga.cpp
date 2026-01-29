@@ -1,4 +1,5 @@
 #include "t-index.h"
+#include "test_runner.h"
 #include "tga_files.h"
 #include "surface.h"
 
@@ -6,10 +7,10 @@ namespace {
 
 constexpr const char* TRUE_COLOR_TYPE_VALID_DIRECTORY = TEST_ASSETS_DIRECTORY "/tga/true_color_type_valid_image_type_2";
 
-i32 validTrueImageFilesCanBeReadTest(const core::testing::TestSuiteInfo& suiteInfo) {
+i32 validTrueImageFilesCanBeReadTest(const TestRunParams& params) {
     struct Clojure {
         core::StaticPathBuilder<255> path;
-        const core::testing::TestSuiteInfo& suiteInfo;
+        const TestRunParams& params;
     };
 
     core::StaticPathBuilder<255> path;
@@ -18,7 +19,7 @@ i32 validTrueImageFilesCanBeReadTest(const core::testing::TestSuiteInfo& suiteIn
     core::DirWalkCallback listWalk = [](const core::DirEntry& de, addr_size, void* userData) -> bool {
         Clojure* clojure = reinterpret_cast<Clojure*>(userData);
         auto& pbuilder = clojure->path;
-        auto& sInfo = clojure->suiteInfo;
+        auto& sInfo = clojure->params;
 
         pbuilder.resetFilePart();
 
@@ -51,7 +52,7 @@ i32 validTrueImageFilesCanBeReadTest(const core::testing::TestSuiteInfo& suiteIn
         return true;
     };
 
-    Clojure clojure = { .path = path, .suiteInfo = suiteInfo };
+    Clojure clojure = { .path = path, .params = params };
     core::dirWalk(TRUE_COLOR_TYPE_VALID_DIRECTORY, listWalk, &clojure);
 
     return 0;
@@ -59,14 +60,7 @@ i32 validTrueImageFilesCanBeReadTest(const core::testing::TestSuiteInfo& suiteIn
 
 } // namespace
 
-i32 runTgaTestsSuite(const core::testing::TestSuiteInfo& suiteInfo) {
-    using namespace core::testing;
-
-    i32 ret = 0;
-    TestInfo tInfo = createTestInfo(suiteInfo);
-
-    tInfo.name = FN_NAME_TO_CPTR(trueImageTypeTest);
-    if (runTest(tInfo, validTrueImageFilesCanBeReadTest, suiteInfo) != 0) { return -1; }
-
-    return ret;
+i32 runTgaTestsSuite(const TestRunParams& params) {
+    if (validTrueImageFilesCanBeReadTest(params) != 0) { return -1; }
+    return 0;
 }

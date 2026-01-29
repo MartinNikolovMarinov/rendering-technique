@@ -38,12 +38,14 @@ void assertHandler(const char* failedExpr, const char* file, i32 line, const cha
 core::StdStatsAllocator g_statsStdAllocator{};
 core::StdAllocator g_stdAllocator{};
 
-core::AllocatorContext createDefautAllocatorCtx() {
 #if defined(IS_DEBUG)
-    return core::createAllocatorCtx(&g_statsStdAllocator);
+core::StdStatsAllocator g_defaultAllocator{};
 #else
-    return core::createAllocatorCtx(&g_stdAllocator);
+core::StdAllocator g_defaultAllocator{};
 #endif
+
+core::AllocatorContext createDefautAllocatorCtx() {
+    return core::createAllocatorCtx(&g_defaultAllocator);
 }
 
 void coreInit(core::LogLevel globalLogLevel) {
