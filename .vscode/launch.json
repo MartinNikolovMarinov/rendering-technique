@@ -2,10 +2,22 @@
     "version": "0.2.0",
     "configurations": [
         {
+            "name": "Debug Program with LLDB",
+            "type": "lldb",
+            "request": "launch",
+            "program": "${workspaceFolder}/build/tga_files_sandbox",
+            "args": [],
+            "cwd": "${workspaceFolder}",
+            "stopOnEntry": false,
+            "env": {},
+            "preLaunchTask": "Build with Makefile",
+        },
+
+        {
             "name": "Debug Sandbox with LLDB",
             "type": "lldb",
             "request": "launch",
-            "program": "${workspaceFolder}/build/render_obj_files_to_tga",
+            "program": "${workspaceFolder}/build/sandbox",
             "args": [],
             "cwd": "${workspaceFolder}",
             "stopOnEntry": false,

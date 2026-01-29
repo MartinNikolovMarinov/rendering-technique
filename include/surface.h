@@ -2,8 +2,6 @@
 
 #include "core_init.h"
 
-// FIXME: Add a pixel format for 8 bit grayscale
-
 enum struct PixelFormat {
     Unknown,
 
@@ -12,6 +10,8 @@ enum struct PixelFormat {
     BGRA5551,
     BGR555,
     BGR888,
+    GRAY8,
+    GRAYA88,
 
     SENTINEL
 };
@@ -23,6 +23,8 @@ constexpr i32 pixelFormatBytesPerPixel(PixelFormat pixelFormat) {
         case PixelFormat::BGRA5551: return 2;
         case PixelFormat::BGR555:   return 2;
         case PixelFormat::BGR888:   return 3;
+        case PixelFormat::GRAY8:    return 1;
+        case PixelFormat::GRAYA88:  return 2;
 
         case PixelFormat::Unknown: [[fallthrough]];
         case PixelFormat::SENTINEL: [[fallthrough]];
@@ -39,6 +41,8 @@ constexpr i32 pixelFormatAlphaBits(PixelFormat pixelFormat) {
         case PixelFormat::BGRA5551: return 1;
         case PixelFormat::BGR555:   return 0;
         case PixelFormat::BGR888:   return 0;
+        case PixelFormat::GRAY8:    return 0;
+        case PixelFormat::GRAYA88:  return 8;
 
         case PixelFormat::Unknown: [[fallthrough]];
         case PixelFormat::SENTINEL: [[fallthrough]];
@@ -55,6 +59,8 @@ constexpr const char* pixelFormatToCstr(PixelFormat pixelFormat) {
         case PixelFormat::BGRA5551: return "BGRA_5551";
         case PixelFormat::BGR555:   return "BGR_555";
         case PixelFormat::BGR888:   return "BGR_888";
+        case PixelFormat::GRAY8:    return "GRAY_8";
+        case PixelFormat::GRAYA88:  return "GRAYA_88";
 
         case PixelFormat::Unknown: [[fallthrough]];
         case PixelFormat::SENTINEL: [[fallthrough]];

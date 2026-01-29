@@ -4,7 +4,6 @@
 #include "log_utils.h"
 #include "debug_rendering.h"
 #include "surface_renderer.h"
-#include "model.h"
 #include "color.h"
 
 core::Profiler profiler_1;
@@ -15,59 +14,6 @@ enum ProfilePoints {
     PP_DRAW_LINE,
 };
 
-void openAndTestOneTGAFile(const char* path, bool debugRender = false) {
-    logInfo("Parsing File: {}", path);
-
-    auto tgaFile = core::Unpack(TGA::loadFile(path));
-    defer { tgaFile.free(); };
-    logInfo_TGAFile(tgaFile);
-
-    if (debugRender) {
-        const TGA::Header* h = nullptr;
-        core::Expect(tgaFile.header(h));
-
-        if (h->imageType == 2) {
-
-            auto surface = core::Unpack(createSurfaceFromTgaImage(tgaFile), "Failed to create surface from TGA file.");
-            defer { surface.free(); };
-            logInfo_Surface(surface);
-
-            logInfo("Image is True Color; rendering is supported.");
-            debug_immPreviewSurface(surface);
-        }
-    }
-}
-
-void openAllTGAFilesInDirectory(const char* directoryPath) {
-    auto ret = core::dirWalk(directoryPath, [](const core::DirEntry& entry, addr_size, void* userData) -> bool {
-        if (entry.type == core::FileType::Regular) {
-            const addr_size nameLen = core::cstrLen(entry.name);
-            if (entry.name[nameLen - 1] != 't' &&
-                entry.name[nameLen - 2] != 'g' &&
-                entry.name[nameLen - 3] != 'a'
-            ) {
-                return true;
-            }
-
-            const char* basePath = reinterpret_cast<const char*>(userData);
-
-            static char pathBuffer[1024*1024] = {};
-            core::memset(pathBuffer, char(0), 1024*1024);
-
-            addr_size idx = core::memcopy(pathBuffer, basePath, core::cstrLen(basePath));
-            core::memcopy(pathBuffer + idx, entry.name, nameLen);
-
-            openAndTestOneTGAFile(pathBuffer, true);
-        }
-
-        return true;
-    }, const_cast<char*>(directoryPath));
-
-    if (ret.hasErr()) {
-        logErr_PltErrorCode(ret.err());
-        PanicFmt(false, "failed to walk direcotry: {}", directoryPath);
-    }
-}
 
 void create5MillionLines(const char* path) {
     constexpr PixelFormat f = PixelFormat::BGR888;
@@ -192,24 +138,16 @@ void writeSurfaceToFile(const char* path) {
 i32 main() {
     [[maybe_unused]] const char* output = OUT_DIRECTORY "/output.tga";
     [[maybe_unused]] const char* depthPathOutput =  OUT_DIRECTORY "/depth-output.tga";
+    [[maybe_unused]] const char* inputFile = ASSETS_DIRECTORY "/test_assets/tga/fileformat/ubw8.tga";
 
     {
         coreInit(core::LogLevel::L_DEBUG);
         defer { coreShutdown(); };
 
-        {
-            // Panic(initializeDebugRendering(), "Failed to initialize debug rendering!");
-            // defer { shutdownDebugRendering(); };
-        }
+        Panic(initializeDebugRendering(), "Failed to initialize debug rendering!");
+        defer { shutdownDebugRendering(); };
 
-        {
-            // writeSurfaceToFile(output);
-        }
-
-        {
-            // testAllFilesInDirectory(ASSETS_DIRECTORY "/tga-test-suite/my_test_suite/");
-            // testOneFile(ASSETS_DIRECTORY "/output.tga", true);
-        }
+        writeSurfaceToFile(output);
     }
     return 0;
 }

@@ -444,6 +444,9 @@ constexpr inline SetPixelFn pickSetPixelFunction(PixelFormat pixelFormat) {
         case PixelFormat::BGRA5551: return setPixelTopLeft_BGRA5551;
         case PixelFormat::BGR555:   return setPixelTopLeft_BGR555;
 
+        case PixelFormat::GRAY8:    Assert(false, "TODO:"); return nullptr;
+        case PixelFormat::GRAYA88:  Assert(false, "TODO:"); return nullptr;
+
         case PixelFormat::Unknown: [[fallthrough]];
         case PixelFormat::SENTINEL: [[fallthrough]];
         default:
@@ -494,6 +497,9 @@ constexpr inline GetPixelFn pickGetPixelFunction(PixelFormat pixelFormat) {
         case PixelFormat::BGRA8888: return getPixelTopLeft_BGRA8888;
         case PixelFormat::BGRX8888: return getPixelTopLeft_BGRX8888;
         case PixelFormat::BGR888:   return getPixelTopLeft_BGR888;
+
+        case PixelFormat::GRAY8:      Assert(false, "TODO:"); return nullptr;
+        case PixelFormat::GRAYA88:    Assert(false, "TODO:"); return nullptr;
 
         case PixelFormat::BGRA5551: [[fallthrough]];
         case PixelFormat::BGR555:   [[fallthrough]];

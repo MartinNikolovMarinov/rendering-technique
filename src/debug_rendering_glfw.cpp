@@ -122,6 +122,9 @@ constexpr GLenum pickGLFormat(PixelFormat pixelFormat) {
         case PixelFormat::BGRA5551: return GL_BGRA;
         case PixelFormat::BGR555:   return GL_BGRA;
 
+        case PixelFormat::GRAY8:    return GL_LUMINANCE;
+        case PixelFormat::GRAYA88:  return GL_LUMINANCE_ALPHA;
+
         case PixelFormat::Unknown: [[fallthrough]];
         case PixelFormat::SENTINEL: [[fallthrough]];
         default:
@@ -139,6 +142,9 @@ constexpr GLint pickGLInternalFormat(PixelFormat pixelFormat) {
         case PixelFormat::BGRA5551: return GL_RGB5_A1;
         case PixelFormat::BGR555:   return GL_RGB5;
 
+        case PixelFormat::GRAY8:    return GL_LUMINANCE8;
+        case PixelFormat::GRAYA88:  return GL_LUMINANCE8_ALPHA8;
+
         case PixelFormat::Unknown: [[fallthrough]];
         case PixelFormat::SENTINEL: [[fallthrough]];
         default:
@@ -155,6 +161,9 @@ constexpr GLenum pickGLType(PixelFormat pixelFormat) {
 
         case PixelFormat::BGRA5551: return GL_UNSIGNED_SHORT_1_5_5_5_REV;
         case PixelFormat::BGR555:   return GL_UNSIGNED_SHORT_1_5_5_5_REV;
+
+        case PixelFormat::GRAY8:    return GL_UNSIGNED_BYTE;
+        case PixelFormat::GRAYA88:  return GL_UNSIGNED_BYTE;
 
         case PixelFormat::Unknown: [[fallthrough]];
         case PixelFormat::SENTINEL: [[fallthrough]];

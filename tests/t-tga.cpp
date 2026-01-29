@@ -4,7 +4,7 @@
 
 namespace {
 
-constexpr const char* TRUE_IMAGE_TYPE_VALID_DIRECTORY = TEST_ASSETS_DIRECTORY "/tga/true_image_type_valid";
+constexpr const char* TRUE_COLOR_TYPE_VALID_DIRECTORY = TEST_ASSETS_DIRECTORY "/tga/true_color_type_valid_image_type_2";
 
 i32 validTrueImageFilesCanBeReadTest(const core::testing::TestSuiteInfo& suiteInfo) {
     struct Clojure {
@@ -13,7 +13,7 @@ i32 validTrueImageFilesCanBeReadTest(const core::testing::TestSuiteInfo& suiteIn
     };
 
     core::StaticPathBuilder<255> path;
-    path.setDirPath(TRUE_IMAGE_TYPE_VALID_DIRECTORY);
+    path.setDirPath(TRUE_COLOR_TYPE_VALID_DIRECTORY);
 
     core::DirWalkCallback listWalk = [](const core::DirEntry& de, addr_size, void* userData) -> bool {
         Clojure* clojure = reinterpret_cast<Clojure*>(userData);
@@ -52,7 +52,7 @@ i32 validTrueImageFilesCanBeReadTest(const core::testing::TestSuiteInfo& suiteIn
     };
 
     Clojure clojure = { .path = path, .suiteInfo = suiteInfo };
-    core::dirWalk(TRUE_IMAGE_TYPE_VALID_DIRECTORY, listWalk, &clojure);
+    core::dirWalk(TRUE_COLOR_TYPE_VALID_DIRECTORY, listWalk, &clojure);
 
     return 0;
 }

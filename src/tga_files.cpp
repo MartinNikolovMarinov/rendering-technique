@@ -11,14 +11,33 @@ namespace {
 
 constexpr auto TRUE_VISION_SIGNATURE = "TRUEVISION-XFILE."_sv;
 
+struct FormatMapping {
+    i32 imageType;
+    i32 bytesPerPixel;
+    i32 alphaChannelSize;
+    PixelFormat format;
+};
+constexpr FormatMapping formatMappingTable[] = {
+    // True color (image type 2)
+    { .imageType = 2, .bytesPerPixel = 2, .alphaChannelSize = 0, .format = PixelFormat::BGR555 },
+    { .imageType = 2, .bytesPerPixel = 2, .alphaChannelSize = 1, .format = PixelFormat::BGRA5551 },
+    { .imageType = 2, .bytesPerPixel = 3, .alphaChannelSize = 0, .format = PixelFormat::BGR888 },
+    { .imageType = 2, .bytesPerPixel = 4, .alphaChannelSize = 8, .format = PixelFormat::BGRA8888 },
+    { .imageType = 2, .bytesPerPixel = 4, .alphaChannelSize = 0, .format = PixelFormat::BGRX8888 },
+
+    // Grayscale (image type 3)
+    { .imageType = 3, .bytesPerPixel = 1, .alphaChannelSize = 0, .format = PixelFormat::GRAY8 },
+    { .imageType = 3, .bytesPerPixel = 2, .alphaChannelSize = 8, .format = PixelFormat::GRAYA88 },
+};
+
 constexpr bool isFatalError(TGAError err);
 
 constexpr bool hasSignature(const char signature[18]);
 constexpr core::expected<addr_off, TGAError> parseFooterOffset(u8* begin, u8* end);
 
-PixelFormat pickPixelFormatForTrueColorImage(i32 bytesPerPixel, i32 alphaChannelSize);
+PixelFormat pickPixelFormat(i32 imageType, i32 bytesPerPixel, i32 alphaChannelSize);
 
-core::expected<TGAError> createTrueColorFile(const CreateFileFromSurfaceParams& params);
+core::expected<TGAError> createImageFile(const CreateFileFromSurfaceParams& params, const FormatMapping& mapping);
 
 } // namespace
 
@@ -213,12 +232,14 @@ core::expected<Surface, TGAError> createSurfaceFromTgaImage(const TGA::TGAImage&
     PixelFormat pixelFormat = PixelFormat::Unknown;
 
     switch (header->imageType) {
-        case 2:
-            // True Color Image
-            pixelFormat = pickPixelFormatForTrueColorImage(bytesPerPixel, alphaChannelSize);
+        case 2: // True Color Image
+            pixelFormat = pickPixelFormat(2, bytesPerPixel, alphaChannelSize);
+            break;
+        case 3: // Gray Scale Image
+            pixelFormat = pickPixelFormat(3, bytesPerPixel, alphaChannelSize);
             break;
 
-        // TODO2: [Support] Do I care for any other image type?
+        // TODO2: [Support] Do I care about color mapped images?
         // TODO2: [Support] Decode if run-length encoded (RLE).
 
         default:
@@ -227,7 +248,7 @@ core::expected<Surface, TGAError> createSurfaceFromTgaImage(const TGA::TGAImage&
     }
 
     if (pixelFormat == PixelFormat::Unknown) {
-        logErr("pixel format unknown");
+        logErr("pixel format unknown/unsupported");
         return core::unexpected(TGAError::FailedToCreateSurface);
     }
 
@@ -266,19 +287,22 @@ core::expected<TGAError> createFileFromSurface(const CreateFileFromSurfaceParams
         return core::unexpected(TGAError::InvalidArgument);
     }
 
-    switch (params.imageType) {
-        case 2:
-            return createTrueColorFile(params);
-
-        // TODO2: [Support] Do I cae for any other image type?
-        // TODO2: [Support] Run-length encoding (RLE).
-
-        default:
-            logErr("Unsupported image type = {}", params.imageType);
-            return core::unexpected(TGAError::UnsupportedImageType);
+    PixelFormat pixelFormat = params.surface.pixelFormat;
+    const FormatMapping* mapping = nullptr;
+    for (addr_size i = 0; i < CORE_C_ARRLEN(formatMappingTable); i++) {
+        auto& m = formatMappingTable[i];
+        if (m.imageType == params.imageType && m.format == pixelFormat) {
+            mapping = &m;
+            break;
+        }
+    }
+    if (mapping == nullptr) {
+        logErr("Unsupported pixel format {} for image type {}", pixelFormatToCstr(pixelFormat) , params.imageType);
+        return core::unexpected(TGAError::UnsupportedImageType);
     }
 
-    return {};
+    auto ret = createImageFile(params, *mapping);
+    return ret;
 }
 
 namespace
@@ -326,50 +350,29 @@ constexpr core::expected<addr_off, TGAError> parseFooterOffset(u8* begin, u8* en
     return off;
 }
 
-PixelFormat pickPixelFormatForTrueColorImage(i32 bytesPerPixel, i32 alphaChannelSize) {
-    PixelFormat pixelFormat = PixelFormat::Unknown;
+PixelFormat pickPixelFormat(i32 imageType, i32 bytesPerPixel, i32 alphaChannelSize) {
+    PixelFormat ret = PixelFormat::Unknown;
 
-    if (bytesPerPixel == 3) {
-        if (alphaChannelSize != 0) {
-            goto error;
+    for (addr_size i = 0; i < CORE_C_ARRLEN(formatMappingTable); i++) {
+        auto& m = formatMappingTable[i];
+        if (m.imageType == imageType &&
+            m.bytesPerPixel == bytesPerPixel &&
+            m.alphaChannelSize == alphaChannelSize
+        ) {
+            ret = m.format;
+            break;
         }
-
-        pixelFormat = PixelFormat::BGR888;
-    }
-    else if (bytesPerPixel == 4) {
-        if (alphaChannelSize == 8) {
-            pixelFormat = PixelFormat::BGRA8888;
-        }
-        else if (alphaChannelSize == 0) {
-            pixelFormat = PixelFormat::BGRX8888; // 8 padding bits, no alpha channel data
-        }
-        else {
-            goto error;
-        }
-    }
-    else if (bytesPerPixel == 2) {
-        if (alphaChannelSize == 1) {
-            pixelFormat = PixelFormat::BGRA5551;
-        }
-        else if (alphaChannelSize == 0) {
-            pixelFormat = PixelFormat::BGR555;
-        }
-        else {
-            goto error;
-        }
-    }
-    else {
-        goto error;
     }
 
-    return pixelFormat;
-error:
-    logErr("bytesPerPixel = {}, but alphaChannelSize = {}", bytesPerPixel, alphaChannelSize);
-    return PixelFormat::Unknown;
+    return ret;
 }
 
-core::expected<TGAError> createTrueColorFile(const CreateFileFromSurfaceParams& params) {
-    auto openRes = core::fileOpen(params.path,
+core::expected<TGAError> createImageFile(const CreateFileFromSurfaceParams& params, const FormatMapping& mapping) {
+    const char* path = params.path;
+    const Surface& surface = params.surface;
+    FileType fileType = params.fileType;
+
+    auto openRes = core::fileOpen(path,
         core::OpenMode::Read | core::OpenMode::Write | core::OpenMode::Truncate | core::OpenMode::Create);
     if (openRes.hasErr()) {
         logErr_PltErrorCode(openRes.err());
@@ -377,17 +380,18 @@ core::expected<TGAError> createTrueColorFile(const CreateFileFromSurfaceParams& 
     }
 
     core::FileDesc file = std::move(openRes.value());
+    defer { core::fileClose(file); };
 
     Header header = {};
 
-    header.imageType = TGAByte(params.imageType);
-    header.setWidth(u16(params.surface.width));
-    header.setHeight(u16(params.surface.height));
-    header.setPixelDepth(u8(pixelFormatBytesPerPixel(params.surface.pixelFormat) * core::BYTE_SIZE));
-    header.setAlphaBits(u8(pixelFormatAlphaBits(params.surface.pixelFormat)));
+    header.imageType = TGAByte(mapping.imageType);
+    header.setWidth(u16(surface.width));
+    header.setHeight(u16(surface.height));
+    header.setPixelDepth(u8(mapping.bytesPerPixel * core::BYTE_SIZE));
+    header.setAlphaBits(u8(mapping.alphaChannelSize));
 
     // Set image origin
-    switch (params.surface.origin) {
+    switch (surface.origin) {
         case Origin::BottomLeft:
             header.setOrigin(0b00);
             break;
@@ -415,13 +419,13 @@ core::expected<TGAError> createTrueColorFile(const CreateFileFromSurfaceParams& 
     }
 
     // Write the content
-    if (auto res = core::fileWrite(file, params.surface.data, addr_size(params.surface.size())); res.hasErr() || res.value() != addr_size(params.surface.size())) {
+    if (auto res = core::fileWrite(file, surface.data, addr_size(surface.size())); res.hasErr() || res.value() != addr_size(surface.size())) {
         logErr_PltErrorCode(res.err());
         return core::unexpected(TGAError::FailedToWriteFile);
     }
 
     // Write the footer if file type is new
-    if (params.fileType == FileType::New) {
+    if (fileType == FileType::New) {
         Footer footer = {};
         core::memcopy(footer.signature, TRUE_VISION_SIGNATURE.data(), TRUE_VISION_SIGNATURE.len());
         if (auto res = core::fileWrite(file, &footer, sizeof(Footer)); res.hasErr() || res.value() != sizeof(Footer)) {
