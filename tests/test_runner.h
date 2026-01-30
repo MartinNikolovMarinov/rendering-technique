@@ -4,7 +4,16 @@
 
 #include <iostream>
 
-const char* passedOrFailedStr(bool passed, bool useAnsiColors);
+namespace detail {
+
+constexpr const char* passedOrFailedStr(bool passed, bool useAnsiColors) {
+    if (useAnsiColors) {
+        return passed ? ANSI_GREEN("PASSED") : ANSI_RED("FAILED");
+    }
+    return passed ? "PASSED" : "FAILED";
+}
+
+} // namespace detail
 
 struct TestRunParams;
 struct TestCreateInfo;
@@ -128,7 +137,7 @@ private:
     }
 
     void endTestGroup(const char* suiteName, i32 returnCode, u64 startTsc, u64 freq) {
-        std::cout << "[SUITE " << passedOrFailedStr(returnCode == 0, useAnsiColors) << "] " << suiteName;
+        std::cout << "[SUITE " << detail::passedOrFailedStr(returnCode == 0, useAnsiColors) << "] " << suiteName;
 
         auto endTsc = core::getPerfCounter();
         auto deltaTimeNs = u64(core::CORE_SECOND * (f64(endTsc - startTsc) / f64(freq)));

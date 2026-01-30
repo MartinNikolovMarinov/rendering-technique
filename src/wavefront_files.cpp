@@ -251,6 +251,9 @@ core::expected<core::vec4f, WavefrontError> parseVertexLine(core::StrView currLi
     Assert(currLine[0] == 'f', "BUG: failed a basic sanity check");
 
     auto parseFaceComponent = [](core::StrView component, Face& face, i32 faceIdx) -> core::expected<WavefrontError> {
+        // FIXME: [BUG] This functions is hard to read and looks wrong.
+        // What happens in cases like this 'f 1/8/9 2/11/50 3/123/99'
+
         core::StrView faceComponents[DIMMENTIONS];
         addr_size faceComponentsCount = 0;
         bool ok = core::split(component, '/', faceComponents, DIMMENTIONS, faceComponentsCount);
@@ -280,13 +283,13 @@ core::expected<core::vec4f, WavefrontError> parseVertexLine(core::StrView currLi
 
     if (componentsCount != DIMMENTIONS - 1) {
         logErr(
-            "TODO: [WAVEFRONT] Only components with {} dimmentions are supported; or maybe never will.",
+            "TODO: [WAVEFRONT] Only components with {} dimmentions are supported.",
             DIMMENTIONS
         );
         return core::unexpected(WavefrontError::InvalidFileFormat);
     }
 
-    // Parse vertex indices
+    // Parse first component
     {
         core::StrView component = {};
         currLine = nextToken(currLine, { ' ' }, component);
@@ -295,10 +298,9 @@ core::expected<core::vec4f, WavefrontError> parseVertexLine(core::StrView currLi
         }
         auto res = parseFaceComponent(component, face, 0);
         if (res.hasErr()) return core::unexpected(res.err());
-        componentsCount--;
     }
 
-    // Parse vertex texture indices
+    // Parse second component
     {
         core::StrView component = {};
         currLine = nextToken(currLine, { ' ' }, component);
@@ -307,10 +309,9 @@ core::expected<core::vec4f, WavefrontError> parseVertexLine(core::StrView currLi
         }
         auto res = parseFaceComponent(component, face, 1);
         if (res.hasErr()) return core::unexpected(res.err());
-        componentsCount--;
     }
 
-    // Parse vertex normal indices
+    // Parse third component
     {
         core::StrView component = {};
         currLine = nextToken(currLine, { ' ', '\n' }, component);
@@ -319,7 +320,6 @@ core::expected<core::vec4f, WavefrontError> parseVertexLine(core::StrView currLi
         }
         auto res = parseFaceComponent(component, face, 2);
         if (res.hasErr()) return core::unexpected(res.err());
-        componentsCount--;
     }
 
     return face;

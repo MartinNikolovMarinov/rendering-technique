@@ -69,7 +69,7 @@ void fillLine(Surface& surface, i32 ax, i32 ay, i32 bx, i32 by, Color color) {
             ? x * surface.pitch + y * surface.bpp()
             : y * surface.pitch + x * surface.bpp();
 
-        // TODO: Is there a branchless way to do this upfront?
+        // TODO: [PERFORMANCE] Is there a branchless way to do this upfront?
         if (0 < idx && idx <= surface.size()) {
             setPixelFn(surface.data, idx, color);
         }
