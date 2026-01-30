@@ -9,14 +9,19 @@
 #include "model.h"
 #include "color.h"
 
-void renderObjFilesToTga(const char** objFiles, i32 objFilesLen, const char* outputPath, const char* outputDepth) {
+void renderObjFilesToTga(
+    const char** objFiles,
+    i32 objFilesLen,
+    const char* outputPath,
+    const char* outputDepth,
+    const char * wireFramePath
+) {
     //==================================================================================================================
     // Initialize Surfaces
     //==================================================================================================================
 
     constexpr addr_size WIDTH = 1024;
     constexpr addr_size HEIGHT = 1024;
-    constexpr bool wireFrameMode = false;
 
     Surface outputSurface;
     {
@@ -34,6 +39,23 @@ void renderObjFilesToTga(const char** objFiles, i32 objFilesLen, const char* out
         };
     }
     defer { outputSurface.free(); };
+
+    Surface wireFrameSurface;
+    {
+        constexpr PixelFormat pixelFormat = PixelFormat::BGR888;
+        constexpr i32 bpp = pixelFormatBytesPerPixel(pixelFormat);
+        static u8 wbuf[WIDTH*HEIGHT*bpp] = {};
+        wireFrameSurface = {
+            .actx = nullptr,
+            .origin = Origin::BottomLeft,
+            .pixelFormat = pixelFormat,
+            .width = WIDTH,
+            .height = HEIGHT,
+            .pitch = WIDTH * bpp,
+            .data = wbuf,
+        };
+    }
+    defer { wireFrameSurface.free(); };
 
     Surface depthBuffer;
     {
@@ -80,23 +102,45 @@ void renderObjFilesToTga(const char** objFiles, i32 objFilesLen, const char* out
     RendererHandle r = rendererInit(actx);
     defer { rendererDestory(r); };
 
-    rendererSetFrameBuffer(r, WIDTH, HEIGHT);
-    rendererSetWireframe(r, wireFrameMode);
+    // Rasterize
+    {
+        rendererSetFrameBuffer(r, WIDTH, HEIGHT);
+        rendererSetWireframe(r, false);
 
-    rendererSetOutput(r, outputSurface);
-    rendererClear(r, BLACK);
+        rendererSetOutput(r, outputSurface);
+        rendererClear(r, BLACK);
 
-    // Clear rendering target surface:
-    for (i32 i = 0; i < objFilesLen; i++) {
-        auto& model = models[addr_size(i)];
+        for (i32 i = 0; i < objFilesLen; i++) {
+            auto& model = models[addr_size(i)];
 
-        rendererBeginFrame(r);
-        {
-            rendererSetVertexBuffer(r, model.vertices);
-            rendererSetIndexBuffer(r, model.faces);
-            rendererCalculateDepthBuffer(r, depthBuffer);
+            rendererBeginFrame(r);
+            {
+                rendererSetVertexBuffer(r, model.vertices);
+                rendererSetIndexBuffer(r, model.faces);
+                rendererCalculateDepthBuffer(r, depthBuffer);
+            }
+            rendererEndFrame(r);
         }
-        rendererEndFrame(r);
+    }
+
+    // Wireframe
+    {
+        rendererSetFrameBuffer(r, WIDTH, HEIGHT);
+        rendererSetWireframe(r, true);
+
+        rendererSetOutput(r, wireFrameSurface);
+        rendererClear(r, BLACK);
+
+        for (i32 i = 0; i < objFilesLen; i++) {
+            auto& model = models[addr_size(i)];
+
+            rendererBeginFrame(r);
+            {
+                rendererSetVertexBuffer(r, model.vertices);
+                rendererSetIndexBuffer(r, model.faces);
+            }
+            rendererEndFrame(r);
+        }
     }
 
     //==================================================================================================================
@@ -107,6 +151,16 @@ void renderObjFilesToTga(const char** objFiles, i32 objFilesLen, const char* out
         TGA::CreateFileFromSurfaceParams params = {
             .surface = outputSurface,
             .path = outputPath,
+            .imageType = 2,
+            .fileType = TGA::FileType::New,
+        };
+        core::Expect(TGA::createFileFromSurface(params));
+        logInfo("Created output file in \"{}\"", outputPath);
+    }
+    {
+        TGA::CreateFileFromSurfaceParams params = {
+            .surface = wireFrameSurface,
+            .path = wireFramePath,
             .imageType = 2,
             .fileType = TGA::FileType::New,
         };
@@ -131,17 +185,21 @@ i32 main() {
         defer { coreShutdown(); };
 
         const char* filesToRender[] = {
-            ASSETS_DIRECTORY "/test_assets/obj/single_file_models/diablo3_pose.obj",
+            // ASSETS_DIRECTORY "/test_assets/obj/single_file_models/diablo3_pose.obj",
 
-            // ASSETS_DIRECTORY "/test_assets/obj/single_file_models/african_head.obj",
+            ASSETS_DIRECTORY "/test_assets/obj/single_file_models/african_head.obj",
 
             // ASSETS_DIRECTORY "/test_assets/obj/multipart/body.obj",
             // ASSETS_DIRECTORY "/test_assets/obj/multipart/head.obj",
             // ASSETS_DIRECTORY "/test_assets/obj/multipart/eyes.obj",
+
+            // ASSETS_DIRECTORY "/test_assets/obj/simple/triangle.obj",
         };
+
         const char* output = OUT_DIRECTORY "/output.tga";
         const char* outputDepth = OUT_DIRECTORY "/output-depth.tga";
-        renderObjFilesToTga(filesToRender, CORE_C_ARRLEN(filesToRender), output, outputDepth);
+        const char* wireFrameOutput = OUT_DIRECTORY "/output-wire.tga";
+        renderObjFilesToTga(filesToRender, CORE_C_ARRLEN(filesToRender), output, outputDepth, wireFrameOutput);
     }
     return 0;
 }

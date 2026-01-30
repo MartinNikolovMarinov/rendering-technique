@@ -280,7 +280,7 @@ core::expected<core::vec4f, WavefrontError> parseVertexLine(core::StrView currLi
 
     if (componentsCount != DIMMENTIONS - 1) {
         logErr(
-            "TODO: [WAVEFRONT] Face components with more than {} dimensions are not supported yet; or maybe never will.",
+            "TODO: [WAVEFRONT] Only components with {} dimmentions are supported; or maybe never will.",
             DIMMENTIONS
         );
         return core::unexpected(WavefrontError::InvalidFileFormat);

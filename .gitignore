@@ -1,6 +1,8 @@
 build
 .cache
 
+assets/test_assets
+
 .vscode/*
 !vscode/
 !vscode/launch.json
