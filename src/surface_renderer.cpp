@@ -20,6 +20,8 @@ constexpr inline void setPixelRaw_GRAYA88(u8* data, i32 idx, Color color);
 
 constexpr inline SetPixelFn pickSetPixelFunction(PixelFormat pixelFormat);
 
+void fillPixelGuarded(Surface& surface, i32 x, i32 y, Color color);
+
 } // namespace
 
 void fillPixel(Surface& surface, i32 x, i32 y, Color color) {
@@ -34,12 +36,11 @@ void fillPixel(Surface& surface, i32 x, i32 y, Color color) {
     setPixelFn(surface.data, idx, color);
 }
 
-
 void fillLine(Surface& surface, i32 ax, i32 ay, i32 bx, i32 by, Color color) {
     Assert(surface.data != nullptr, "surface data is null");
-    Assert(ax >= 0 && ay >= 0 && bx >= 0 && by >= 0, "line start/end out of bounds (negative)");
-    Assert(ax < surface.width && bx < surface.width, "line x out of bounds");
-    Assert(ay < surface.height && by < surface.height, "line y out of bounds");
+    // Assert(ax >= 0 && ay >= 0 && bx >= 0 && by >= 0, "line start/end out of bounds (negative)");
+    // Assert(ax < surface.width && bx < surface.width, "line x out of bounds");
+    // Assert(ay < surface.height && by < surface.height, "line y out of bounds");
     Assert(surface.bpp() > 0, "invalid bytes-per-pixel");
 
     SetPixelFn setPixelFn = pickSetPixelFunction(surface.pixelFormat);
@@ -60,20 +61,23 @@ void fillLine(Surface& surface, i32 ax, i32 ay, i32 bx, i32 by, Color color) {
 
     i32 y = ay;
     i32 ierror = 0;
+    i32 dty2 = core::absGeneric(by - ay) * 2;
+    i32 dtx2 = (bx - ax) * 2;
+    i32 ydir = by > ay ? 1 : -1;
     for (i32 x = ax; x <= bx; x++) {
-        if (transpose) {
-            i32 idx = x * surface.pitch + y * surface.bpp();
-            setPixelFn(surface.data, idx, color);
-        }
-        else {
-            i32 idx = y * surface.pitch + x * surface.bpp();
+        i32 idx = (transpose)
+            ? x * surface.pitch + y * surface.bpp()
+            : y * surface.pitch + x * surface.bpp();
+
+        // TODO: Is there a branchless way to do this upfront?
+        if (0 < idx && idx <= surface.size()) {
             setPixelFn(surface.data, idx, color);
         }
 
-        ierror += i32(2 * core::absGeneric(by - ay));
+        ierror += dty2;
         if (ierror > bx - ax) {
-            y += by > ay ? 1 : -1;
-            ierror -= 2 * (bx-ax);
+            y += ydir;
+            ierror -= dtx2;
         }
     }
 }
@@ -103,16 +107,24 @@ void strokeRect(Surface& surface, i32 x, i32 y, Color color, i32 width, i32 heig
     fillLine(surface, x, endY, x, y, color);
 }
 
+//======================================================================================================================
+// Triangle Rendering
+//======================================================================================================================
+
 namespace {
 
 void fillTriangleBarycentric(
     Surface& surface,
-    const Surface& depthBuffer,
+    const Surface* depthBuffer,
     const core::vec3i& a, const core::vec3i& b, const core::vec3i& c,
     const Color& colorA, const Color& colorB, const Color& colorC,
     f32 holeInsetRatio
 ) {
+    Assert(depthBuffer && surface.width == depthBuffer->width);
+    Assert(depthBuffer && surface.height == depthBuffer->height);
+
     core::Bbox2D<i32> bbox = core::calcTriangleBBox(a.xy(), b.xy(), c.xy());
+    bbox.clampTo(0, surface.width - 1, 0, surface.height - 1);
 
     f32 totalArea = core::calcTriangleAreaF32(a.xy(), b.xy(), c.xy());
     if (core::absGeneric(totalArea) < 1) {
@@ -133,15 +145,19 @@ void fillTriangleBarycentric(
             }
 
             // Check point agains depth buffer:
-            u8 z = u8(alpha * f32(a.z()) + beta * f32(b.z()) + gamma * f32(c.z()));
-            i32 idxInDepthBuffer = y * depthBuffer.pitch + x * depthBuffer.bpp();
-            u8 depth = depthBuffer.data[idxInDepthBuffer];
-            if (z < depth) {
-                continue;
+            if (depthBuffer) {
+                u8 z = u8(alpha * f32(a.z()) + beta * f32(b.z()) + gamma * f32(c.z()));
+                i32 idxInDepthBuffer = y * depthBuffer->pitch + x * depthBuffer->bpp();
+                u8 depth = depthBuffer->data[idxInDepthBuffer];
+                if (z < depth) {
+                    continue;
+                }
             }
 
+            // If a hole ratio is provided don't render pixels inside the hole:
             if (holeInsetRatio > 0.0f) {
-                f32 t = holeInsetRatio / 3.0f;
+                constexpr f32 barycentricComponentCount = 3.0f;
+                f32 t = holeInsetRatio / barycentricComponentCount;
                 if (alpha >= t && beta >= t && gamma >= t) {
                     continue;
                 }
@@ -166,6 +182,7 @@ void fillDepthBuffer(
     const core::vec3i& a, const core::vec3i& b, const core::vec3i& c
 ) {
     core::Bbox2D<i32> bbox = core::calcTriangleBBox(a.xy(), b.xy(), c.xy());
+    bbox.clampTo(0, depthBuffer.width - 1, 0, depthBuffer.height - 1);
 
     f32 totalArea = core::calcTriangleAreaF32(a.xy(), b.xy(), c.xy());
     if (core::absGeneric(totalArea) < 1) {
@@ -198,6 +215,26 @@ void fillDepthBuffer(
     }
 }
 
+void strokeTriangleInset(
+    Surface& surface,
+    const Surface* depthBuffer,
+    const core::vec3i& a, const core::vec3i& b, const core::vec3i& c,
+    const Color& colorA, const Color& colorB, const Color& colorC,
+    f32 boarderRatio
+) {
+    f32 clampedRatio = core::core_max(0.0f, core::core_min(boarderRatio, 1.0f));
+    fillTriangleBarycentric(surface, depthBuffer, a, b, c, colorA, colorB, colorC, clampedRatio);
+}
+
+void fillTriangle(
+    Surface& surface,
+    const Surface* depthBuffer,
+    const core::vec3i& a, const core::vec3i& b, const core::vec3i& c,
+    const Color& colorA, const Color& colorB, const Color& colorC
+) {
+    fillTriangleBarycentric(surface, depthBuffer, a, b, c, colorA, colorB, colorC, 0.0f);
+}
+
 } // namespace
 
 void strokeTriangleFast(
@@ -212,22 +249,20 @@ void strokeTriangleFast(
 
 void strokeTriangleInset(
     Surface& surface,
-    const Surface& depthBuffer,
     const core::vec3i& a, const core::vec3i& b, const core::vec3i& c,
     const Color& colorA, const Color& colorB, const Color& colorC,
     f32 boarderRatio
 ) {
     f32 clampedRatio = core::core_max(0.0f, core::core_min(boarderRatio, 1.0f));
-    fillTriangleBarycentric(surface, depthBuffer, a, b, c, colorA, colorB, colorC, clampedRatio);
+    fillTriangleBarycentric(surface, nullptr, a, b, c, colorA, colorB, colorC, clampedRatio);
 }
 
 void fillTriangle(
     Surface& surface,
-    const Surface& depthBuffer,
     const core::vec3i& a, const core::vec3i& b, const core::vec3i& c,
     const Color& colorA, const Color& colorB, const Color& colorC
 ) {
-    fillTriangleBarycentric(surface, depthBuffer, a, b, c, colorA, colorB, colorC, 0.0f);
+    fillTriangleBarycentric(surface, nullptr, a, b, c, colorA, colorB, colorC, 0.0f);
 }
 
 //======================================================================================================================
@@ -236,11 +271,30 @@ void fillTriangle(
 
 namespace {
 
-constexpr inline core::vec3i orthogonalProjection(core::vec4f normVec, i32 width, i32 height) {
+constexpr inline core::vec3i orthogonalProjection(core::vec3f normVec, i32 width, i32 height) {
     i32 x = i32((normVec.x() + 1.0f) * (f32(width - 1)/2.0f));
     i32 y = i32((normVec.y() + 1.0f) * (f32(height - 1)/2.0f));
     i32 z = i32((normVec.z() + 1.0f) * (255.f/2.0f));
-    return core::v(x, y, z);
+    auto ret = core::v(x, y, z);
+    return ret;
+}
+
+inline core::vec3f rot(core::vec3f v, core::radians angle) {
+    auto a = angle.value;
+    core::mat3x3f Ry = core::mat<3, 3, f32>(
+        core::v(core::cos(a), 0.f, core::sin(a)),
+        core::v(0.f, 1.f, 0.f),
+        core::v(-core::sin(a), 0.f, core::cos(a))
+    );
+    Ry = core::mtranspose(Ry);
+    auto ret = Ry*v;
+    return ret;
+}
+
+constexpr inline core::vec3f persp(core::vec3f v) {
+    constexpr f32 c = 3.f;
+    auto ret = v / (1.0f-v.z() / c);
+    return ret;
 }
 
 }
@@ -270,6 +324,7 @@ RendererHandle rendererInit(core::AllocatorContext& actx) {
 
 void rendererDestory(RendererHandle r) {
     if (r && r->actx) {
+        // Destory logic below:
 
         // Finalize free the renderer itself and zero-out all fields:
         r->actx->free(r, 1, sizeof(Renderer));
@@ -327,9 +382,13 @@ void rendererCalculateDepthBuffer(RendererHandle r, Surface& depthBuffer) {
             core::vec4f& v2 = vertices[f[1]];
             core::vec4f& v3 = vertices[f[2]];
 
-            core::vec3i a = orthogonalProjection(v1, width, height);
-            core::vec3i b = orthogonalProjection(v2, width, height);
-            core::vec3i c = orthogonalProjection(v3, width, height);
+            // TODO: This projections is hardcoded for testing:
+            core::vec3i a = orthogonalProjection(persp(rot(v1.xyz(), core::degToRad(30))), width, height);
+            core::vec3i b = orthogonalProjection(persp(rot(v2.xyz(), core::degToRad(30))), width, height);
+            core::vec3i c = orthogonalProjection(persp(rot(v3.xyz(), core::degToRad(30))), width, height);
+            // core::vec3i a = orthogonalProjection(v1.xyz(), width, height);
+            // core::vec3i b = orthogonalProjection(v2.xyz(), width, height);
+            // core::vec3i c = orthogonalProjection(v3.xyz(), width, height);
 
             fillDepthBuffer(depthBuffer, a, b, c);
         }
@@ -355,21 +414,25 @@ void rendererEndFrame(RendererHandle r) {
         core::vec4f& v2 = vertices[f[1]];
         core::vec4f& v3 = vertices[f[2]];
 
-        core::vec3i a = orthogonalProjection(v1, width, height);
-        core::vec3i b = orthogonalProjection(v2, width, height);
-        core::vec3i c = orthogonalProjection(v3, width, height);
+        // TODO: This projections is hardcoded for testing:
+        core::vec3i a = orthogonalProjection(persp(rot(v1.xyz(), core::degToRad(30))), width, height);
+        core::vec3i b = orthogonalProjection(persp(rot(v2.xyz(), core::degToRad(30))), width, height);
+        core::vec3i c = orthogonalProjection(persp(rot(v3.xyz(), core::degToRad(30))), width, height);
+        // core::vec3i a = orthogonalProjection(v1.xyz(), width, height);
+        // core::vec3i b = orthogonalProjection(v2.xyz(), width, height);
+        // core::vec3i c = orthogonalProjection(v3.xyz(), width, height);
 
         if (wireframe) {
             strokeTriangleFast(surface, a.xy(), b.xy(), c.xy(), RED);
-            fillPixel(surface, a.x(), a.y(), WHITE);
-            fillPixel(surface, b.x(), b.y(), WHITE);
-            fillPixel(surface, c.x(), c.y(), WHITE);
+            fillPixelGuarded(surface, a.x(), a.y(), WHITE);
+            fillPixelGuarded(surface, b.x(), b.y(), WHITE);
+            fillPixelGuarded(surface, c.x(), c.y(), WHITE);
         }
         else {
             Color color1 = randomColor();
             Color color2 = randomColor();
             Color color3 = randomColor();
-            fillTriangle(surface, depthBuffer, a, b, c, color1, color2, color3);
+            fillTriangle(surface, &depthBuffer, a, b, c, color1, color2, color3);
         }
     }
 }
@@ -445,6 +508,13 @@ constexpr inline SetPixelFn pickSetPixelFunction(PixelFormat pixelFormat) {
             Assert(false, "invalid pixel format");
             return nullptr;
     }
+}
+
+void fillPixelGuarded(Surface& surface, i32 x, i32 y, Color color) {
+    if (0 > x || x >= surface.width) return; // x ∈ [0, width)
+    if (0 > y || y >= surface.height) return; // y ∈ [0, height)
+
+    fillPixel(surface, x, y, color);
 }
 
 } // namespace

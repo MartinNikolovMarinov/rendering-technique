@@ -27,14 +27,12 @@ void strokeTriangleFast(
 );
 void strokeTriangleInset(
     Surface& surface,
-    const Surface& depthBuffer,
     const core::vec3i& a, const core::vec3i& b, const core::vec3i& c,
     const Color& colorA, const Color& colorB, const Color& colorC,
     f32 boarderRatio
 );
 void fillTriangle(
     Surface& surface,
-    const Surface& depthBuffer,
     const core::vec3i& a, const core::vec3i& b, const core::vec3i& c,
     const Color& colorA, const Color& colorB, const Color& colorC
 );

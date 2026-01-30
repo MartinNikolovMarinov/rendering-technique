@@ -100,8 +100,8 @@ void writeSurfaceToFile(const char* path) {
     depthBuffer.pitch = depthBuffer.width * bpp;
     depthBuffer.data = buf2;
 
-    fillTriangle(s, depthBuffer, a, b, c, RED, GREEN, BLUE);
-    strokeTriangleInset(s, depthBuffer, a, b, c, BLUE, RED, GREEN, scale);
+    fillTriangle(s, a, b, c, RED, GREEN, BLUE);
+    strokeTriangleInset(s, a, b, c, BLUE, RED, GREEN, scale);
 
     // Outline inner triangle
     {
