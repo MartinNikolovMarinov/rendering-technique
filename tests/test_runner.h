@@ -4,6 +4,11 @@
 
 #include <iostream>
 
+// TODO: [TEST_RUNNER] Implement these as needed:
+//  * Add a beforeAll and afterAll functions on the test group.
+//  * Add a beforeEach and afterEach functions on the test group.
+//  * Add a before and after functions for specific tests.
+
 namespace detail {
 
 constexpr const char* passedOrFailedStr(bool passed, bool useAnsiColors) {
@@ -25,7 +30,7 @@ using TestFunction = i32 (*)(const TestRunParams& input);
 struct TestRunParams {
     const char* name = nullptr;
     core::AllocatorContext* actx = nullptr;
-    void* userData = nullptr;
+    const void* userData = nullptr;
 };
 
 struct TestCreateInfo {
@@ -34,7 +39,7 @@ struct TestCreateInfo {
     bool expectZeroAllocationsInGlobalAllocator = true;
     bool only = false;
     bool skip = false;
-    void* userData = nullptr;
+    const void* userData = nullptr;
 };
 
 struct TestGroupCreateInfo {

@@ -64,3 +64,20 @@ i32 runTgaTestsSuite(const TestRunParams& params) {
     if (validTrueImageFilesCanBeReadTest(params) != 0) { return -1; }
     return 0;
 }
+
+i32 runRenderSingleCenteredTriangle(const TestRunParams& params) {
+    // TODO: Write this test..
+    // 1. I should write a before each in the group for all these tests to clean the temporary directory for snapshots.
+    // 2. Read the input wavefront file and parse it.
+    // 3. Render it to the temporary output directory as tga.
+    // 4. Store the snapshots if this is a request for update.
+    // 5. Or verify that they match bit-by-bit. (I can't think of a less painful way to do this sadly ..)
+
+    auto sinfo = reinterpret_cast<const TestSnapshotInfo*>(params.userData);
+
+    std::cout << "WAVEFRONT INPUT FILE: " << sinfo->wavefrontInputFile << std::endl;
+    std::cout << "SNAPSHOT DIRECTORY: " << sinfo->snapshotDirectory << std::endl;
+    std::cout << "SHOULD UPDATE SNAPSHOTS: " << sinfo->updateSnapshots << std::endl;
+
+    return 0;
+}

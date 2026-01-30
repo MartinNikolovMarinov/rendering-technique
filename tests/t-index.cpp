@@ -1,7 +1,13 @@
 #include "t-index.h"
 #include "test_runner.h"
 
+constexpr const char* SNAPSHOT_DIRECTORY = TEST_ASSETS_DIRECTORY "/snapshots";
+
 i32 runAllTests() {
+    //==================================================================================================================
+    // Initial Setup Code
+    //==================================================================================================================
+
     coreInit(core::LogLevel::L_DEBUG);
     defer { coreShutdown(); };
 
@@ -12,14 +18,30 @@ i32 runAllTests() {
         testAllocatorsStore[i] = i;
     }
 
-    TestRunner<10> testRunner = {};
-    testRunner.useAnsiColors = true;
+    //==================================================================================================================
+    // Table Definitions for all Tests
+    //==================================================================================================================
 
-    constexpr TestCreateInfo wavefrontTests[] = {
+    constexpr TestSnapshotInfo testSnapshotInfos[] = {
+        {
+            .wavefrontInputFile = TEST_ASSETS_DIRECTORY "/obj/01_triangle.obj",
+            .snapshotDirectory = SNAPSHOT_DIRECTORY,
+            .updateSnapshots = false
+        }
+    };
+
+    TestCreateInfo wavefrontTests[] = {
         { .name = FN_NAME_TO_CPTR(runWavefrontTestsSuite), .testFunction = runWavefrontTestsSuite },
     };
-    constexpr TestCreateInfo tgaTests[] = {
+    TestCreateInfo tgaTests[] = {
         { .name = FN_NAME_TO_CPTR(runTgaTestsSuite), .testFunction = runTgaTestsSuite },
+    };
+    TestCreateInfo snapshotTests[] = {
+        {
+            .name = FN_NAME_TO_CPTR(runRenderSingleCenteredTriangle),
+            .testFunction = runRenderSingleCenteredTriangle,
+            .userData = &testSnapshotInfos[0]
+        },
     };
 
     struct TestGroupTableEntry {
@@ -29,14 +51,25 @@ i32 runAllTests() {
 
     TestGroupTableEntry testGroups[] = {
         {
-            .group = { .name = "Wavefront Test Suite", .allocatorsToUse = allTestAllocators },
+            .group = { .name = "Wavefront Tests Suite", .allocatorsToUse = allTestAllocators },
             .tests = { wavefrontTests, CORE_C_ARRLEN(wavefrontTests) }
         },
         {
-            .group = { .name = "TGA Test Suite", .allocatorsToUse = allTestAllocators },
+            .group = { .name = "TGA Tests Suite", .allocatorsToUse = allTestAllocators },
             .tests = { tgaTests, CORE_C_ARRLEN(tgaTests) }
         },
+        {
+            .group = { .name = "Snapshot Tests Suite", .allocatorsToUse = allTestAllocators },
+            .tests = { snapshotTests, CORE_C_ARRLEN(snapshotTests) }
+        },
     };
+
+    //==================================================================================================================
+    // Initialize and Start the Test Runner
+    //==================================================================================================================
+
+    TestRunner<10> testRunner = {};
+    testRunner.useAnsiColors = true;
 
     for (auto& entry : testGroups) {
         auto& group = testRunner.addTestGroup(entry.group);
