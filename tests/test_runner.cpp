@@ -62,12 +62,16 @@ TestGroup& TestGroup::addTest(const TestCreateInfo& info) {
 
             AssertFmt(test.testRunParams.actx, "Test '{}' has no allocator context", test.testRunParams.name);
 
+            // IMPORTANT:
+            // This is the exact correct spot for before each, because it might use the default allocator at some point,
+            // which might cause some Zero Allocations expectations to fail. DO NOT MOVE!
+            // Memory leaks in before each will also be detected; I consider this a feature not a bug.
+            if (beforeEach) beforeEach(test.testRunParams);
+
             auto allocatedBefore = test.testRunParams.actx->totalMemoryAllocated();
             auto inUseBefore = test.testRunParams.actx->inUseMemory();
             auto& globalActx = core::getAllocator(core::DEFAULT_ALLOCATOR_ID);
             auto globalAllocatedBefore = globalActx.totalMemoryAllocated();
-
-            if (beforeEach) beforeEach(test.testRunParams);
 
             u64 startTsc = beginTest(test);
             i32 testResult = test.testFunction(test.testRunParams);

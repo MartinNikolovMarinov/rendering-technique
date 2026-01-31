@@ -2,6 +2,7 @@
 #include "test_runner.h"
 
 constexpr const char* SNAPSHOT_DIRECTORY = TEST_ASSETS_DIRECTORY "/snapshots";
+constexpr const char* TEST_OUTPUT_DIRECTORY = TEST_ASSETS_DIRECTORY "/test_output_directory";
 
 i32 runAllTests() {
     //==================================================================================================================
@@ -24,7 +25,7 @@ i32 runAllTests() {
 
     constexpr TestSnapshotInfo testSnapshotInfos[] = {
         {
-            .wavefrontInputFile = TEST_ASSETS_DIRECTORY "/obj/01_triangle.obj",
+            .wavefrontInputFile = TEST_ASSETS_DIRECTORY "/snapshot_tests_input_files/01_triangle.obj",
             .snapshotDirectory = SNAPSHOT_DIRECTORY,
             .updateSnapshots = false
         }
@@ -63,15 +64,64 @@ i32 runAllTests() {
             .group = {
                 .name = "Snapshot Tests Suite",
                 .allocatorsToUse = allTestAllocators,
-                .beforeAll = [] (const TestGroupRunParams& params) {
-                    std::cout << "\t\t Verify Directory Exists and Is Clean for '" << params.groupName << "'" << std::endl;
+                .beforeAll = [] (const TestGroupRunParams&) {
+                    // Create the test output directory if it does not exist.
+                    bool exists = core::Unpack(core::fileExists(TEST_OUTPUT_DIRECTORY));
+                    if (!exists) {
+                        core::Expect(core::dirCreate(TEST_OUTPUT_DIRECTORY));
+                    }
+
+                    // Verify snapshot direcory exists:
+                    exists = core::Unpack(core::fileExists(SNAPSHOT_DIRECTORY));
+                    AssertFmt(
+                        exists,
+                        "Before allfailed because '{}' does not exist; provided path = '{}'",
+                        FN_NAME_TO_CPTR(SNAPSHOT_DIRECTORY), SNAPSHOT_DIRECTORY
+                    );
+                },
+                .afterAll = [](const TestGroupRunParams&) {
+                    bool exists = core::Unpack(core::fileExists(TEST_OUTPUT_DIRECTORY));
+                    AssertFmt(
+                        exists,
+                        "{} should exist on after all function call; provided path = '{}'",
+                        FN_NAME_TO_CPTR(TEST_OUTPUT_DIRECTORY), TEST_OUTPUT_DIRECTORY
+                    );
+
+                    // Delete output directroy
+                    // FIXME: Uncomment this later
+                    // core::Expect(
+                    //     core::dirDeleteRec<core::DEFAULT_ALLOCATOR_ID>(TEST_OUTPUT_DIRECTORY),
+                    //     "AfterAll failed to delete {}",
+                    //     FN_NAME_TO_CPTR(TEST_OUTPUT_DIRECTORY)
+                    // );
                 },
                 .beforeEach = [] (const TestRunParams& params) {
-                    std::cout << "\t\t Verify Directory Clean for '" << params.name << "'" << std::endl;
+                    auto sinfo = reinterpret_cast<const TestSnapshotInfo*>(params.userData);
+                    const char* wavefrontInputFile = sinfo->wavefrontInputFile;
+                    const char* testName = params.name;
+
+                    bool exists = core::Unpack(core::fileExists(wavefrontInputFile));
+                    AssertFmt(
+                        exists,
+                        "BeforeEach failed for test '{}'; reason: wavefront file '{}' does not exist!",
+                        testName,
+                        wavefrontInputFile
+                    );
+
+                    core::StaticPathBuilder<512> pathBuilder;
+                    pathBuilder.setDirPath(TEST_OUTPUT_DIRECTORY);
+                    pathBuilder.setFilePart(testName);
+                    core::Expect(
+                        core::dirCreate(pathBuilder.fullPath()),
+                        "BeforeEach for test '{}' failed; reason: failed to create file '{}'",
+                        testName,
+                        pathBuilder.fullPath()
+                    );
+                    pathBuilder.reset();
                 },
-                .afterEach = [] (const TestRunParams& params) {
-                    std::cout << "\t\t Clean Directory for '" << params.name << "'" << std::endl;
-                },
+                // .afterEach = [] (const TestRunParams& params) {
+                //     std::cout << "\t\t Clean Directory for '" << params.name << "'" << std::endl;
+                // },
             },
             .tests = { snapshotTests, CORE_C_ARRLEN(snapshotTests) }
         },

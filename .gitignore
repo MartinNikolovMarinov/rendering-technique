@@ -3,6 +3,8 @@ build
 
 assets/test_assets
 
+tests/test_assets/test_output_directory
+
 .vscode/*
 !vscode/
 !vscode/launch.json
