@@ -73,11 +73,7 @@ i32 runRenderSingleCenteredTriangle(const TestRunParams& params) {
     // 4. Store the snapshots if this is a request for update.
     // 5. Or verify that they match bit-by-bit. (I can't think of a less painful way to do this sadly ..)
 
-    auto sinfo = reinterpret_cast<const TestSnapshotInfo*>(params.userData);
-
-    std::cout << "WAVEFRONT INPUT FILE: " << sinfo->wavefrontInputFile << std::endl;
-    std::cout << "SNAPSHOT DIRECTORY: " << sinfo->snapshotDirectory << std::endl;
-    std::cout << "SHOULD UPDATE SNAPSHOTS: " << sinfo->updateSnapshots << std::endl;
+    [[maybe_unused]] auto sinfo = reinterpret_cast<const TestSnapshotInfo*>(params.userData);
 
     return 0;
 }

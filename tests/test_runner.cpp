@@ -1,5 +1,9 @@
 #include "test_runner.h"
 
+namespace {
+void skippedTest(const char* testName, bool useAnsiColors);
+} // namespace
+
 TestGroup& TestGroup::addTest(const TestCreateInfo& info) {
     AssertFmt(info.testFunction, "Trying to create test '{}' without a test function!", info.name);
     Test test = {
@@ -25,6 +29,15 @@ TestGroup& TestGroup::addTest(const TestCreateInfo& info) {
         return t.only == true && t.skip == false;
     });
 
+    auto groupHookRunParams = TestGroupRunParams {
+        .groupName = name,
+        .allocatorsToUse = allocatorsToUse,
+        .testsCount = i32(tests.len()),
+    };
+
+    if (beforeAll) beforeAll(groupHookRunParams);
+    defer { if (afterAll) afterAll(groupHookRunParams); };
+
     for (addr_size i = 0; i < tests.len(); i++) {
         Test& test = tests[i];
 
@@ -32,9 +45,11 @@ TestGroup& TestGroup::addTest(const TestCreateInfo& info) {
 
         // At least one test has an only flag set, therfore ignore tests that have 'only=false'.
         if (hasOnly && !test.only) {
+            skippedTest(test.testRunParams.name, useAnsiColors);
             continue;
         }
         if (test.skip) {
+            skippedTest(test.testRunParams.name, useAnsiColors);
             continue;
         }
 
@@ -52,9 +67,13 @@ TestGroup& TestGroup::addTest(const TestCreateInfo& info) {
             auto& globalActx = core::getAllocator(core::DEFAULT_ALLOCATOR_ID);
             auto globalAllocatedBefore = globalActx.totalMemoryAllocated();
 
+            if (beforeEach) beforeEach(test.testRunParams);
+
             u64 startTsc = beginTest(test);
             i32 testResult = test.testFunction(test.testRunParams);
             endTest(test, testResult, useAnsiColors, allocatedBefore, inUseBefore, globalAllocatedBefore, startTsc, freq);
+
+            if (afterEach) afterEach(test.testRunParams);
 
             AssertFmt(testResult == 0, "Test {} failed", test.testRunParams.name);
 
@@ -146,3 +165,15 @@ void TestGroup::endTest(
 
     std::cout << " ]" << std::endl;
 }
+
+namespace {
+
+void skippedTest(const char* testName, bool useAnsiColors) {
+    std::cout
+        << "\t"
+        << (useAnsiColors ? ANSI_YELLOW("[TEST SKIPPED] ") : "[TEST SKIPPED] ")
+        << testName
+        << std::endl;
+}
+
+} // namespace

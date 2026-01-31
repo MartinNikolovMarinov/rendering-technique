@@ -5,9 +5,19 @@
 #include <iostream>
 
 // TODO: [TEST_RUNNER] Implement these as needed:
-//  * Add a beforeAll and afterAll functions on the test group.
-//  * Add a beforeEach and afterEach functions on the test group.
 //  * Add a before and after functions for specific tests.
+
+struct TestRunParams;
+struct TestGroupRunParams;
+struct TestCreateInfo;
+struct TestGroup;
+template<addr_size TTestGroupCount> struct TestRunner;
+
+using TestFunction = i32 (*)(const TestRunParams& params);
+using BeforeAllTestsFunction = void (*)(const TestGroupRunParams& params);
+using AfterAllTestsFunction = void (*)(const TestGroupRunParams& params);
+using BeforeEachTestFunction = void (*)(const TestRunParams& params);
+using AfterEachTestFunction = void (*)(const TestRunParams& params);
 
 namespace detail {
 
@@ -20,17 +30,16 @@ constexpr const char* passedOrFailedStr(bool passed, bool useAnsiColors) {
 
 } // namespace detail
 
-struct TestRunParams;
-struct TestCreateInfo;
-struct TestGroup;
-template<addr_size TTestGroupCount> struct TestRunner;
-
-using TestFunction = i32 (*)(const TestRunParams& input);
-
 struct TestRunParams {
     const char* name = nullptr;
     core::AllocatorContext* actx = nullptr;
     const void* userData = nullptr;
+};
+
+struct TestGroupRunParams {
+    const char* groupName = nullptr;
+    core::Memory<const core::AllocatorId> allocatorsToUse = {};
+    i32 testsCount = 0;
 };
 
 struct TestCreateInfo {
@@ -47,11 +56,17 @@ struct TestGroupCreateInfo {
     core::Memory<const core::AllocatorId> allocatorsToUse = {};
     bool groupOnly = false;
     bool groupSkip = false;
+    BeforeAllTestsFunction beforeAll = nullptr;
+    AfterAllTestsFunction afterAll = nullptr;
+    BeforeEachTestFunction beforeEach = nullptr;
+    AfterEachTestFunction afterEach = nullptr;
 };
 
 struct TestGroup {
 
 private:
+    template<addr_size TTestGroupCount> friend struct TestRunner;
+
     struct Test {
         i32 testNumber;
 
@@ -66,12 +81,6 @@ private:
     };
 
 public:
-    bool groupOnly = false;
-    bool groupSkip = false;
-    const char* name = nullptr;
-
-    core::Memory<const core::AllocatorId> allocatorsToUse;
-    core::ArrStatic<Test, 255> tests;
 
     TestGroup& addTest(const TestCreateInfo& info);
     [[nodiscard]] i32 runTestGroup(i32& testCounter, bool useAnsiColors, u64 freq);
@@ -88,21 +97,34 @@ private:
         u64 startTsc,
         u64 freq
     );
+
+    bool groupOnly = false;
+    bool groupSkip = false;
+    const char* name = nullptr;
+    BeforeAllTestsFunction beforeAll = nullptr;
+    AfterAllTestsFunction afterAll = nullptr;
+    BeforeEachTestFunction beforeEach = nullptr;
+    AfterEachTestFunction afterEach = nullptr;
+
+    core::Memory<const core::AllocatorId> allocatorsToUse;
+    core::ArrStatic<Test, 255> tests;
 };
 
 template<addr_size TTestGroupCount>
 struct TestRunner {
-    core::ArrStatic<TestGroup, TTestGroupCount> testGroups;
     bool useAnsiColors = true;
 
-    [[nodiscard]] TestGroup& addTestGroup(const TestGroupCreateInfo& info) {
-        TestGroup testGroup = {
-            .groupOnly = info.groupOnly,
-            .groupSkip = info.groupSkip,
-            .name = info.name,
-            .allocatorsToUse = info.allocatorsToUse,
-            .tests = {}
-        };
+    TestGroup& addTestGroup(const TestGroupCreateInfo& info) {
+        TestGroup testGroup = {};
+        testGroup.groupOnly = info.groupOnly;
+        testGroup.groupSkip = info.groupSkip;
+        testGroup.name = info.name;
+        testGroup.beforeAll = info.beforeAll;
+        testGroup.afterAll = info.afterAll;
+        testGroup.beforeEach = info.beforeEach;
+        testGroup.afterEach = info.afterEach;
+        testGroup.allocatorsToUse = info.allocatorsToUse;
+        testGroup.tests = {};
         testGroups.push(std::move(testGroup));
         return testGroups.last();
     }
@@ -115,15 +137,17 @@ struct TestRunner {
             return t.groupOnly == true && t.groupSkip == false;
         });
 
-        i32 testCounter = 0;
+        i32 testCounter = 1;
         for (addr_size i = 0; i < testGroups.len(); i++) {
             TestGroup& testGroup = testGroups[i];
 
             // At least one test has an only flag set, therfore ignore tests that have 'only=false'.
             if (hasOnly && !testGroup.groupOnly) {
+                skippedTestGroup(testGroup.name);
                 continue;
             }
             if (testGroup.groupSkip) {
+                skippedTestGroup(testGroup.name);
                 continue;
             }
 
@@ -136,6 +160,13 @@ struct TestRunner {
     }
 
 private:
+    void skippedTestGroup(const char* suiteName) {
+        std::cout
+            << (useAnsiColors ? ANSI_YELLOW("[SUITE SKIPPED] ") : "[SUITE SKIPPED] ")
+            << suiteName
+            << std::endl;
+    }
+
     u64 beginTestGroup(const char* suiteName) {
         std::cout << "[SUITE RUNNING] " << suiteName << std::endl;
         return core::getPerfCounter();
@@ -154,4 +185,6 @@ private:
 
         std::cout << std::endl;
     }
+
+    core::ArrStatic<TestGroup, TTestGroupCount> testGroups;
 };

@@ -35,6 +35,7 @@ i32 runAllTests() {
     };
     TestCreateInfo tgaTests[] = {
         { .name = FN_NAME_TO_CPTR(runTgaTestsSuite), .testFunction = runTgaTestsSuite },
+        { .name = FN_NAME_TO_CPTR(runTgaTestsSuite), .testFunction = runTgaTestsSuite },
     };
     TestCreateInfo snapshotTests[] = {
         {
@@ -59,7 +60,19 @@ i32 runAllTests() {
             .tests = { tgaTests, CORE_C_ARRLEN(tgaTests) }
         },
         {
-            .group = { .name = "Snapshot Tests Suite", .allocatorsToUse = allTestAllocators },
+            .group = {
+                .name = "Snapshot Tests Suite",
+                .allocatorsToUse = allTestAllocators,
+                .beforeAll = [] (const TestGroupRunParams& params) {
+                    std::cout << "\t\t Verify Directory Exists and Is Clean for '" << params.groupName << "'" << std::endl;
+                },
+                .beforeEach = [] (const TestRunParams& params) {
+                    std::cout << "\t\t Verify Directory Clean for '" << params.name << "'" << std::endl;
+                },
+                .afterEach = [] (const TestRunParams& params) {
+                    std::cout << "\t\t Clean Directory for '" << params.name << "'" << std::endl;
+                },
+            },
             .tests = { snapshotTests, CORE_C_ARRLEN(snapshotTests) }
         },
     };
