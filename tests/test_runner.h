@@ -4,9 +4,6 @@
 
 #include <iostream>
 
-// TODO: [TEST_RUNNER] Implement these as needed:
-//  * Add a before and after functions for specific tests.
-
 struct TestRunParams;
 struct TestGroupRunParams;
 struct TestCreateInfo;

@@ -33,12 +33,14 @@ i32 facesAreEqual(const WavefrontObj::Face& f1, const WavefrontObj::Face& f2) {
     return 0;
 }
 
-i32 simpleVerticesTest(const TestRunParams& params) {
-    constexpr const char* vertices1_valid_path = TEST_ASSETS_DIRECTORY "/obj/vertices1_valid.obj";
+} // namespace
+
+i32 runWavefrontVerticesTest(const TestRunParams& params) {
+    const char* filePath = reinterpret_cast<const char*>(params.userData);
 
     auto obj = core::Unpack(
-        Wavefront::loadFile(vertices1_valid_path, WavefrontVersion::VERSION_3_0, *params.actx),
-        "Failed to load file: \"{}\"", vertices1_valid_path
+        Wavefront::loadFile(filePath, WavefrontVersion::VERSION_3_0, *params.actx),
+        "Failed to load file: \"{}\"", filePath
     );
     defer { obj.free(); };
 
@@ -73,12 +75,12 @@ i32 simpleVerticesTest(const TestRunParams& params) {
     return 0;
 }
 
-i32 simpleFacesTest(const TestRunParams& params) {
-    constexpr const char* vertices1_valid_path = TEST_ASSETS_DIRECTORY "/obj/faces1_valid.obj";
+i32 runWavefrontFacesTest(const TestRunParams& params) {
+    const char* filePath = reinterpret_cast<const char*>(params.userData);
 
     auto obj = core::Unpack(
-        Wavefront::loadFile(vertices1_valid_path, Wavefront::WavefrontVersion::VERSION_3_0, *params.actx),
-        "Failed to load file: \"{}\"", vertices1_valid_path
+        Wavefront::loadFile(filePath, Wavefront::WavefrontVersion::VERSION_3_0, *params.actx),
+        "Failed to load file: \"{}\"", filePath
     );
     defer { obj.free(); };
 
@@ -110,13 +112,5 @@ i32 simpleFacesTest(const TestRunParams& params) {
     });
     CT_CHECK(ret == 0);
 
-    return 0;
-}
-
-} // namespace
-
-i32 runWavefrontTestsSuite(const TestRunParams& params) {
-    if (simpleVerticesTest(params) != 0) { return -1; }
-    if (simpleFacesTest(params) != 0) { return -1; }
     return 0;
 }

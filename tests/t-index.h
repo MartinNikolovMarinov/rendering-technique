@@ -4,15 +4,18 @@
 
 struct TestRunParams;
 
-// TODO: Is this the right place for this?
 struct TestSnapshotInfo {
     const char* wavefrontInputFile = nullptr;
     const char* snapshotDirectory = nullptr;
+    const char* outputDirectory = nullptr;
     bool updateSnapshots = false;
 };
 
-i32 runWavefrontTestsSuite(const TestRunParams& params);
-i32 runTgaTestsSuite(const TestRunParams& params);
-i32 runRenderSingleCenteredTriangle(const TestRunParams& params);
+i32 runWavefrontVerticesTest(const TestRunParams& params);
+i32 runWavefrontFacesTest(const TestRunParams& params);
+
+i32 runCreateSurfaceFromTgaFilesInDirectoryTest(const TestRunParams& params);
+
+i32 runRenderSingleCenteredTriangleTest(const TestRunParams& params);
 
 i32 runAllTests();
