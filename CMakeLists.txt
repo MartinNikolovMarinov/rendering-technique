@@ -93,6 +93,7 @@ set(src_test
     tests/test.cpp
     tests/t-index.cpp
     tests/test_runner.cpp
+    tests/test_utils.cpp
 
     tests/t-wavefront.cpp
     tests/t-tga.cpp

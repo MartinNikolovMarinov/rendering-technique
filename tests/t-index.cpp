@@ -54,7 +54,7 @@ void beforeEachSnapshotTest(const TestRunParams& params) {
 
     // Create the output directory
     core::StaticPathBuilder<512> pathBuilder;
-    pathBuilder.setDirPath(TEST_OUTPUT_DIRECTORY);
+    pathBuilder.setDirPart(TEST_OUTPUT_DIRECTORY);
     pathBuilder.setFilePart(testName);
     core::Expect(
         core::dirCreate(pathBuilder.fullPath()),
@@ -127,13 +127,13 @@ i32 runAllTests() {
 
     TestCreateInfo snapshotTests[] = {
         {
-            .name = FN_NAME_TO_CPTR(runRenderSingleCenteredTriangle),
-            .testFunction = runRenderSingleCenteredTriangleTest,
+            .name = "01 Simple Triangle Scene",
+            .testFunction = runDirectRasterizationSnapshotTest,
             .userData = &testSnapshotInfos[0]
         },
         {
-            .name = FN_NAME_TO_CPTR(runRenderSingleCenteredTriangle),
-            .testFunction = runRenderSingleCenteredTriangleTest,
+            .name = "02 Four Triangles Scene",
+            .testFunction = runDirectRasterizationSnapshotTest,
             .userData = &testSnapshotInfos[1]
         },
     };
@@ -156,11 +156,12 @@ i32 runAllTests() {
             .group = {
                 .name = "Snapshot Tests Suite",
                 .allocatorsToUse = allTestAllocators,
+                .groupOnly = true, // TODO: remove this
                 .beforeAll = beforeAllSnapshotTests,
                 .afterAll = afterAllSnapshotTests,
                 .beforeEach = beforeEachSnapshotTest,
             },
-            .tests = { snapshotTests, CORE_C_ARRLEN(snapshotTests) }
+            .tests = { snapshotTests, CORE_C_ARRLEN(snapshotTests) },
         },
     };
 

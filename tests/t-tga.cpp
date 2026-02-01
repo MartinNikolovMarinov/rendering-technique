@@ -13,7 +13,7 @@ i32 runCreateSurfaceFromTgaFilesInDirectoryTest(const TestRunParams& params) {
     };
 
     core::StaticPathBuilder<255> path;
-    path.setDirPath(directory);
+    path.setDirPart(directory);
 
     core::DirWalkCallback listWalk = [](const core::DirEntry& de, addr_size, void* userData) -> bool {
         Clojure* clojure = reinterpret_cast<Clojure*>(userData);

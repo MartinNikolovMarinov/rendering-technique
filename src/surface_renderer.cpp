@@ -120,8 +120,10 @@ void fillTriangleBarycentric(
     const Color& colorA, const Color& colorB, const Color& colorC,
     f32 holeInsetRatio
 ) {
-    Assert(depthBuffer && surface.width == depthBuffer->width);
-    Assert(depthBuffer && surface.height == depthBuffer->height);
+    if (depthBuffer) {
+        Assert(surface.width == depthBuffer->width);
+        Assert(surface.height == depthBuffer->height);
+    }
 
     core::Bbox2D<i32> bbox = core::calcTriangleBBox(a.xy(), b.xy(), c.xy());
     bbox.clampTo(0, surface.width - 1, 0, surface.height - 1);

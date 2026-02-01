@@ -16,6 +16,6 @@ i32 runWavefrontFacesTest(const TestRunParams& params);
 
 i32 runCreateSurfaceFromTgaFilesInDirectoryTest(const TestRunParams& params);
 
-i32 runRenderSingleCenteredTriangleTest(const TestRunParams& params);
+i32 runDirectRasterizationSnapshotTest(const TestRunParams& params);
 
 i32 runAllTests();
