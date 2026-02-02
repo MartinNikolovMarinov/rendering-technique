@@ -1,8 +1,7 @@
 #include "t-index.h"
 #include "test_runner.h"
-
-constexpr const char* SNAPSHOT_ROOT_DIRECTORY = TEST_ASSETS_DIRECTORY "/snapshots";
-constexpr const char* TEST_OUTPUT_DIRECTORY = TEST_ASSETS_DIRECTORY "/test_output_directory";
+#include "test_types.h"
+#include "test_utils.h"
 
 void beforeAllSnapshotTests(const TestGroupRunParams&) {
     bool exists;
@@ -31,10 +30,12 @@ void afterAllSnapshotTests(const TestGroupRunParams&) {
     );
 
     // Delete output directroy
-    core::Expect(
-        core::dirDeleteRec<core::DEFAULT_ALLOCATOR_ID>(TEST_OUTPUT_DIRECTORY),
-        "AfterAll failed to delete {}",
-        FN_NAME_TO_CPTR(TEST_OUTPUT_DIRECTORY)
+    auto deleteRes = core::dirDeleteRec<core::DEFAULT_ALLOCATOR_ID>(TEST_OUTPUT_DIRECTORY);
+    AssertFmt(
+        !deleteRes.hasErr(),
+        "AfterAll failed to delete {}; error code = {}",
+        FN_NAME_TO_CPTR(TEST_OUTPUT_DIRECTORY),
+        deleteRes.err()
     );
 }
 
@@ -110,34 +111,6 @@ i32 runAllTests() {
         },
     };
 
-    constexpr TestSnapshotInfo testSnapshotInfos[] = {
-        {
-            .wavefrontInputFileFullPath = TEST_ASSETS_DIRECTORY "/snapshot_tests_input_files/01_simple_triangle.obj",
-            .snapshotDirectory = SNAPSHOT_ROOT_DIRECTORY,
-            .outputDirectory = TEST_OUTPUT_DIRECTORY,
-            .updateSnapshots = false
-        },
-        {
-            .wavefrontInputFileFullPath = TEST_ASSETS_DIRECTORY "/snapshot_tests_input_files/02_triangles.obj",
-            .snapshotDirectory = SNAPSHOT_ROOT_DIRECTORY,
-            .outputDirectory = TEST_OUTPUT_DIRECTORY,
-            .updateSnapshots = false
-        }
-    };
-
-    TestCreateInfo snapshotTests[] = {
-        {
-            .name = "01 Simple Triangle Scene",
-            .testFunction = runDirectRasterizationSnapshotTest,
-            .userData = &testSnapshotInfos[0]
-        },
-        {
-            .name = "02 Four Triangles Scene",
-            .testFunction = runDirectRasterizationSnapshotTest,
-            .userData = &testSnapshotInfos[1]
-        },
-    };
-
     struct TestGroupTableEntry {
         TestGroupCreateInfo group;
         core::Memory<const TestCreateInfo> tests;
@@ -156,7 +129,6 @@ i32 runAllTests() {
             .group = {
                 .name = "Snapshot Tests Suite",
                 .allocatorsToUse = allTestAllocators,
-                .groupOnly = true, // TODO: remove this
                 .beforeAll = beforeAllSnapshotTests,
                 .afterAll = afterAllSnapshotTests,
                 .beforeEach = beforeEachSnapshotTest,

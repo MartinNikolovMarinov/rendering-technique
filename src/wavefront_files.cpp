@@ -251,8 +251,7 @@ core::expected<core::vec4f, WavefrontError> parseVertexLine(core::StrView currLi
     Assert(currLine[0] == 'f', "BUG: failed a basic sanity check");
 
     auto parseFaceComponent = [](core::StrView component, Face& face, i32 faceIdx) -> core::expected<WavefrontError> {
-        // FIXME: [BUG] This functions is hard to read and looks wrong.
-        // What happens in cases like this 'f 1/8/9 2/11/50 3/123/99'
+        // TODO: [WAVEFRONT] This functions is hard to read and looks wrong.
 
         core::StrView faceComponents[DIMMENTIONS];
         addr_size faceComponentsCount = 0;

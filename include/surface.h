@@ -80,6 +80,20 @@ enum struct Origin {
     SENTINEL
 };
 
+constexpr const char* originToCstr(Origin o) {
+    switch (o) {
+        case Origin::BottomLeft:  return "BottomLeft";
+        case Origin::BottomRight: return "BottomRight";
+        case Origin::TopLeft:     return "TopLeft";
+        case Origin::TopRight:    return "TopRight";
+        case Origin::Center:      return "Center";
+
+        case Origin::Undefined: [[fallthrough]];
+        case Origin::SENTINEL: [[fallthrough]];
+        default: return "undefined";
+    }
+}
+
 struct Surface {
     core::AllocatorContext* actx = nullptr;
     Origin origin = Origin::Undefined;
