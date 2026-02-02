@@ -1,7 +1,10 @@
 #include "t-index.h"
+
 #include "test_runner.h"
 #include "test_types.h"
 #include "test_utils.h"
+
+#include "snapshot_test_cases_table.h"
 
 void beforeAllSnapshotTests(const TestGroupRunParams&) {
     bool exists;
