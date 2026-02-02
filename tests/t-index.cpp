@@ -33,13 +33,13 @@ void afterAllSnapshotTests(const TestGroupRunParams&) {
     );
 
     // Delete output directroy
-    // auto deleteRes = core::dirDeleteRec<core::DEFAULT_ALLOCATOR_ID>(TEST_OUTPUT_DIRECTORY);
-    // AssertFmt(
-    //     !deleteRes.hasErr(),
-    //     "AfterAll failed to delete {}; error code = {}",
-    //     FN_NAME_TO_CPTR(TEST_OUTPUT_DIRECTORY),
-    //     deleteRes.err()
-    // );
+    auto deleteRes = core::dirDeleteRec<core::DEFAULT_ALLOCATOR_ID>(TEST_OUTPUT_DIRECTORY);
+    AssertFmt(
+        !deleteRes.hasErr(),
+        "AfterAll failed to delete {}; error code = {}",
+        FN_NAME_TO_CPTR(TEST_OUTPUT_DIRECTORY),
+        deleteRes.err()
+    );
 }
 
 void beforeEachSnapshotTest(const TestRunParams& params) {
