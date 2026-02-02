@@ -40,7 +40,7 @@ void afterAllSnapshotTests(const TestGroupRunParams&) {
 
 void beforeEachSnapshotTest(const TestRunParams& params) {
     auto sinfo = reinterpret_cast<const TestSnapshotInfo*>(params.userData);
-    const char* wavefrontInputFile = sinfo->wavefrontInputFile;
+    const char* wavefrontInputFile = sinfo->wavefrontInputFileFullPath;
     const char* testName = params.name;
 
     // Wavefront input file must exist
@@ -54,8 +54,8 @@ void beforeEachSnapshotTest(const TestRunParams& params) {
 
     // Create the output directory
     core::StaticPathBuilder<512> pathBuilder;
-    pathBuilder.setDirPart(TEST_OUTPUT_DIRECTORY);
-    pathBuilder.setFilePart(testName);
+    pathBuilder.setDirPart(core::sv(TEST_OUTPUT_DIRECTORY));
+    pathBuilder.setFilePart(core::sv(testName));
     core::Expect(
         core::dirCreate(pathBuilder.fullPath()),
         "BeforeEach for test '{}' failed; reason: failed to create file '{}'",
@@ -112,16 +112,16 @@ i32 runAllTests() {
 
     constexpr TestSnapshotInfo testSnapshotInfos[] = {
         {
-            .wavefrontInputFile = TEST_ASSETS_DIRECTORY "/snapshot_tests_input_files/01_simple_triangle.obj",
+            .wavefrontInputFileFullPath = TEST_ASSETS_DIRECTORY "/snapshot_tests_input_files/01_simple_triangle.obj",
             .snapshotDirectory = SNAPSHOT_ROOT_DIRECTORY,
             .outputDirectory = TEST_OUTPUT_DIRECTORY,
-            .updateSnapshots = true
+            .updateSnapshots = false
         },
         {
-            .wavefrontInputFile = TEST_ASSETS_DIRECTORY "/snapshot_tests_input_files/02_triangles.obj",
+            .wavefrontInputFileFullPath = TEST_ASSETS_DIRECTORY "/snapshot_tests_input_files/02_triangles.obj",
             .snapshotDirectory = SNAPSHOT_ROOT_DIRECTORY,
             .outputDirectory = TEST_OUTPUT_DIRECTORY,
-            .updateSnapshots = true
+            .updateSnapshots = false
         }
     };
 

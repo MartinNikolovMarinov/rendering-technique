@@ -19,7 +19,7 @@ constexpr inline core::vec3i orthogonalProjection(core::vec3f normVec, i32 width
     return ret;
 }
 
-Model3D waveFrontFileToModel(const char* path, core::AllocatorContext& actx) {
+Model3D parseWavefrontFileToModel(const char* path, core::AllocatorContext& actx) {
     auto result = Wavefront::loadFile(path, Wavefront::WavefrontVersion::VERSION_3_0, actx);
     Assert(!result.hasErr(), "Failed to load Wavefront file");
     Wavefront::WavefrontObj obj = result.value();
@@ -51,24 +51,36 @@ Surface createTestSurface(
     return s;
 }
 
-void createTrueImageFile(const Surface& surface, const TestSnapshotInfo& snapshotInfo) {
-    // TODO: This is a mess..
-    core::StaticPathBuilder<512> waveFrontFilePb = {};
-    waveFrontFilePb.setFilePart(snapshotInfo.wavefrontInputFile);
-    const char* fileName = waveFrontFilePb.filePart();
-
-    core::StaticPathBuilder<512> fileInSnapshitDirPb = {};
-    fileInSnapshitDirPb.setDirPart(snapshotInfo.snapshotDirectory);
-    fileInSnapshitDirPb.setFilePart(fileName);
-    fileInSnapshitDirPb.setExtPart("tga");
-
+void createTrueImageFile(const Surface& surface, const char* path) {
     TGA::CreateFileFromSurfaceParams tgaCreateParams = {
         .surface = surface,
-        .path = fileInSnapshitDirPb.fullPath(),
+        .path = path,
         .imageType = 2,
         .fileType = TGA::FileType::New,
     };
     core::Expect(TGA::createFileFromSurface(tgaCreateParams));
+}
+
+void updateSnapshot(const Surface& s,  const TestSnapshotInfo* sinfo) {
+    core::StaticPathBuilder<512> snapshotFilePb = {};
+    snapshotFilePb.setFilePart(core::sv(sinfo->wavefrontInputFileFullPath));
+    snapshotFilePb.setDirPart(core::sv(sinfo->snapshotDirectory));
+    snapshotFilePb.setExtPart("tga"_sv);
+
+    if (sinfo->updateSnapshots) {
+        createTrueImageFile(s, snapshotFilePb.fullPath());
+    }
+    else {
+        core::StaticPathBuilder<512> outputFilePb = {};
+        outputFilePb.setFilePart(core::sv(sinfo->wavefrontInputFileFullPath));
+        outputFilePb.setDirPart(core::sv(sinfo->outputDirectory));
+        outputFilePb.setExtPart("tga"_sv);
+
+        createTrueImageFile(s, outputFilePb.fullPath());
+
+        // Compare the output file with the snapshot:
+        compareFilesBytewise(outputFilePb.fullPath(), snapshotFilePb.fullPath());
+    }
 }
 
 i32 runDirectRasterizationSnapshotTest(const TestRunParams& params) {
@@ -76,7 +88,7 @@ i32 runDirectRasterizationSnapshotTest(const TestRunParams& params) {
 
     [[maybe_unused]] auto sinfo = reinterpret_cast<const TestSnapshotInfo*>(params.userData);
 
-    Model3D model = waveFrontFileToModel(sinfo->wavefrontInputFile, *params.actx);
+    Model3D model = parseWavefrontFileToModel(sinfo->wavefrontInputFileFullPath, *params.actx);
     defer { model.free(); };
 
     Surface s = createTestSurface(800, 800, PixelFormat::BGRA8888, Origin::BottomLeft, *params.actx);
@@ -99,12 +111,7 @@ i32 runDirectRasterizationSnapshotTest(const TestRunParams& params) {
         strokeTriangleFast(s, a.xy(), b.xy(), c.xy(), WHITE);
     }
 
-    if (sinfo->updateSnapshots) {
-        createTrueImageFile(s, *sinfo);
-    }
-    else {
-        // TODO: this...
-    }
+    updateSnapshot(s, sinfo);
 
     return 0;
 }

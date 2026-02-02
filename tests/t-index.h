@@ -5,7 +5,7 @@
 struct TestRunParams;
 
 struct TestSnapshotInfo {
-    const char* wavefrontInputFile = nullptr;
+    const char* wavefrontInputFileFullPath = nullptr;
     const char* snapshotDirectory = nullptr;
     const char* outputDirectory = nullptr;
     bool updateSnapshots = false;
