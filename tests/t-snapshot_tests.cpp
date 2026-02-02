@@ -92,9 +92,31 @@ void updateSnapshot(const Surface& s, const TestSnapshotInfo* sinfo, const char*
     core::StaticPathBuilder<512> snapshotFilePb = {};
     snapshotFilePb.setFilePart(core::sv(sinfo->wavefrontInputFileFullPath));
     snapshotFilePb.setDirPart(core::sv(sinfo->snapshotDirectory));
+    snapshotFilePb.appendToDirPath(core::sv(testName));
     genSnapshotFileName(s, snapshotFilePb);
 
     if (sinfo->updateSnapshots) {
+        // Snapshot update procedure:
+        // - Ensure {snapshotDirectory}/{testName} exists.
+        // - The directory may be missing for newly introduced tests and must be created.
+
+        // snapshotDirPart is a non-null-terminated view.
+        // System calls require null-terminated paths, so copy into a local buffer.
+        char dirCopyBuff[512] = {};
+        core::StrView snapshotDirPart = snapshotFilePb.dirPartSv();
+        core::memcopy(dirCopyBuff, snapshotDirPart.data(), snapshotDirPart.len());
+
+        bool exists = core::Unpack(core::fileExists(dirCopyBuff));
+        if (!exists) {
+            auto createDirRes = core::dirCreate(dirCopyBuff);
+            AssertFmt(
+                !createDirRes.hasErr(),
+                "Failed to create directory '{}'; error code = {}",
+                dirCopyBuff,
+                createDirRes.err()
+            );
+        }
+
         createTrueImageFile(s, snapshotFilePb.fullPath());
     }
     else {
