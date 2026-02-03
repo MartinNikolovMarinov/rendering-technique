@@ -16,35 +16,53 @@ constexpr bool updateAllSnapshots = false;
 // The id becomes an enum entry (SNAPSHOT_<id>) so both tables index the same element.
 // Editing this list updates both TestSnapshotInfo and TestCreateInfo tables below.
 #define SNAPSHOT_CASES(X) \
-    X(SIMPLE_TRIANGLE_BGRA8888_BottomLeft, "01 Simple Triangle Scene", "01_simple_triangle.obj", 800, 800, updateAllSnapshots, BGRA8888, BottomLeft) \
-    X(SIMPLE_TRIANGLE_BGRX8888_BottomLeft, "01 Simple Triangle Scene", "01_simple_triangle.obj", 800, 800, updateAllSnapshots, BGRX8888, BottomLeft) \
-    X(SIMPLE_TRIANGLE_BGRA5551_BottomLeft, "01 Simple Triangle Scene", "01_simple_triangle.obj", 800, 800, updateAllSnapshots, BGRA5551, BottomLeft) \
-    X(SIMPLE_TRIANGLE_BGR555_BottomLeft,   "01 Simple Triangle Scene", "01_simple_triangle.obj", 800, 800, updateAllSnapshots, BGR555,   BottomLeft) \
-    X(SIMPLE_TRIANGLE_BGR888_BottomLeft,   "01 Simple Triangle Scene", "01_simple_triangle.obj", 800, 800, updateAllSnapshots, BGR888,   BottomLeft) \
+    X(SIMPLE_TRIANGLE_BGRA8888_300x300, "01 Simple Triangle Scene", "01_simple_triangle.obj", 300, 300, updateAllSnapshots, BGRA8888, BottomLeft) \
+    X(SIMPLE_TRIANGLE_BGRX8888_300x300, "01 Simple Triangle Scene", "01_simple_triangle.obj", 300, 300, updateAllSnapshots, BGRX8888, BottomLeft) \
+    X(SIMPLE_TRIANGLE_BGRA5551_300x300, "01 Simple Triangle Scene", "01_simple_triangle.obj", 300, 300, updateAllSnapshots, BGRA5551, BottomLeft) \
+    X(SIMPLE_TRIANGLE_BGR555_300x300,   "01 Simple Triangle Scene", "01_simple_triangle.obj", 300, 300, updateAllSnapshots, BGR555,   BottomLeft) \
+    X(SIMPLE_TRIANGLE_BGR888_300x300,   "01 Simple Triangle Scene", "01_simple_triangle.obj", 300, 300, updateAllSnapshots, BGR888,   BottomLeft) \
     \
-    X(SIMPLE_TRIANGLE_BGRA8888, "01 Simple Triangle Scene", "01_simple_triangle.obj", 800, 800, updateAllSnapshots, BGRA8888, TopLeft) \
-    X(SIMPLE_TRIANGLE_BGRX8888, "01 Simple Triangle Scene", "01_simple_triangle.obj", 800, 800, updateAllSnapshots, BGRX8888, TopLeft) \
-    X(SIMPLE_TRIANGLE_BGRA5551, "01 Simple Triangle Scene", "01_simple_triangle.obj", 800, 800, updateAllSnapshots, BGRA5551, TopLeft) \
-    X(SIMPLE_TRIANGLE_BGR555,   "01 Simple Triangle Scene", "01_simple_triangle.obj", 800, 800, updateAllSnapshots, BGR555,   TopLeft) \
-    X(SIMPLE_TRIANGLE_BGR888,   "01 Simple Triangle Scene", "01_simple_triangle.obj", 800, 800, updateAllSnapshots, BGR888,   TopLeft) \
+    X(SIMPLE_TRIANGLE_BGRA8888_437x658, "01 Simple Triangle Scene", "01_simple_triangle.obj", 437, 658, updateAllSnapshots, BGRA8888, BottomLeft) \
+    X(SIMPLE_TRIANGLE_BGRX8888_437x658, "01 Simple Triangle Scene", "01_simple_triangle.obj", 437, 658, updateAllSnapshots, BGRX8888, BottomLeft) \
+    X(SIMPLE_TRIANGLE_BGRA5551_437x658, "01 Simple Triangle Scene", "01_simple_triangle.obj", 437, 658, updateAllSnapshots, BGRA5551, BottomLeft) \
+    X(SIMPLE_TRIANGLE_BGR555_437x658,   "01 Simple Triangle Scene", "01_simple_triangle.obj", 437, 658, updateAllSnapshots, BGR555,   BottomLeft) \
+    X(SIMPLE_TRIANGLE_BGR888_437x658,   "01 Simple Triangle Scene", "01_simple_triangle.obj", 437, 658, updateAllSnapshots, BGR888,   BottomLeft) \
     \
-    X(SIMPLE_TRIANGLE_BGRA8888_BottomRight, "01 Simple Triangle Scene", "01_simple_triangle.obj", 800, 800, updateAllSnapshots, BGRA8888, BottomRight) \
-    X(SIMPLE_TRIANGLE_BGRX8888_BottomRight, "01 Simple Triangle Scene", "01_simple_triangle.obj", 800, 800, updateAllSnapshots, BGRX8888, BottomRight) \
-    X(SIMPLE_TRIANGLE_BGRA5551_BottomRight, "01 Simple Triangle Scene", "01_simple_triangle.obj", 800, 800, updateAllSnapshots, BGRA5551, BottomRight) \
-    X(SIMPLE_TRIANGLE_BGR555_BottomRight,   "01 Simple Triangle Scene", "01_simple_triangle.obj", 800, 800, updateAllSnapshots, BGR555,   BottomRight) \
-    X(SIMPLE_TRIANGLE_BGR888_BottomRight,   "01 Simple Triangle Scene", "01_simple_triangle.obj", 800, 800, updateAllSnapshots, BGR888,   BottomRight) \
+    X(SIMPLE_TRIANGLE_BGRA8888_10x800, "01 Simple Triangle Scene", "01_simple_triangle.obj",  40, 800, updateAllSnapshots, BGRA8888, BottomLeft) \
+    X(SIMPLE_TRIANGLE_BGRX8888_10x800, "01 Simple Triangle Scene", "01_simple_triangle.obj",  40, 800, updateAllSnapshots, BGRX8888, BottomLeft) \
+    X(SIMPLE_TRIANGLE_BGRA5551_10x800, "01 Simple Triangle Scene", "01_simple_triangle.obj",  40, 800, updateAllSnapshots, BGRA5551, BottomLeft) \
+    X(SIMPLE_TRIANGLE_BGR555_10x800,   "01 Simple Triangle Scene", "01_simple_triangle.obj",  40, 800, updateAllSnapshots, BGR555,   BottomLeft) \
+    X(SIMPLE_TRIANGLE_BGR888_10x800,   "01 Simple Triangle Scene", "01_simple_triangle.obj",  40, 800, updateAllSnapshots, BGR888,   BottomLeft) \
     \
-    X(SIMPLE_TRIANGLE_BGRA8888_TopLeft, "01 Simple Triangle Scene", "01_simple_triangle.obj", 800, 800, updateAllSnapshots, BGRA8888, TopLeft) \
-    X(SIMPLE_TRIANGLE_BGRX8888_TopLeft, "01 Simple Triangle Scene", "01_simple_triangle.obj", 800, 800, updateAllSnapshots, BGRX8888, TopLeft) \
-    X(SIMPLE_TRIANGLE_BGRA5551_TopLeft, "01 Simple Triangle Scene", "01_simple_triangle.obj", 800, 800, updateAllSnapshots, BGRA5551, TopLeft) \
-    X(SIMPLE_TRIANGLE_BGR555_TopLeft,   "01 Simple Triangle Scene", "01_simple_triangle.obj", 800, 800, updateAllSnapshots, BGR555,   TopLeft) \
-    X(SIMPLE_TRIANGLE_BGR888_TopLeft,   "01 Simple Triangle Scene", "01_simple_triangle.obj", 800, 800, updateAllSnapshots, BGR888,   TopLeft) \
+    X(SIMPLE_TRIANGLE_BGRA8888_1000x20, "01 Simple Triangle Scene", "01_simple_triangle.obj", 1000, 60, updateAllSnapshots, BGRA8888, BottomLeft) \
+    X(SIMPLE_TRIANGLE_BGRX8888_1000x20, "01 Simple Triangle Scene", "01_simple_triangle.obj", 1000, 60, updateAllSnapshots, BGRX8888, BottomLeft) \
+    X(SIMPLE_TRIANGLE_BGRA5551_1000x20, "01 Simple Triangle Scene", "01_simple_triangle.obj", 1000, 60, updateAllSnapshots, BGRA5551, BottomLeft) \
+    X(SIMPLE_TRIANGLE_BGR555_1000x20,   "01 Simple Triangle Scene", "01_simple_triangle.obj", 1000, 60, updateAllSnapshots, BGR555,   BottomLeft) \
+    X(SIMPLE_TRIANGLE_BGR888_1000x20,   "01 Simple Triangle Scene", "01_simple_triangle.obj", 1000, 60, updateAllSnapshots, BGR888,   BottomLeft) \
     \
-    X(FOUR_TRIANGLES_BGRA8888_BottomLeft,  "02 Four Triangles Scene",  "02_triangles.obj",       800, 800, updateAllSnapshots, BGRA8888, BottomLeft) \
-    X(FOUR_TRIANGLES_BGRX8888_BottomLeft,  "02 Four Triangles Scene",  "02_triangles.obj",       800, 800, updateAllSnapshots, BGRX8888, BottomLeft) \
-    X(FOUR_TRIANGLES_BGRA5551_BottomLeft,  "02 Four Triangles Scene",  "02_triangles.obj",       800, 800, updateAllSnapshots, BGRA5551, BottomLeft) \
-    X(FOUR_TRIANGLES_BGR555_BottomLeft,    "02 Four Triangles Scene",  "02_triangles.obj",       800, 800, updateAllSnapshots, BGR555,   BottomLeft) \
-    X(FOUR_TRIANGLES_BGR888_BottomLeft,    "02 Four Triangles Scene",  "02_triangles.obj",       800, 800, updateAllSnapshots, BGR888,   BottomLeft)
+    X(FOUR_TRIANGLES_BGRA8888_BottomLeft,  "02 Four Triangles Scene",  "02_triangles.obj",  800, 800, updateAllSnapshots, BGRA8888, BottomLeft) \
+    X(FOUR_TRIANGLES_BGRX8888_BottomLeft,  "02 Four Triangles Scene",  "02_triangles.obj",  800, 800, updateAllSnapshots, BGRX8888, BottomLeft) \
+    X(FOUR_TRIANGLES_BGRA5551_BottomLeft,  "02 Four Triangles Scene",  "02_triangles.obj",  800, 800, updateAllSnapshots, BGRA5551, BottomLeft) \
+    X(FOUR_TRIANGLES_BGR555_BottomLeft,    "02 Four Triangles Scene",  "02_triangles.obj",  800, 800, updateAllSnapshots, BGR555,   BottomLeft) \
+    X(FOUR_TRIANGLES_BGR888_BottomLeft,    "02 Four Triangles Scene",  "02_triangles.obj",  800, 800, updateAllSnapshots, BGR888,   BottomLeft) \
+    \
+    X(FOUR_TRIANGLES_BGRA8888_TopLeft,  "02 Four Triangles Scene",  "02_triangles.obj",     800, 800, updateAllSnapshots, BGRA8888, TopLeft) \
+    X(FOUR_TRIANGLES_BGRX8888_TopLeft,  "02 Four Triangles Scene",  "02_triangles.obj",     800, 800, updateAllSnapshots, BGRX8888, TopLeft) \
+    X(FOUR_TRIANGLES_BGRA5551_TopLeft,  "02 Four Triangles Scene",  "02_triangles.obj",     800, 800, updateAllSnapshots, BGRA5551, TopLeft) \
+    X(FOUR_TRIANGLES_BGR555_TopLeft,    "02 Four Triangles Scene",  "02_triangles.obj",     800, 800, updateAllSnapshots, BGR555,   TopLeft) \
+    X(FOUR_TRIANGLES_BGR888_TopLeft,    "02 Four Triangles Scene",  "02_triangles.obj",     800, 800, updateAllSnapshots, BGR888,   TopLeft) \
+    \
+    X(FOUR_TRIANGLES_BGRA8888_BottomRight,  "02 Four Triangles Scene",  "02_triangles.obj", 800, 800, updateAllSnapshots, BGRA8888, BottomRight) \
+    X(FOUR_TRIANGLES_BGRX8888_BottomRight,  "02 Four Triangles Scene",  "02_triangles.obj", 800, 800, updateAllSnapshots, BGRX8888, BottomRight) \
+    X(FOUR_TRIANGLES_BGRA5551_BottomRight,  "02 Four Triangles Scene",  "02_triangles.obj", 800, 800, updateAllSnapshots, BGRA5551, BottomRight) \
+    X(FOUR_TRIANGLES_BGR555_BottomRight,    "02 Four Triangles Scene",  "02_triangles.obj", 800, 800, updateAllSnapshots, BGR555,   BottomRight) \
+    X(FOUR_TRIANGLES_BGR888_BottomRight,    "02 Four Triangles Scene",  "02_triangles.obj", 800, 800, updateAllSnapshots, BGR888,   BottomRight) \
+    \
+    X(FOUR_TRIANGLES_BGRA8888_TopRight,  "02 Four Triangles Scene",  "02_triangles.obj",    800, 800, updateAllSnapshots, BGRA8888, TopRight) \
+    X(FOUR_TRIANGLES_BGRX8888_TopRight,  "02 Four Triangles Scene",  "02_triangles.obj",    800, 800, updateAllSnapshots, BGRX8888, TopRight) \
+    X(FOUR_TRIANGLES_BGRA5551_TopRight,  "02 Four Triangles Scene",  "02_triangles.obj",    800, 800, updateAllSnapshots, BGRA5551, TopRight) \
+    X(FOUR_TRIANGLES_BGR555_TopRight,    "02 Four Triangles Scene",  "02_triangles.obj",    800, 800, updateAllSnapshots, BGR555,   TopRight) \
+    X(FOUR_TRIANGLES_BGR888_TopRight,    "02 Four Triangles Scene",  "02_triangles.obj",    800, 800, updateAllSnapshots, BGR888,   TopRight)
 
 // Maps each case id to a stable index used to cross-reference both tables.
 // The INFO/TEST entry macros expand SNAPSHOT_CASES into parallel arrays:

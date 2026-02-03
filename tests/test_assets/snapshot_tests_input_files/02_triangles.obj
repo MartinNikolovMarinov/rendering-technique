@@ -1,22 +1,26 @@
-# 4 symmetric triangles, one per quadrant
+# Corner markers + center arrow (asymmetric). Detects X/Y flips and corner origin selection.
 
-v -1  0 0
-v  0  1 0
-v  0  0 0
+# Top-left: large right triangle
+v -0.95  0.95 0
+v -0.55  0.95 0
+v -0.95  0.55 0
 
-v  0  0 0
-v  0  1 0
-v  1  0 0
+# Bottom-left: long thin triangle
+v -0.95 -0.60 0
+v -0.60 -0.75 0
+v -0.90 -0.95 0
 
-v -1  0 0
-v  0  0 0
-v  0 -1 0
+# Bottom-right: tiny right triangle
+v  0.85 -0.85 0
+v  0.95 -0.85 0
+v  0.95 -0.95 0
 
-v  0  0 0
-v  1  0 0
-v  0 -1 0
+# Center: arrow pointing up
+v -0.10  0.00 0
+v  0.10  0.00 0
+v  0.00  0.30 0
 
-f  1/2144/26493   2/117111/386531  3/308494/297727
-f  4/2931/365229  5/66636/108670   6/358531/191333
-f  7/2638/017499  8/187693/300890  9/260679/328689
-f 10/4002/810677 11/311246/315335 12/239246/90316
+f 1 2 3
+f 4 5 6
+f 7 8 9
+f 10 11 12
