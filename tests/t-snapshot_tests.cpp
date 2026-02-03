@@ -52,14 +52,14 @@ Surface createTestSurface(
     return s;
 }
 
-void createTrueImageFile(const Surface& surface, const char* path) {
+void createTrueImageFile(const Surface& surface, const char* path, core::AllocatorContext& actx) {
     TGA::CreateFileFromSurfaceParams tgaCreateParams = {
         .surface = surface,
         .path = path,
         .imageType = 2,
         .fileType = TGA::FileType::New,
     };
-    core::Expect(TGA::createFileFromSurface(tgaCreateParams));
+    core::Expect(TGA::createFileFromSurface(tgaCreateParams, actx));
 }
 
 template <i32 N>
@@ -88,7 +88,9 @@ void genSnapshotFileName(const Surface& s, core::StaticPathBuilder<N>& pb) {
     pb.setFilePart(core::sv(modifiedPathBuff, addr_size(ret.value())));
 }
 
-void updateSnapshot(const Surface& s, const TestSnapshotInfo* sinfo, const char* testName) {
+void updateSnapshot(const Surface& s, const TestSnapshotInfo* sinfo, TestRunParams& params) {
+    const char* testName = params.name;
+
     core::StaticPathBuilder<512> snapshotFilePb = {};
     snapshotFilePb.setFilePart(core::sv(sinfo->wavefrontInputFileFullPath));
     snapshotFilePb.setDirPart(core::sv(sinfo->snapshotDirectory));
@@ -117,7 +119,7 @@ void updateSnapshot(const Surface& s, const TestSnapshotInfo* sinfo, const char*
             );
         }
 
-        createTrueImageFile(s, snapshotFilePb.fullPath());
+        createTrueImageFile(s, snapshotFilePb.fullPath(), *params.actx);
     }
     else {
         core::StaticPathBuilder<512> outputFilePb = {};
@@ -126,14 +128,14 @@ void updateSnapshot(const Surface& s, const TestSnapshotInfo* sinfo, const char*
         outputFilePb.appendToDirPath(core::sv(testName));
         genSnapshotFileName(s, outputFilePb);
 
-        createTrueImageFile(s, outputFilePb.fullPath());
+        createTrueImageFile(s, outputFilePb.fullPath(), *params.actx);
 
         // Compare the output file with the snapshot:
         compareFilesBytewise(outputFilePb.fullPath(), snapshotFilePb.fullPath());
     }
 }
 
-i32 runDirectRasterizationSnapshotTest(const TestRunParams& params) {
+i32 runDirectRasterizationSnapshotTest(TestRunParams& params) {
     [[maybe_unused]] auto sinfo = reinterpret_cast<const TestSnapshotInfo*>(params.userData);
 
     Model3D model = parseWavefrontFileToModel(sinfo->wavefrontInputFileFullPath, *params.actx);
@@ -142,7 +144,12 @@ i32 runDirectRasterizationSnapshotTest(const TestRunParams& params) {
     Surface s = createTestSurface(sinfo->width, sinfo->height, sinfo->pixelFormat, sinfo->origin, *params.actx);
     defer { s.free(); };
 
-    fillRect(s, 0, 0, BLACK, s.width, s.height);
+    if (pixelFormatAlphaBits(sinfo->pixelFormat) > 0) {
+        fillRect(s, 0, 0, { .rgba = { 0, 0, 0, 0 } }, s.width, s.height);
+    }
+    else {
+        fillRect(s, 0, 0, BLACK, s.width, s.height);
+    }
 
     for (addr_size i = 0; i < model.faces.len(); i++) {
         auto& f = model.faces[i];
@@ -159,7 +166,7 @@ i32 runDirectRasterizationSnapshotTest(const TestRunParams& params) {
         strokeTriangleFast(s, a.xy(), b.xy(), c.xy(), WHITE);
     }
 
-    updateSnapshot(s, sinfo, params.name);
+    updateSnapshot(s, sinfo, params);
 
     return 0;
 }

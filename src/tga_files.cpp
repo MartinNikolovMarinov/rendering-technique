@@ -13,21 +13,21 @@ constexpr auto TRUE_VISION_SIGNATURE = "TRUEVISION-XFILE."_sv;
 
 struct FormatMapping {
     i32 imageType;
-    i32 bytesPerPixel;
+    i32 bitsPerPixel;
     i32 alphaChannelSize;
     PixelFormat format;
 };
 constexpr FormatMapping formatMappingTable[] = {
     // True color (image type 2)
-    { .imageType = 2, .bytesPerPixel = 2, .alphaChannelSize = 0, .format = PixelFormat::BGR555 },
-    { .imageType = 2, .bytesPerPixel = 2, .alphaChannelSize = 1, .format = PixelFormat::BGRA5551 },
-    { .imageType = 2, .bytesPerPixel = 3, .alphaChannelSize = 0, .format = PixelFormat::BGR888 },
-    { .imageType = 2, .bytesPerPixel = 4, .alphaChannelSize = 8, .format = PixelFormat::BGRA8888 },
-    { .imageType = 2, .bytesPerPixel = 4, .alphaChannelSize = 0, .format = PixelFormat::BGRX8888 },
+    { .imageType = 2, .bitsPerPixel = 15, .alphaChannelSize = 0, .format = PixelFormat::BGR555 },
+    { .imageType = 2, .bitsPerPixel = 16, .alphaChannelSize = 1, .format = PixelFormat::BGRA5551 },
+    { .imageType = 2, .bitsPerPixel = 24, .alphaChannelSize = 0, .format = PixelFormat::BGR888 },
+    { .imageType = 2, .bitsPerPixel = 32, .alphaChannelSize = 8, .format = PixelFormat::BGRA8888 },
+    { .imageType = 2, .bitsPerPixel = 32, .alphaChannelSize = 0, .format = PixelFormat::BGRX8888 },
 
     // Grayscale (image type 3)
-    { .imageType = 3, .bytesPerPixel = 1, .alphaChannelSize = 0, .format = PixelFormat::GRAY8 },
-    { .imageType = 3, .bytesPerPixel = 2, .alphaChannelSize = 8, .format = PixelFormat::GRAYA88 },
+    { .imageType = 3, .bitsPerPixel = 8, .alphaChannelSize = 0, .format = PixelFormat::GRAY8 },
+    { .imageType = 3, .bitsPerPixel = 16, .alphaChannelSize = 8, .format = PixelFormat::GRAYA88 },
 };
 
 constexpr bool isFatalError(TGAError err);

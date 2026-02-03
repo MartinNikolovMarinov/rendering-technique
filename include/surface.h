@@ -101,7 +101,7 @@ struct Surface {
     i32 width = 0;
     i32 height = 0;
     i32 pitch = 0;
-    u8* data = nullptr;
+    u8* data = nullptr; // FIXME: [BUG] Accessing data directly is a problem if the data is packed and for BGR555 it will be.
 
     constexpr i32 size() const { return height * pitch; }
     constexpr i32 bpp() const { return pixelFormatBytesPerPixel(pixelFormat); }

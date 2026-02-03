@@ -35,7 +35,7 @@ i32 facesAreEqual(const WavefrontObj::Face& f1, const WavefrontObj::Face& f2) {
 
 } // namespace
 
-i32 runWavefrontVerticesTest(const TestRunParams& params) {
+i32 runWavefrontVerticesTest(TestRunParams& params) {
     const char* filePath = reinterpret_cast<const char*>(params.userData);
 
     auto obj = core::Unpack(
@@ -75,7 +75,7 @@ i32 runWavefrontVerticesTest(const TestRunParams& params) {
     return 0;
 }
 
-i32 runWavefrontFacesTest(const TestRunParams& params) {
+i32 runWavefrontFacesTest(TestRunParams& params) {
     const char* filePath = reinterpret_cast<const char*>(params.userData);
 
     auto obj = core::Unpack(

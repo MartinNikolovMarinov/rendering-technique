@@ -175,14 +175,14 @@ struct PACKED Header {
         return i32(0b1111 & imageSpecification[9]);
     }
     constexpr inline void setAlphaBits(u8 x) {
-        imageSpecification[9] = TGAByte(0b1111 & x);
+        imageSpecification[9] = TGAByte((imageSpecification[9] & 0b1111'0000) | (x & 0b0000'1111));
     }
 
     constexpr inline i32 origin() const {
         return i32(0b110000 & imageSpecification[9]) >> 4;
     }
     constexpr inline void setOrigin(u8 x) {
-        imageSpecification[9] = TGAByte((0b11 & x) << 4);
+        imageSpecification[9] = TGAByte((imageSpecification[9] & 0b1100'1111) | ((x & 0b0000'0011) << 4));
     }
 };
 PACK_POP
@@ -244,6 +244,6 @@ const char* errorToCstr(TGAError err);
 
 [[nodiscard]] core::expected<TGAImage, TGAError> loadFile(const char* path, core::AllocatorContext& actx = DEF_ALLOC);
 [[nodiscard]] core::expected<Surface, TGAError> createSurfaceFromTgaImage(const TGA::TGAImage& tgaImage, core::AllocatorContext& actx = DEF_ALLOC);
-[[nodiscard]] core::expected<TGAError> createFileFromSurface(const CreateFileFromSurfaceParams& params);
+[[nodiscard]] core::expected<TGAError> createFileFromSurface(const CreateFileFromSurfaceParams& params, core::AllocatorContext& actx = DEF_ALLOC);
 
 } // namespace TGA

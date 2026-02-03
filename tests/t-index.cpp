@@ -42,7 +42,7 @@ void afterAllSnapshotTests(const TestGroupRunParams&) {
     );
 }
 
-void beforeEachSnapshotTest(const TestRunParams& params) {
+void beforeEachSnapshotTest(TestRunParams& params) {
     auto sinfo = reinterpret_cast<const TestSnapshotInfo*>(params.userData);
     const char* wavefrontInputFile = sinfo->wavefrontInputFileFullPath;
     const char* testName = params.name;

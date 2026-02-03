@@ -16,60 +16,60 @@ constexpr bool updateAllSnapshots = false;
 // The id becomes an enum entry (SNAPSHOT_<id>) so both tables index the same element.
 // Editing this list updates both TestSnapshotInfo and TestCreateInfo tables below.
 #define SNAPSHOT_CASES(X) \
-    X(SIMPLE_TRIANGLE_BGRA8888_300x300, "01 Simple Triangle Scene", "01_simple_triangle.obj", 300, 300, updateAllSnapshots, BGRA8888, BottomLeft) \
-    X(SIMPLE_TRIANGLE_BGRX8888_300x300, "01 Simple Triangle Scene", "01_simple_triangle.obj", 300, 300, updateAllSnapshots, BGRX8888, BottomLeft) \
-    X(SIMPLE_TRIANGLE_BGRA5551_300x300, "01 Simple Triangle Scene", "01_simple_triangle.obj", 300, 300, updateAllSnapshots, BGRA5551, BottomLeft) \
-    X(SIMPLE_TRIANGLE_BGR555_300x300,   "01 Simple Triangle Scene", "01_simple_triangle.obj", 300, 300, updateAllSnapshots, BGR555,   BottomLeft) \
-    X(SIMPLE_TRIANGLE_BGR888_300x300,   "01 Simple Triangle Scene", "01_simple_triangle.obj", 300, 300, updateAllSnapshots, BGR888,   BottomLeft) \
+    X(SIMPLE_TRIANGLE_BGRA8888_300x300, "01 Simple Triangle Scene", "01_simple_triangle.obj", 300, 300, updateAllSnapshots, BGRA8888, BottomLeft, runDirectRasterizationSnapshotTest) \
+    X(SIMPLE_TRIANGLE_BGRX8888_300x300, "01 Simple Triangle Scene", "01_simple_triangle.obj", 300, 300, updateAllSnapshots, BGRX8888, BottomLeft, runDirectRasterizationSnapshotTest) \
+    X(SIMPLE_TRIANGLE_BGRA5551_300x300, "01 Simple Triangle Scene", "01_simple_triangle.obj", 300, 300, updateAllSnapshots, BGRA5551, BottomLeft, runDirectRasterizationSnapshotTest) \
+    X(SIMPLE_TRIANGLE_BGR555_300x300,   "01 Simple Triangle Scene", "01_simple_triangle.obj", 300, 300, updateAllSnapshots, BGR555,   BottomLeft, runDirectRasterizationSnapshotTest) \
+    X(SIMPLE_TRIANGLE_BGR888_300x300,   "01 Simple Triangle Scene", "01_simple_triangle.obj", 300, 300, updateAllSnapshots, BGR888,   BottomLeft, runDirectRasterizationSnapshotTest) \
     \
-    X(SIMPLE_TRIANGLE_BGRA8888_437x658, "01 Simple Triangle Scene", "01_simple_triangle.obj", 437, 658, updateAllSnapshots, BGRA8888, BottomLeft) \
-    X(SIMPLE_TRIANGLE_BGRX8888_437x658, "01 Simple Triangle Scene", "01_simple_triangle.obj", 437, 658, updateAllSnapshots, BGRX8888, BottomLeft) \
-    X(SIMPLE_TRIANGLE_BGRA5551_437x658, "01 Simple Triangle Scene", "01_simple_triangle.obj", 437, 658, updateAllSnapshots, BGRA5551, BottomLeft) \
-    X(SIMPLE_TRIANGLE_BGR555_437x658,   "01 Simple Triangle Scene", "01_simple_triangle.obj", 437, 658, updateAllSnapshots, BGR555,   BottomLeft) \
-    X(SIMPLE_TRIANGLE_BGR888_437x658,   "01 Simple Triangle Scene", "01_simple_triangle.obj", 437, 658, updateAllSnapshots, BGR888,   BottomLeft) \
+    X(SIMPLE_TRIANGLE_BGRA8888_437x658, "01 Simple Triangle Scene", "01_simple_triangle.obj", 437, 658, updateAllSnapshots, BGRA8888, BottomLeft, runDirectRasterizationSnapshotTest) \
+    X(SIMPLE_TRIANGLE_BGRX8888_437x658, "01 Simple Triangle Scene", "01_simple_triangle.obj", 437, 658, updateAllSnapshots, BGRX8888, BottomLeft, runDirectRasterizationSnapshotTest) \
+    X(SIMPLE_TRIANGLE_BGRA5551_437x658, "01 Simple Triangle Scene", "01_simple_triangle.obj", 437, 658, updateAllSnapshots, BGRA5551, BottomLeft, runDirectRasterizationSnapshotTest) \
+    X(SIMPLE_TRIANGLE_BGR555_437x658,   "01 Simple Triangle Scene", "01_simple_triangle.obj", 437, 658, updateAllSnapshots, BGR555,   BottomLeft, runDirectRasterizationSnapshotTest) \
+    X(SIMPLE_TRIANGLE_BGR888_437x658,   "01 Simple Triangle Scene", "01_simple_triangle.obj", 437, 658, updateAllSnapshots, BGR888,   BottomLeft, runDirectRasterizationSnapshotTest) \
     \
-    X(SIMPLE_TRIANGLE_BGRA8888_10x800, "01 Simple Triangle Scene", "01_simple_triangle.obj",  40, 800, updateAllSnapshots, BGRA8888, BottomLeft) \
-    X(SIMPLE_TRIANGLE_BGRX8888_10x800, "01 Simple Triangle Scene", "01_simple_triangle.obj",  40, 800, updateAllSnapshots, BGRX8888, BottomLeft) \
-    X(SIMPLE_TRIANGLE_BGRA5551_10x800, "01 Simple Triangle Scene", "01_simple_triangle.obj",  40, 800, updateAllSnapshots, BGRA5551, BottomLeft) \
-    X(SIMPLE_TRIANGLE_BGR555_10x800,   "01 Simple Triangle Scene", "01_simple_triangle.obj",  40, 800, updateAllSnapshots, BGR555,   BottomLeft) \
-    X(SIMPLE_TRIANGLE_BGR888_10x800,   "01 Simple Triangle Scene", "01_simple_triangle.obj",  40, 800, updateAllSnapshots, BGR888,   BottomLeft) \
+    X(SIMPLE_TRIANGLE_BGRA8888_10x800, "01 Simple Triangle Scene", "01_simple_triangle.obj",  40, 800, updateAllSnapshots, BGRA8888, BottomLeft, runDirectRasterizationSnapshotTest) \
+    X(SIMPLE_TRIANGLE_BGRX8888_10x800, "01 Simple Triangle Scene", "01_simple_triangle.obj",  40, 800, updateAllSnapshots, BGRX8888, BottomLeft, runDirectRasterizationSnapshotTest) \
+    X(SIMPLE_TRIANGLE_BGRA5551_10x800, "01 Simple Triangle Scene", "01_simple_triangle.obj",  40, 800, updateAllSnapshots, BGRA5551, BottomLeft, runDirectRasterizationSnapshotTest) \
+    X(SIMPLE_TRIANGLE_BGR555_10x800,   "01 Simple Triangle Scene", "01_simple_triangle.obj",  40, 800, updateAllSnapshots, BGR555,   BottomLeft, runDirectRasterizationSnapshotTest) \
+    X(SIMPLE_TRIANGLE_BGR888_10x800,   "01 Simple Triangle Scene", "01_simple_triangle.obj",  40, 800, updateAllSnapshots, BGR888,   BottomLeft, runDirectRasterizationSnapshotTest) \
     \
-    X(SIMPLE_TRIANGLE_BGRA8888_1000x20, "01 Simple Triangle Scene", "01_simple_triangle.obj", 1000, 60, updateAllSnapshots, BGRA8888, BottomLeft) \
-    X(SIMPLE_TRIANGLE_BGRX8888_1000x20, "01 Simple Triangle Scene", "01_simple_triangle.obj", 1000, 60, updateAllSnapshots, BGRX8888, BottomLeft) \
-    X(SIMPLE_TRIANGLE_BGRA5551_1000x20, "01 Simple Triangle Scene", "01_simple_triangle.obj", 1000, 60, updateAllSnapshots, BGRA5551, BottomLeft) \
-    X(SIMPLE_TRIANGLE_BGR555_1000x20,   "01 Simple Triangle Scene", "01_simple_triangle.obj", 1000, 60, updateAllSnapshots, BGR555,   BottomLeft) \
-    X(SIMPLE_TRIANGLE_BGR888_1000x20,   "01 Simple Triangle Scene", "01_simple_triangle.obj", 1000, 60, updateAllSnapshots, BGR888,   BottomLeft) \
+    X(SIMPLE_TRIANGLE_BGRA8888_1000x20, "01 Simple Triangle Scene", "01_simple_triangle.obj", 1000, 60, updateAllSnapshots, BGRA8888, BottomLeft, runDirectRasterizationSnapshotTest) \
+    X(SIMPLE_TRIANGLE_BGRX8888_1000x20, "01 Simple Triangle Scene", "01_simple_triangle.obj", 1000, 60, updateAllSnapshots, BGRX8888, BottomLeft, runDirectRasterizationSnapshotTest) \
+    X(SIMPLE_TRIANGLE_BGRA5551_1000x20, "01 Simple Triangle Scene", "01_simple_triangle.obj", 1000, 60, updateAllSnapshots, BGRA5551, BottomLeft, runDirectRasterizationSnapshotTest) \
+    X(SIMPLE_TRIANGLE_BGR555_1000x20,   "01 Simple Triangle Scene", "01_simple_triangle.obj", 1000, 60, updateAllSnapshots, BGR555,   BottomLeft, runDirectRasterizationSnapshotTest) \
+    X(SIMPLE_TRIANGLE_BGR888_1000x20,   "01 Simple Triangle Scene", "01_simple_triangle.obj", 1000, 60, updateAllSnapshots, BGR888,   BottomLeft, runDirectRasterizationSnapshotTest) \
     \
-    X(FOUR_TRIANGLES_BGRA8888_BottomLeft,  "02 Four Triangles Scene",  "02_triangles.obj",  800, 800, updateAllSnapshots, BGRA8888, BottomLeft) \
-    X(FOUR_TRIANGLES_BGRX8888_BottomLeft,  "02 Four Triangles Scene",  "02_triangles.obj",  800, 800, updateAllSnapshots, BGRX8888, BottomLeft) \
-    X(FOUR_TRIANGLES_BGRA5551_BottomLeft,  "02 Four Triangles Scene",  "02_triangles.obj",  800, 800, updateAllSnapshots, BGRA5551, BottomLeft) \
-    X(FOUR_TRIANGLES_BGR555_BottomLeft,    "02 Four Triangles Scene",  "02_triangles.obj",  800, 800, updateAllSnapshots, BGR555,   BottomLeft) \
-    X(FOUR_TRIANGLES_BGR888_BottomLeft,    "02 Four Triangles Scene",  "02_triangles.obj",  800, 800, updateAllSnapshots, BGR888,   BottomLeft) \
+    X(FOUR_TRIANGLES_BGRA8888_BottomLeft,  "02 Four Triangles Scene",  "02_triangles.obj",  800, 800, updateAllSnapshots, BGRA8888, BottomLeft, runDirectRasterizationSnapshotTest) \
+    X(FOUR_TRIANGLES_BGRX8888_BottomLeft,  "02 Four Triangles Scene",  "02_triangles.obj",  800, 800, updateAllSnapshots, BGRX8888, BottomLeft, runDirectRasterizationSnapshotTest) \
+    X(FOUR_TRIANGLES_BGRA5551_BottomLeft,  "02 Four Triangles Scene",  "02_triangles.obj",  800, 800, updateAllSnapshots, BGRA5551, BottomLeft, runDirectRasterizationSnapshotTest) \
+    X(FOUR_TRIANGLES_BGR555_BottomLeft,    "02 Four Triangles Scene",  "02_triangles.obj",  800, 800, updateAllSnapshots, BGR555,   BottomLeft, runDirectRasterizationSnapshotTest) \
+    X(FOUR_TRIANGLES_BGR888_BottomLeft,    "02 Four Triangles Scene",  "02_triangles.obj",  800, 800, updateAllSnapshots, BGR888,   BottomLeft, runDirectRasterizationSnapshotTest) \
     \
-    X(FOUR_TRIANGLES_BGRA8888_TopLeft,  "02 Four Triangles Scene",  "02_triangles.obj",     800, 800, updateAllSnapshots, BGRA8888, TopLeft) \
-    X(FOUR_TRIANGLES_BGRX8888_TopLeft,  "02 Four Triangles Scene",  "02_triangles.obj",     800, 800, updateAllSnapshots, BGRX8888, TopLeft) \
-    X(FOUR_TRIANGLES_BGRA5551_TopLeft,  "02 Four Triangles Scene",  "02_triangles.obj",     800, 800, updateAllSnapshots, BGRA5551, TopLeft) \
-    X(FOUR_TRIANGLES_BGR555_TopLeft,    "02 Four Triangles Scene",  "02_triangles.obj",     800, 800, updateAllSnapshots, BGR555,   TopLeft) \
-    X(FOUR_TRIANGLES_BGR888_TopLeft,    "02 Four Triangles Scene",  "02_triangles.obj",     800, 800, updateAllSnapshots, BGR888,   TopLeft) \
+    X(FOUR_TRIANGLES_BGRA8888_TopLeft,  "02 Four Triangles Scene",  "02_triangles.obj",     800, 800, updateAllSnapshots, BGRA8888, TopLeft, runDirectRasterizationSnapshotTest) \
+    X(FOUR_TRIANGLES_BGRX8888_TopLeft,  "02 Four Triangles Scene",  "02_triangles.obj",     800, 800, updateAllSnapshots, BGRX8888, TopLeft, runDirectRasterizationSnapshotTest) \
+    X(FOUR_TRIANGLES_BGRA5551_TopLeft,  "02 Four Triangles Scene",  "02_triangles.obj",     800, 800, updateAllSnapshots, BGRA5551, TopLeft, runDirectRasterizationSnapshotTest) \
+    X(FOUR_TRIANGLES_BGR555_TopLeft,    "02 Four Triangles Scene",  "02_triangles.obj",     800, 800, updateAllSnapshots, BGR555,   TopLeft, runDirectRasterizationSnapshotTest) \
+    X(FOUR_TRIANGLES_BGR888_TopLeft,    "02 Four Triangles Scene",  "02_triangles.obj",     800, 800, updateAllSnapshots, BGR888,   TopLeft, runDirectRasterizationSnapshotTest) \
     \
-    X(FOUR_TRIANGLES_BGRA8888_BottomRight,  "02 Four Triangles Scene",  "02_triangles.obj", 800, 800, updateAllSnapshots, BGRA8888, BottomRight) \
-    X(FOUR_TRIANGLES_BGRX8888_BottomRight,  "02 Four Triangles Scene",  "02_triangles.obj", 800, 800, updateAllSnapshots, BGRX8888, BottomRight) \
-    X(FOUR_TRIANGLES_BGRA5551_BottomRight,  "02 Four Triangles Scene",  "02_triangles.obj", 800, 800, updateAllSnapshots, BGRA5551, BottomRight) \
-    X(FOUR_TRIANGLES_BGR555_BottomRight,    "02 Four Triangles Scene",  "02_triangles.obj", 800, 800, updateAllSnapshots, BGR555,   BottomRight) \
-    X(FOUR_TRIANGLES_BGR888_BottomRight,    "02 Four Triangles Scene",  "02_triangles.obj", 800, 800, updateAllSnapshots, BGR888,   BottomRight) \
+    X(FOUR_TRIANGLES_BGRA8888_BottomRight,  "02 Four Triangles Scene",  "02_triangles.obj", 800, 800, updateAllSnapshots, BGRA8888, BottomRight, runDirectRasterizationSnapshotTest) \
+    X(FOUR_TRIANGLES_BGRX8888_BottomRight,  "02 Four Triangles Scene",  "02_triangles.obj", 800, 800, updateAllSnapshots, BGRX8888, BottomRight, runDirectRasterizationSnapshotTest) \
+    X(FOUR_TRIANGLES_BGRA5551_BottomRight,  "02 Four Triangles Scene",  "02_triangles.obj", 800, 800, updateAllSnapshots, BGRA5551, BottomRight, runDirectRasterizationSnapshotTest) \
+    X(FOUR_TRIANGLES_BGR555_BottomRight,    "02 Four Triangles Scene",  "02_triangles.obj", 800, 800, updateAllSnapshots, BGR555,   BottomRight, runDirectRasterizationSnapshotTest) \
+    X(FOUR_TRIANGLES_BGR888_BottomRight,    "02 Four Triangles Scene",  "02_triangles.obj", 800, 800, updateAllSnapshots, BGR888,   BottomRight, runDirectRasterizationSnapshotTest) \
     \
-    X(FOUR_TRIANGLES_BGRA8888_TopRight,  "02 Four Triangles Scene",  "02_triangles.obj",    800, 800, updateAllSnapshots, BGRA8888, TopRight) \
-    X(FOUR_TRIANGLES_BGRX8888_TopRight,  "02 Four Triangles Scene",  "02_triangles.obj",    800, 800, updateAllSnapshots, BGRX8888, TopRight) \
-    X(FOUR_TRIANGLES_BGRA5551_TopRight,  "02 Four Triangles Scene",  "02_triangles.obj",    800, 800, updateAllSnapshots, BGRA5551, TopRight) \
-    X(FOUR_TRIANGLES_BGR555_TopRight,    "02 Four Triangles Scene",  "02_triangles.obj",    800, 800, updateAllSnapshots, BGR555,   TopRight) \
-    X(FOUR_TRIANGLES_BGR888_TopRight,    "02 Four Triangles Scene",  "02_triangles.obj",    800, 800, updateAllSnapshots, BGR888,   TopRight)
+    X(FOUR_TRIANGLES_BGRA8888_TopRight,  "02 Four Triangles Scene",  "02_triangles.obj",    800, 800, updateAllSnapshots, BGRA8888, TopRight, runDirectRasterizationSnapshotTest) \
+    X(FOUR_TRIANGLES_BGRX8888_TopRight,  "02 Four Triangles Scene",  "02_triangles.obj",    800, 800, updateAllSnapshots, BGRX8888, TopRight, runDirectRasterizationSnapshotTest) \
+    X(FOUR_TRIANGLES_BGRA5551_TopRight,  "02 Four Triangles Scene",  "02_triangles.obj",    800, 800, updateAllSnapshots, BGRA5551, TopRight, runDirectRasterizationSnapshotTest) \
+    X(FOUR_TRIANGLES_BGR555_TopRight,    "02 Four Triangles Scene",  "02_triangles.obj",    800, 800, updateAllSnapshots, BGR555,   TopRight, runDirectRasterizationSnapshotTest) \
+    X(FOUR_TRIANGLES_BGR888_TopRight,    "02 Four Triangles Scene",  "02_triangles.obj",    800, 800, updateAllSnapshots, BGR888,   TopRight, runDirectRasterizationSnapshotTest)
 
 // Maps each case id to a stable index used to cross-reference both tables.
 // The INFO/TEST entry macros expand SNAPSHOT_CASES into parallel arrays:
 //   - testSnapshotInfos: data needed by the snapshot runner
 //   - snapshotTests:     test registration pointing at the matching info entry
-#define SNAPSHOT_ENUM_ENTRY(id, case_name, file, w, h, upd, fmt, case_origin) SNAPSHOT_##id,
-#define SNAPSHOT_INFO_ENTRY(id, case_name, file, w, h, upd, fmt, case_origin) \
+#define SNAPSHOT_ENUM_ENTRY(id) SNAPSHOT_##id,
+#define SNAPSHOT_INFO_ENTRY(file, w, h, upd, fmt, case_origin) \
     { \
         .wavefrontInputFileFullPath = TEST_ASSETS_DIRECTORY "/snapshot_tests_input_files/" file, \
         .snapshotDirectory = SNAPSHOT_ROOT_DIRECTORY, \
@@ -80,28 +80,28 @@ constexpr bool updateAllSnapshots = false;
         .pixelFormat = PixelFormat::fmt, \
         .origin = Origin::case_origin, \
     },
-#define SNAPSHOT_TEST_ENTRY(id, case_name, file, w, h, upd, fmt, case_origin) \
+#define SNAPSHOT_TEST_ENTRY(id, case_name, test_fn) \
     { \
         .name = case_name, \
-        .testFunction = runDirectRasterizationSnapshotTest, \
+        .testFunction = test_fn, \
         .userData = &testSnapshotInfos[SNAPSHOT_##id], \
     },
 
 enum SnapshotIndex {
-#define X(id, case_name, file, w, h, upd, fmt, case_origin) SNAPSHOT_ENUM_ENTRY(id, case_name, file, w, h, upd, fmt, case_origin)
+#define X(id, case_name, file, w, h, upd, fmt, case_origin, test_fn) SNAPSHOT_ENUM_ENTRY(id)
     SNAPSHOT_CASES(X)
 #undef X
     SNAPSHOT_COUNT
 };
 
 inline TestSnapshotInfo testSnapshotInfos[] = {
-#define X(id, case_name, file, w, h, upd, fmt, case_origin) SNAPSHOT_INFO_ENTRY(id, case_name, file, w, h, upd, fmt, case_origin)
+#define X(id, case_name, file, w, h, upd, fmt, case_origin, test_fn) SNAPSHOT_INFO_ENTRY(file, w, h, upd, fmt, case_origin)
     SNAPSHOT_CASES(X)
 #undef X
 };
 
 inline TestCreateInfo snapshotTests[] = {
-#define X(id, case_name, file, w, h, upd, fmt, case_origin) SNAPSHOT_TEST_ENTRY(id, case_name, file, w, h, upd, fmt, case_origin)
+#define X(id, case_name, file, w, h, upd, fmt, case_origin, test_fn) SNAPSHOT_TEST_ENTRY(id, case_name, test_fn)
     SNAPSHOT_CASES(X)
 #undef X
 };

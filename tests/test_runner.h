@@ -10,11 +10,11 @@ struct TestCreateInfo;
 struct TestGroup;
 template<addr_size TTestGroupCount> struct TestRunner;
 
-using TestFunction = i32 (*)(const TestRunParams& params);
+using TestFunction = i32 (*)(TestRunParams& params);
 using BeforeAllTestsFunction = void (*)(const TestGroupRunParams& params);
 using AfterAllTestsFunction = void (*)(const TestGroupRunParams& params);
-using BeforeEachTestFunction = void (*)(const TestRunParams& params);
-using AfterEachTestFunction = void (*)(const TestRunParams& params);
+using BeforeEachTestFunction = void (*)(TestRunParams& params);
+using AfterEachTestFunction = void (*)(TestRunParams& params);
 
 namespace detail {
 

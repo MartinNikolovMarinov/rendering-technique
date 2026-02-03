@@ -3,6 +3,9 @@
 
 #include "GLFW/glfw3.h"
 
+PRAGMA_WARNING_PUSH
+PRAGMA_WARNING_SUPPRESS_ALL
+
 namespace {
 
 bool g_glfwInitialized = false;
@@ -174,3 +177,5 @@ constexpr GLenum pickGLType(PixelFormat pixelFormat) {
 }
 
 } // namespace
+
+PRAGMA_WARNING_POP

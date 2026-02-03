@@ -4,12 +4,12 @@
 #include "surface.h"
 
 
-i32 runCreateSurfaceFromTgaFilesInDirectoryTest(const TestRunParams& params) {
+i32 runCreateSurfaceFromTgaFilesInDirectoryTest(TestRunParams& params) {
     const char* directory = reinterpret_cast<const char*>(params.userData);
 
     struct Clojure {
         core::StaticPathBuilder<255> path;
-        const TestRunParams& params;
+        TestRunParams& params;
     };
 
     core::StaticPathBuilder<255> path;
