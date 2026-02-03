@@ -185,7 +185,7 @@ i32 main() {
         defer { coreShutdown(); };
 
         const char* filesToRender[] = {
-            ASSETS_DIRECTORY "/test_assets/obj/single_file_models/diablo3_pose.obj",
+            // ASSETS_DIRECTORY "/test_assets/obj/single_file_models/diablo3_pose.obj",
 
             // ASSETS_DIRECTORY "/test_assets/obj/single_file_models/african_head.obj",
 
@@ -193,7 +193,7 @@ i32 main() {
             // ASSETS_DIRECTORY "/test_assets/obj/multipart/head.obj",
             // ASSETS_DIRECTORY "/test_assets/obj/multipart/eyes.obj",
 
-            // ASSETS_DIRECTORY "/test_assets/obj/simple/triangle.obj",
+            ASSETS_DIRECTORY "/test_assets/obj/simple/rectangle_with_arrow.obj",
         };
 
         const char* output = OUT_DIRECTORY "/output.tga";

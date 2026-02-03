@@ -385,12 +385,12 @@ void rendererCalculateDepthBuffer(RendererHandle r, Surface& depthBuffer) {
             core::vec4f& v3 = vertices[f[2]];
 
             // TODO: This projections is hardcoded for testing:
-            core::vec3i a = orthogonalProjection(persp(rot(v1.xyz(), core::degToRad(30))), width, height);
-            core::vec3i b = orthogonalProjection(persp(rot(v2.xyz(), core::degToRad(30))), width, height);
-            core::vec3i c = orthogonalProjection(persp(rot(v3.xyz(), core::degToRad(30))), width, height);
-            // core::vec3i a = orthogonalProjection(v1.xyz(), width, height);
-            // core::vec3i b = orthogonalProjection(v2.xyz(), width, height);
-            // core::vec3i c = orthogonalProjection(v3.xyz(), width, height);
+            // core::vec3i a = orthogonalProjection(persp(rot(v1.xyz(), core::degToRad(30))), width, height);
+            // core::vec3i b = orthogonalProjection(persp(rot(v2.xyz(), core::degToRad(30))), width, height);
+            // core::vec3i c = orthogonalProjection(persp(rot(v3.xyz(), core::degToRad(30))), width, height);
+            core::vec3i a = orthogonalProjection(v1.xyz(), width, height);
+            core::vec3i b = orthogonalProjection(v2.xyz(), width, height);
+            core::vec3i c = orthogonalProjection(v3.xyz(), width, height);
 
             fillDepthBuffer(depthBuffer, a, b, c);
         }
@@ -417,12 +417,12 @@ void rendererEndFrame(RendererHandle r) {
         core::vec4f& v3 = vertices[f[2]];
 
         // TODO: This projections is hardcoded for testing:
-        core::vec3i a = orthogonalProjection(persp(rot(v1.xyz(), core::degToRad(30))), width, height);
-        core::vec3i b = orthogonalProjection(persp(rot(v2.xyz(), core::degToRad(30))), width, height);
-        core::vec3i c = orthogonalProjection(persp(rot(v3.xyz(), core::degToRad(30))), width, height);
-        // core::vec3i a = orthogonalProjection(v1.xyz(), width, height);
-        // core::vec3i b = orthogonalProjection(v2.xyz(), width, height);
-        // core::vec3i c = orthogonalProjection(v3.xyz(), width, height);
+        // core::vec3i a = orthogonalProjection(persp(rot(v1.xyz(), core::degToRad(30))), width, height);
+        // core::vec3i b = orthogonalProjection(persp(rot(v2.xyz(), core::degToRad(30))), width, height);
+        // core::vec3i c = orthogonalProjection(persp(rot(v3.xyz(), core::degToRad(30))), width, height);
+        core::vec3i a = orthogonalProjection(v1.xyz(), width, height);
+        core::vec3i b = orthogonalProjection(v2.xyz(), width, height);
+        core::vec3i c = orthogonalProjection(v3.xyz(), width, height);
 
         if (wireframe) {
             strokeTriangleFast(surface, a.xy(), b.xy(), c.xy(), RED);

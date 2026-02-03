@@ -15,7 +15,7 @@ constexpr bool updateAllSnapshots = false;
 //   id, display name, input file, width, height, update flag, pixel format, origin.
 // The id becomes an enum entry (SNAPSHOT_<id>) so both tables index the same element.
 // Editing this list updates both TestSnapshotInfo and TestCreateInfo tables below.
-#define SNAPSHOT_CASES(X) \
+#define SNAPSHOT_SIMPLE_TRIANGLE_SCENE(X) \
     X(SIMPLE_TRIANGLE_BGRA8888_300x300, "01 Simple Triangle Scene", "01_simple_triangle.obj", 300, 300, updateAllSnapshots, BGRA8888, BottomLeft, runDirectRasterizationSnapshotTest) \
     X(SIMPLE_TRIANGLE_BGRX8888_300x300, "01 Simple Triangle Scene", "01_simple_triangle.obj", 300, 300, updateAllSnapshots, BGRX8888, BottomLeft, runDirectRasterizationSnapshotTest) \
     X(SIMPLE_TRIANGLE_BGRA5551_300x300, "01 Simple Triangle Scene", "01_simple_triangle.obj", 300, 300, updateAllSnapshots, BGRA5551, BottomLeft, runDirectRasterizationSnapshotTest) \
@@ -48,6 +48,8 @@ constexpr bool updateAllSnapshots = false;
     X(SIMPLE_TRIANGLE_GRAY8_1000x20,    "01 Simple Triangle Scene", "01_simple_triangle.obj", 1000, 60, updateAllSnapshots, GRAY8,    BottomLeft, runDirectRasterizationSnapshotTest) \
     X(SIMPLE_TRIANGLE_GRAYA88_1000x20,  "01 Simple Triangle Scene", "01_simple_triangle.obj", 1000, 60, updateAllSnapshots, GRAYA88,  BottomLeft, runDirectRasterizationSnapshotTest) \
     \
+
+#define SNAPSHOT_TRIANGLE_SCENE(X) \
     X(FOUR_TRIANGLES_BGRA8888_BottomLeft,  "02 Four Triangles Scene",  "02_triangles.obj",  800, 800, updateAllSnapshots, BGRA8888, BottomLeft, runDirectRasterizationSnapshotTest) \
     X(FOUR_TRIANGLES_BGRX8888_BottomLeft,  "02 Four Triangles Scene",  "02_triangles.obj",  800, 800, updateAllSnapshots, BGRX8888, BottomLeft, runDirectRasterizationSnapshotTest) \
     X(FOUR_TRIANGLES_BGRA5551_BottomLeft,  "02 Four Triangles Scene",  "02_triangles.obj",  800, 800, updateAllSnapshots, BGRA5551, BottomLeft, runDirectRasterizationSnapshotTest) \
@@ -78,7 +80,12 @@ constexpr bool updateAllSnapshots = false;
     X(FOUR_TRIANGLES_BGRX5551_TopRight,  "02 Four Triangles Scene",  "02_triangles.obj",    800, 800, updateAllSnapshots, BGRX5551, TopRight, runDirectRasterizationSnapshotTest) \
     X(FOUR_TRIANGLES_BGR888_TopRight,    "02 Four Triangles Scene",  "02_triangles.obj",    800, 800, updateAllSnapshots, BGR888,   TopRight, runDirectRasterizationSnapshotTest) \
     X(FOUR_TRIANGLES_GRAY8_TopRight,     "02 Four Triangles Scene",  "02_triangles.obj",    800, 800, updateAllSnapshots, GRAY8,    TopRight, runDirectRasterizationSnapshotTest) \
-    X(FOUR_TRIANGLES_GRAYA88_TopRight,   "02 Four Triangles Scene",  "02_triangles.obj",    800, 800, updateAllSnapshots, GRAYA88,  TopRight, runDirectRasterizationSnapshotTest)
+    X(FOUR_TRIANGLES_GRAYA88_TopRight,   "02 Four Triangles Scene",  "02_triangles.obj",    800, 800, updateAllSnapshots, GRAYA88,  TopRight, runDirectRasterizationSnapshotTest) \
+    \
+
+#define SNAPSHOT_CASES(X) \
+    SNAPSHOT_SIMPLE_TRIANGLE_SCENE(X) \
+    SNAPSHOT_TRIANGLE_SCENE(X)
 
 // Maps each case id to a stable index used to cross-reference both tables.
 // The INFO/TEST entry macros expand SNAPSHOT_CASES into parallel arrays:
