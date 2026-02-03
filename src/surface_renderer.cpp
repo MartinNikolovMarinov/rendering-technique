@@ -14,7 +14,7 @@ constexpr inline void setPixelRaw_BGRA8888(u8* data, i32 idx, Color color);
 constexpr inline void setPixelRaw_BGRX8888(u8* data, i32 idx, Color color);
 constexpr inline void setPixelRaw_BGR888(u8* data, i32 idx, Color color);
 constexpr inline void setPixelRaw_BGRA5551(u8* data, i32 idx, Color color);
-constexpr inline void setPixelRaw_BGR555(u8* data, i32 idx, Color color);
+constexpr inline void setPixelRaw_BGRX5551(u8* data, i32 idx, Color color);
 constexpr inline void setPixelRaw_GRAY8(u8* data, i32 idx, Color color);
 constexpr inline void setPixelRaw_GRAYA88(u8* data, i32 idx, Color color);
 
@@ -472,7 +472,7 @@ constexpr inline void setPixelRaw_BGRA5551(u8* data, i32 idx, Color color) {
     data[idx + 1] = u8(packed >> 8);
 }
 
-constexpr inline void setPixelRaw_BGR555(u8* data, i32 idx, Color color) {
+constexpr inline void setPixelRaw_BGRX5551(u8* data, i32 idx, Color color) {
     // Packed as: bits 0-4 blue, 5-9 green, 10-14 red, bit 15 cleared.
     u16 b = u16(color.b() >> 3);
     u16 g = u16(color.g() >> 3);
@@ -499,7 +499,7 @@ constexpr inline SetPixelFn pickSetPixelFunction(PixelFormat pixelFormat) {
         case PixelFormat::BGRX8888: return setPixelRaw_BGRX8888;
         case PixelFormat::BGR888:   return setPixelRaw_BGR888;
         case PixelFormat::BGRA5551: return setPixelRaw_BGRA5551;
-        case PixelFormat::BGR555:   return setPixelRaw_BGR555;
+        case PixelFormat::BGRX5551: return setPixelRaw_BGRX5551;
 
         case PixelFormat::GRAY8:    return setPixelRaw_GRAY8;
         case PixelFormat::GRAYA88:  return setPixelRaw_GRAYA88;

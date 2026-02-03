@@ -123,7 +123,7 @@ constexpr GLenum pickGLFormat(PixelFormat pixelFormat) {
         case PixelFormat::BGR888:   return GL_BGR;
 
         case PixelFormat::BGRA5551: return GL_BGRA;
-        case PixelFormat::BGR555:   return GL_BGRA;
+        case PixelFormat::BGRX5551: return GL_BGRA;
 
         case PixelFormat::GRAY8:    return GL_LUMINANCE;
         case PixelFormat::GRAYA88:  return GL_LUMINANCE_ALPHA;
@@ -143,7 +143,7 @@ constexpr GLint pickGLInternalFormat(PixelFormat pixelFormat) {
         case PixelFormat::BGR888:   return GL_RGB8;
 
         case PixelFormat::BGRA5551: return GL_RGB5_A1;
-        case PixelFormat::BGR555:   return GL_RGB5;
+        case PixelFormat::BGRX5551: return GL_RGB5;
 
         case PixelFormat::GRAY8:    return GL_LUMINANCE8;
         case PixelFormat::GRAYA88:  return GL_LUMINANCE8_ALPHA8;
@@ -163,7 +163,7 @@ constexpr GLenum pickGLType(PixelFormat pixelFormat) {
         case PixelFormat::BGR888:   return GL_UNSIGNED_BYTE;
 
         case PixelFormat::BGRA5551: return GL_UNSIGNED_SHORT_1_5_5_5_REV;
-        case PixelFormat::BGR555:   return GL_UNSIGNED_SHORT_1_5_5_5_REV;
+        case PixelFormat::BGRX5551: return GL_UNSIGNED_SHORT_1_5_5_5_REV;
 
         case PixelFormat::GRAY8:    return GL_UNSIGNED_BYTE;
         case PixelFormat::GRAYA88:  return GL_UNSIGNED_BYTE;

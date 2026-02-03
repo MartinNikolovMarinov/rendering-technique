@@ -12,14 +12,14 @@ namespace {
 constexpr auto TRUE_VISION_SIGNATURE = "TRUEVISION-XFILE."_sv;
 
 struct FormatMapping {
-    i32 imageType;
-    i32 bitsPerPixel;
-    i32 alphaChannelSize;
+    u8 imageType;
+    u8 bitsPerPixel;
+    u8 alphaChannelSize;
     PixelFormat format;
 };
 constexpr FormatMapping formatMappingTable[] = {
     // True color (image type 2)
-    { .imageType = 2, .bitsPerPixel = 15, .alphaChannelSize = 0, .format = PixelFormat::BGR555 },
+    { .imageType = 2, .bitsPerPixel = 16, .alphaChannelSize = 0, .format = PixelFormat::BGRX5551 },
     { .imageType = 2, .bitsPerPixel = 16, .alphaChannelSize = 1, .format = PixelFormat::BGRA5551 },
     { .imageType = 2, .bitsPerPixel = 24, .alphaChannelSize = 0, .format = PixelFormat::BGR888 },
     { .imageType = 2, .bitsPerPixel = 32, .alphaChannelSize = 8, .format = PixelFormat::BGRA8888 },
@@ -35,7 +35,7 @@ constexpr bool isFatalError(TGAError err);
 constexpr bool hasSignature(const char signature[18]);
 constexpr core::expected<addr_off, TGAError> parseFooterOffset(u8* begin, u8* end);
 
-PixelFormat pickPixelFormat(i32 imageType, i32 bytesPerPixel, i32 alphaChannelSize);
+PixelFormat pickPixelFormat(u8 imageType, u8 bitsPerPixel, u8 alphaChannelSize);
 
 core::expected<TGAError> createImageFile(const CreateFileFromSurfaceParams& params, const FormatMapping& mapping);
 
@@ -233,10 +233,10 @@ core::expected<Surface, TGAError> createSurfaceFromTgaImage(const TGA::TGAImage&
 
     switch (header->imageType) {
         case 2: // True Color Image
-            pixelFormat = pickPixelFormat(2, bytesPerPixel, alphaChannelSize);
+            pixelFormat = pickPixelFormat(2, u8(pixelDepthInBits), u8(alphaChannelSize));
             break;
         case 3: // Gray Scale Image
-            pixelFormat = pickPixelFormat(3, bytesPerPixel, alphaChannelSize);
+            pixelFormat = pickPixelFormat(3, u8(pixelDepthInBits), u8(alphaChannelSize));
             break;
 
         // TODO2: [TGA Support] Do I care about color mapped images?
@@ -350,13 +350,13 @@ constexpr core::expected<addr_off, TGAError> parseFooterOffset(u8* begin, u8* en
     return off;
 }
 
-PixelFormat pickPixelFormat(i32 imageType, i32 bytesPerPixel, i32 alphaChannelSize) {
+PixelFormat pickPixelFormat(u8 imageType, u8 bitsPerPixel, u8 alphaChannelSize) {
     PixelFormat ret = PixelFormat::Unknown;
 
     for (addr_size i = 0; i < CORE_C_ARRLEN(formatMappingTable); i++) {
         auto& m = formatMappingTable[i];
         if (m.imageType == imageType &&
-            m.bytesPerPixel == bytesPerPixel &&
+            m.bitsPerPixel == bitsPerPixel &&
             m.alphaChannelSize == alphaChannelSize
         ) {
             ret = m.format;
@@ -387,8 +387,8 @@ core::expected<TGAError> createImageFile(const CreateFileFromSurfaceParams& para
     header.imageType = TGAByte(mapping.imageType);
     header.setWidth(u16(surface.width));
     header.setHeight(u16(surface.height));
-    header.setPixelDepth(u8(mapping.bytesPerPixel * core::BYTE_SIZE));
-    header.setAlphaBits(u8(mapping.alphaChannelSize));
+    header.setPixelDepth(mapping.bitsPerPixel);
+    header.setAlphaBits(mapping.alphaChannelSize);
 
     // Set image origin
     switch (surface.origin) {

@@ -244,6 +244,6 @@ const char* errorToCstr(TGAError err);
 
 [[nodiscard]] core::expected<TGAImage, TGAError> loadFile(const char* path, core::AllocatorContext& actx = DEF_ALLOC);
 [[nodiscard]] core::expected<Surface, TGAError> createSurfaceFromTgaImage(const TGA::TGAImage& tgaImage, core::AllocatorContext& actx = DEF_ALLOC);
-[[nodiscard]] core::expected<TGAError> createFileFromSurface(const CreateFileFromSurfaceParams& params, core::AllocatorContext& actx = DEF_ALLOC);
+[[nodiscard]] core::expected<TGAError> createFileFromSurface(const CreateFileFromSurfaceParams& params);
 
 } // namespace TGA

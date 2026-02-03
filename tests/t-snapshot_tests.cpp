@@ -52,14 +52,14 @@ Surface createTestSurface(
     return s;
 }
 
-void createTrueImageFile(const Surface& surface, const char* path, core::AllocatorContext& actx) {
+void createTrueImageFile(const Surface& surface, const char* path) {
     TGA::CreateFileFromSurfaceParams tgaCreateParams = {
         .surface = surface,
         .path = path,
         .imageType = 2,
         .fileType = TGA::FileType::New,
     };
-    core::Expect(TGA::createFileFromSurface(tgaCreateParams, actx));
+    core::Expect(TGA::createFileFromSurface(tgaCreateParams));
 }
 
 template <i32 N>
@@ -119,7 +119,7 @@ void updateSnapshot(const Surface& s, const TestSnapshotInfo* sinfo, TestRunPara
             );
         }
 
-        createTrueImageFile(s, snapshotFilePb.fullPath(), *params.actx);
+        createTrueImageFile(s, snapshotFilePb.fullPath());
     }
     else {
         core::StaticPathBuilder<512> outputFilePb = {};
@@ -128,7 +128,7 @@ void updateSnapshot(const Surface& s, const TestSnapshotInfo* sinfo, TestRunPara
         outputFilePb.appendToDirPath(core::sv(testName));
         genSnapshotFileName(s, outputFilePb);
 
-        createTrueImageFile(s, outputFilePb.fullPath(), *params.actx);
+        createTrueImageFile(s, outputFilePb.fullPath());
 
         // Compare the output file with the snapshot:
         compareFilesBytewise(outputFilePb.fullPath(), snapshotFilePb.fullPath());

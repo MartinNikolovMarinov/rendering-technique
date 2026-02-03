@@ -125,7 +125,7 @@ i32 runAllTests() {
             .tests = { wavefrontTests, CORE_C_ARRLEN(wavefrontTests) }
         },
         {
-            .group = { .name = "TGA Tests Suite", .allocatorsToUse = allTestAllocators, },
+            .group = { .name = "TGA Tests Suite", .allocatorsToUse = allTestAllocators },
             .tests = { tgaTests, CORE_C_ARRLEN(tgaTests) }
         },
         {
