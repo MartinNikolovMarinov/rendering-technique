@@ -19,6 +19,7 @@ struct FormatMapping {
 };
 constexpr FormatMapping formatMappingTable[] = {
     // True color (image type 2)
+    { .imageType = 2, .bitsPerPixel = 15, .alphaChannelSize = 0, .format = PixelFormat::BGRX5551 },
     { .imageType = 2, .bitsPerPixel = 16, .alphaChannelSize = 0, .format = PixelFormat::BGRX5551 },
     { .imageType = 2, .bitsPerPixel = 16, .alphaChannelSize = 1, .format = PixelFormat::BGRA5551 },
     { .imageType = 2, .bitsPerPixel = 24, .alphaChannelSize = 0, .format = PixelFormat::BGR888 },

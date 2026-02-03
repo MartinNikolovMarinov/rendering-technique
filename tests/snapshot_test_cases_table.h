@@ -8,7 +8,7 @@
 constexpr const char* SNAPSHOT_ROOT_DIRECTORY = TEST_ASSETS_DIRECTORY "/snapshots";
 constexpr const char* TEST_OUTPUT_DIRECTORY = TEST_ASSETS_DIRECTORY "/test_output_directory";
 
-constexpr bool updateAllSnapshots = true;
+constexpr bool updateAllSnapshots = false;
 
 // Snapshot cases are the single source of truth for snapshot tests.
 // Each line defines one test variant:
