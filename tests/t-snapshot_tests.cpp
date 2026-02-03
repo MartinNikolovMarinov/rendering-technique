@@ -52,11 +52,33 @@ Surface createTestSurface(
     return s;
 }
 
-void createTrueImageFile(const Surface& surface, const char* path) {
+void createTestTGAImageFile(const Surface& surface, const char* path) {
+    i32 imageType = 0;
+
+    switch (surface.pixelFormat) {
+        case PixelFormat::BGRA8888: [[fallthrough]];
+        case PixelFormat::BGRX8888: [[fallthrough]];
+        case PixelFormat::BGRA5551: [[fallthrough]];
+        case PixelFormat::BGRX5551: [[fallthrough]];
+        case PixelFormat::BGR888:
+            imageType = 2;
+            break;
+
+        case PixelFormat::GRAYA88: [[fallthrough]];
+        case PixelFormat::GRAY8:
+            imageType = 3;
+            break;
+
+        case PixelFormat::SENTINEL: [[fallthrough]];
+        case PixelFormat::Unknown: [[fallthrough]];
+        default:
+            Assert(false, "Invalid Pixel Format");
+    }
+
     TGA::CreateFileFromSurfaceParams tgaCreateParams = {
         .surface = surface,
         .path = path,
-        .imageType = 2,
+        .imageType = imageType,
         .fileType = TGA::FileType::New,
     };
     core::Expect(TGA::createFileFromSurface(tgaCreateParams));
@@ -119,7 +141,7 @@ void updateSnapshot(const Surface& s, const TestSnapshotInfo* sinfo, TestRunPara
             );
         }
 
-        createTrueImageFile(s, snapshotFilePb.fullPath());
+        createTestTGAImageFile(s, snapshotFilePb.fullPath());
     }
     else {
         core::StaticPathBuilder<512> outputFilePb = {};
@@ -128,7 +150,7 @@ void updateSnapshot(const Surface& s, const TestSnapshotInfo* sinfo, TestRunPara
         outputFilePb.appendToDirPath(core::sv(testName));
         genSnapshotFileName(s, outputFilePb);
 
-        createTrueImageFile(s, outputFilePb.fullPath());
+        createTestTGAImageFile(s, outputFilePb.fullPath());
 
         // Compare the output file with the snapshot:
         compareFilesBytewise(outputFilePb.fullPath(), snapshotFilePb.fullPath());
