@@ -2,6 +2,8 @@ build
 .cache
 .DS_Store
 
+lib/core
+
 assets/test_assets
 
 tests/test_assets/test_output_directory
