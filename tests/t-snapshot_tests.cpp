@@ -11,6 +11,8 @@
 #include "face.h"
 #include "tga_files.h"
 
+namespace {
+
 // FIXME: Move something like this in core if notthing there is useful.
 constexpr inline core::vec3i orthogonalProjection(core::vec3f normVec, i32 width, i32 height) {
     i32 x = i32((normVec.x() + 1.0f) * (f32(width - 1)/2.0f));
@@ -157,8 +159,10 @@ void updateSnapshot(const Surface& s, const TestSnapshotInfo* sinfo, TestRunPara
     }
 }
 
+} // namespace
+
 i32 runDirectRasterizationSnapshotTest(TestRunParams& params) {
-    [[maybe_unused]] auto sinfo = reinterpret_cast<const TestSnapshotInfo*>(params.userData);
+    auto sinfo = reinterpret_cast<const TestSnapshotInfo*>(params.userData);
 
     Model3D model = parseWavefrontFileToModel(sinfo->wavefrontInputFileFullPath, *params.actx);
     defer { model.free(); };
@@ -187,6 +191,52 @@ i32 runDirectRasterizationSnapshotTest(TestRunParams& params) {
         fillTriangle(s, a, b, c, RED, GREEN, BLUE);
         strokeTriangleFast(s, a.xy(), b.xy(), c.xy(), WHITE);
     }
+
+    updateSnapshot(s, sinfo, params);
+
+    return 0;
+}
+
+i32 runTriangleInsideTriangleDirectDrawingSnapshotTest(TestRunParams& params) {
+    [[maybe_unused]] auto sinfo = reinterpret_cast<const TestSnapshotInfo*>(params.userData);
+
+    Surface s = createTestSurface(sinfo->width, sinfo->height, sinfo->pixelFormat, sinfo->origin, *params.actx);
+    defer { s.free(); };
+
+    fillRect(s, 0, 0, BLACK, s.width, s.height);
+
+    constexpr f32 scale = 0.3f;
+    i32 ax = 290, ay = 170;
+    i32 bx = 500, by = 240;
+    i32 cx = 130, cy = 650;
+    auto a = core::v(ax, ay, 1);
+    auto b = core::v(bx, by, 1);
+    auto c = core::v(cx, cy, 1);
+
+    fillTriangle(s, a, b, c, RED, GREEN, BLUE);
+    strokeTriangleInset(s, a, b, c, BLUE, RED, GREEN, scale);
+
+    // Outline inner triangle
+    {
+        const f32 centerX = (f32(a.x()) + f32(b.x()) + f32(c.x())) / 3.0f;
+        const f32 centerY = (f32(a.y()) + f32(b.y()) + f32(c.y())) / 3.0f;
+        core::vec2i aInner = core::v(
+            i32(centerX + (f32(a.x()) - centerX) * (1.0f - scale)),
+            i32(centerY + (f32(a.y()) - centerY) * (1.0f - scale))
+        );
+        core::vec2i bInner = core::v(
+            i32(centerX + (f32(b.x()) - centerX) * (1.0f - scale)),
+            i32(centerY + (f32(b.y()) - centerY) * (1.0f - scale))
+        );
+        core::vec2i cInner = core::v(
+            i32(centerX + (f32(c.x()) - centerX) * (1.0f - scale)),
+            i32(centerY + (f32(c.y()) - centerY) * (1.0f - scale))
+        );
+        strokeTriangleFast(s, aInner, bInner, cInner, WHITE);
+    }
+
+    // Outline outer triangle:
+    strokeTriangleFast(s, a.xy(), b.xy(), c.xy(), WHITE);
 
     updateSnapshot(s, sinfo, params);
 

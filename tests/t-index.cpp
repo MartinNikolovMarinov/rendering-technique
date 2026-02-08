@@ -43,18 +43,7 @@ void afterAllSnapshotTests(const TestGroupRunParams&) {
 }
 
 void beforeEachSnapshotTest(TestRunParams& params) {
-    auto sinfo = reinterpret_cast<const TestSnapshotInfo*>(params.userData);
-    const char* wavefrontInputFile = sinfo->wavefrontInputFileFullPath;
     const char* testName = params.name;
-
-    // Wavefront input file must exist
-    bool exists = core::Unpack(core::fileExists(wavefrontInputFile));
-    AssertFmt(
-        exists,
-        "BeforeEach failed for test '{}'; reason: wavefront file '{}' does not exist!",
-        testName,
-        wavefrontInputFile
-    );
 
     // Create the output directory
     core::StaticPathBuilder<512> pathBuilder;
@@ -132,6 +121,7 @@ i32 runAllTests() {
             .group = {
                 .name = "Snapshot Tests Suite",
                 .allocatorsToUse = allTestAllocators,
+                .groupOnly=true,
                 .beforeAll = beforeAllSnapshotTests,
                 .afterAll = afterAllSnapshotTests,
                 .beforeEach = beforeEachSnapshotTest,

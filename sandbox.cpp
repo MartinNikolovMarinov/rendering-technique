@@ -147,7 +147,9 @@ i32 main() {
         Panic(initializeDebugRendering(), "Failed to initialize debug rendering!");
         defer { shutdownDebugRendering(); };
 
-        writeSurfaceToFile(output);
+        // writeSurfaceToFile(output);
+
+        create5MillionLines(output);
     }
     return 0;
 }

@@ -83,9 +83,17 @@ constexpr bool updateAllSnapshots = false;
     X(FOUR_TRIANGLES_GRAYA88_TopRight,   "02 Four Triangles Scene",  "02_triangles.obj",    800, 800, updateAllSnapshots, GRAYA88,  TopRight, runDirectRasterizationSnapshotTest) \
     \
 
+#define SNAPSHOT_TRIANGLE_INSIDE_TRIANGLE_DIRECT_DRAWING_SCENE(X) \
+    X(TRIANGLE_INSIDE_TRIANGLE_DIRECT_DRAWING_TRIANGLES_BGRA8888_TopRight,    "03 Triangle inside a triangle direct drawing", "triangle_inside_triangle_direct_drawing.fake_file", 800, 800, updateAllSnapshots, BGRA8888,  TopRight,       runTriangleInsideTriangleDirectDrawingSnapshotTest) \
+    X(TRIANGLE_INSIDE_TRIANGLE_DIRECT_DRAWING_TRIANGLES_BGRA888_TopLeft,      "03 Triangle inside a triangle direct drawing", "triangle_inside_triangle_direct_drawing.fake_file", 800, 800, updateAllSnapshots, BGR888,    TopLeft,        runTriangleInsideTriangleDirectDrawingSnapshotTest) \
+    X(TRIANGLE_INSIDE_TRIANGLE_DIRECT_DRAWING_TRIANGLES_BGRA5551_BottomRight, "03 Triangle inside a triangle direct drawing", "triangle_inside_triangle_direct_drawing.fake_file", 800, 800, updateAllSnapshots, BGRX8888,  BottomRight,    runTriangleInsideTriangleDirectDrawingSnapshotTest) \
+    X(TRIANGLE_INSIDE_TRIANGLE_DIRECT_DRAWING_TRIANGLES_GRAY8_BottomLeft,     "03 Triangle inside a triangle direct drawing", "triangle_inside_triangle_direct_drawing.fake_file", 800, 800, updateAllSnapshots, GRAY8,     BottomLeft,     runTriangleInsideTriangleDirectDrawingSnapshotTest) \
+    \
+
 #define SNAPSHOT_CASES(X) \
     SNAPSHOT_SIMPLE_TRIANGLE_SCENE(X) \
-    SNAPSHOT_TRIANGLE_SCENE(X)
+    SNAPSHOT_TRIANGLE_SCENE(X) \
+    SNAPSHOT_TRIANGLE_INSIDE_TRIANGLE_DIRECT_DRAWING_SCENE(X)
 
 // Maps each case id to a stable index used to cross-reference both tables.
 // The INFO/TEST entry macros expand SNAPSHOT_CASES into parallel arrays:
