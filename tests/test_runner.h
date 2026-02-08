@@ -80,7 +80,7 @@ private:
 public:
 
     TestGroup& addTest(const TestCreateInfo& info);
-    [[nodiscard]] i32 runTestGroup(i32& testCounter, bool useAnsiColors, u64 freq);
+    [[nodiscard]] i32 runTestGroup(i32& testCounter, i32& skippedTests, bool useAnsiColors, u64 freq);
 
 private:
     [[nodiscard]] u64 beginTest(Test& test);
@@ -135,25 +135,50 @@ struct TestRunner {
         });
 
         i32 testCounter = 1;
+        i32 skippedTests = 0;
+        i32 skippedGroups = 0;
         for (addr_size i = 0; i < testGroups.len(); i++) {
             TestGroup& testGroup = testGroups[i];
 
             // At least one test has an only flag set, therfore ignore tests that have 'only=false'.
             if (hasOnly && !testGroup.groupOnly) {
                 skippedTestGroup(testGroup.name);
+                skippedGroups++;
                 continue;
             }
             if (testGroup.groupSkip) {
                 skippedTestGroup(testGroup.name);
+                skippedGroups++;
                 continue;
             }
 
             u64 groupStartTsc = beginTestGroup(testGroup.name);
-            i32 testGroupResult = testGroup.runTestGroup(testCounter, useAnsiColors, freq);
+            i32 testGroupResult = testGroup.runTestGroup(testCounter, skippedTests, useAnsiColors, freq);
             endTestGroup(testGroup.name, testGroupResult, groupStartTsc, freq);
 
             AssertFmt(testGroupResult == 0, "Test {} failed", testGroup.name);
         }
+
+        std::cout
+            << '\n'
+            << (useAnsiColors ? ANSI_GREEN("Passed Tests: ") : "Passed Tests: ")
+            << testCounter;
+
+        if (skippedGroups > 0) {
+            std::cout
+                << "; "
+                << (useAnsiColors ? ANSI_YELLOW("Skipped Groups: ") : "; Skipped Groups: ")
+                << skippedGroups;
+        }
+
+        if (skippedTests > 0) {
+            std::cout
+                << "; "
+                << (useAnsiColors ? ANSI_YELLOW("Skipped Tests: ") : "; Skipped Tests: ")
+                << skippedTests;
+        }
+
+        std::cout << std::endl;
     }
 
 private:

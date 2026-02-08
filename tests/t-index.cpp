@@ -110,18 +110,17 @@ i32 runAllTests() {
 
     TestGroupTableEntry testGroups[] = {
         {
-            .group = { .name = "Wavefront Tests Suite", .allocatorsToUse = allTestAllocators, },
+            .group = { .name = "Wavefront Tests Suite", .allocatorsToUse = allTestAllocators },
             .tests = { wavefrontTests, CORE_C_ARRLEN(wavefrontTests) }
         },
         {
-            .group = { .name = "TGA Tests Suite", .allocatorsToUse = allTestAllocators },
+            .group = { .name = "TGA Tests Suite", .allocatorsToUse = allTestAllocators, },
             .tests = { tgaTests, CORE_C_ARRLEN(tgaTests) }
         },
         {
             .group = {
                 .name = "Snapshot Tests Suite",
                 .allocatorsToUse = allTestAllocators,
-                .groupOnly=true,
                 .beforeAll = beforeAllSnapshotTests,
                 .afterAll = afterAllSnapshotTests,
                 .beforeEach = beforeEachSnapshotTest,

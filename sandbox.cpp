@@ -14,7 +14,6 @@ enum ProfilePoints {
     PP_DRAW_LINE,
 };
 
-
 void create5MillionLines(const char* path) {
     constexpr PixelFormat f = PixelFormat::BGR888;
     constexpr i32 bpp = pixelFormatBytesPerPixel(f);
@@ -64,77 +63,6 @@ void create5MillionLines(const char* path) {
     core::Expect(TGA::createFileFromSurface(params));
 }
 
-void writeSurfaceToFile(const char* path) {
-    constexpr PixelFormat f = PixelFormat::BGRA8888;
-    constexpr i32 bpp = pixelFormatBytesPerPixel(f);
-    constexpr addr_size WIDTH = 800;
-    constexpr addr_size HEIGHT = 800;
-
-    u8 buf[WIDTH*HEIGHT*bpp] = {};
-    Surface s = Surface();
-    s.actx = nullptr;
-    s.origin = Origin::BottomLeft;
-    s.pixelFormat = f;
-    s.width = WIDTH;
-    s.height = HEIGHT;
-    s.pitch = s.width * bpp;
-    s.data = buf;
-
-    fillRect(s, 0, 0, BLACK, s.width, s.height);
-
-    constexpr f32 scale = 0.3f;
-    i32 ax = 290, ay = 170;
-    i32 bx = 500, by = 240;
-    i32 cx = 130, cy = 650;
-    auto a = core::v(ax, ay, 1);
-    auto b = core::v(bx, by, 1);
-    auto c = core::v(cx, cy, 1);
-
-    u8 buf2[WIDTH*HEIGHT*bpp] = {};
-    Surface depthBuffer = Surface();
-    depthBuffer.actx = nullptr;
-    depthBuffer.origin = Origin::BottomLeft;
-    depthBuffer.pixelFormat = f;
-    depthBuffer.width = WIDTH;
-    depthBuffer.height = HEIGHT;
-    depthBuffer.pitch = depthBuffer.width * bpp;
-    depthBuffer.data = buf2;
-
-    fillTriangle(s, a, b, c, RED, GREEN, BLUE);
-    strokeTriangleInset(s, a, b, c, BLUE, RED, GREEN, scale);
-
-    // Outline inner triangle
-    {
-        const f32 centerX = (f32(a.x()) + f32(b.x()) + f32(c.x())) / 3.0f;
-        const f32 centerY = (f32(a.y()) + f32(b.y()) + f32(c.y())) / 3.0f;
-        core::vec2i aInner = core::v(
-            i32(centerX + (f32(a.x()) - centerX) * (1.0f - scale)),
-            i32(centerY + (f32(a.y()) - centerY) * (1.0f - scale))
-        );
-        core::vec2i bInner = core::v(
-            i32(centerX + (f32(b.x()) - centerX) * (1.0f - scale)),
-            i32(centerY + (f32(b.y()) - centerY) * (1.0f - scale))
-        );
-        core::vec2i cInner = core::v(
-            i32(centerX + (f32(c.x()) - centerX) * (1.0f - scale)),
-            i32(centerY + (f32(c.y()) - centerY) * (1.0f - scale))
-        );
-        strokeTriangleFast(s, aInner, bInner, cInner, WHITE);
-    }
-
-    // Outline outer triangle:
-    strokeTriangleFast(s, a.xy(), b.xy(), c.xy(), WHITE);
-
-    TGA::CreateFileFromSurfaceParams params = {
-        .surface = s,
-        .path = path,
-        .imageType = 2,
-        .fileType = TGA::FileType::New,
-    };
-    core::Expect(TGA::createFileFromSurface(params));
-    logInfo("Wrote to file {}", path);
-}
-
 i32 main() {
     [[maybe_unused]] const char* output = OUT_DIRECTORY "/output.tga";
     [[maybe_unused]] const char* depthPathOutput =  OUT_DIRECTORY "/depth-output.tga";
@@ -146,8 +74,6 @@ i32 main() {
 
         Panic(initializeDebugRendering(), "Failed to initialize debug rendering!");
         defer { shutdownDebugRendering(); };
-
-        // writeSurfaceToFile(output);
 
         create5MillionLines(output);
     }

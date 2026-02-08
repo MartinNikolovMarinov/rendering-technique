@@ -24,7 +24,7 @@ TestGroup& TestGroup::addTest(const TestCreateInfo& info) {
     return *this;
 }
 
-[[nodiscard]] i32 TestGroup::runTestGroup(i32& testCounter, bool useAnsiColors, u64 freq) {
+[[nodiscard]] i32 TestGroup::runTestGroup(i32& testCounter, i32& skippedTests, bool useAnsiColors, u64 freq) {
     bool hasOnly = core::forAny(tests, [](const Test& t, addr_size) {
         return t.only == true && t.skip == false;
     });
@@ -45,10 +45,12 @@ TestGroup& TestGroup::addTest(const TestCreateInfo& info) {
 
         // At least one test has an only flag set, therfore ignore tests that have 'only=false'.
         if (hasOnly && !test.only) {
+            skippedTests++;
             skippedTest(test.testRunParams.name, useAnsiColors);
             continue;
         }
         if (test.skip) {
+            skippedTests++;
             skippedTest(test.testRunParams.name, useAnsiColors);
             continue;
         }

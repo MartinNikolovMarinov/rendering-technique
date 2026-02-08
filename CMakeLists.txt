@@ -4,6 +4,7 @@ project(rendering-techniques VERSION 0.0.1 LANGUAGES C CXX)
 set(target_sandbox sandbox)
 set(target_render_obj_files_to_tga render_obj_files_to_tga)
 set(target_tga_files_sandbox tga_files_sandbox)
+set(target_image_transformations_sandbox image_transformations_sandbox)
 set(target_test tests)
 
 # Standard Requirements:
@@ -87,6 +88,12 @@ set(src_tga_files_sandbox
     tga_files_sandbox.cpp
 )
 
+set(src_image_transformations_sandbox
+    ${src_common}
+
+    image_transformations_sandbox.cpp
+)
+
 set(src_test
     ${src_common}
 
@@ -167,6 +174,9 @@ common_target_setup(${target_render_obj_files_to_tga})
 
 add_executable(${target_tga_files_sandbox} ${src_tga_files_sandbox})
 common_target_setup(${target_tga_files_sandbox})
+
+add_executable(${target_image_transformations_sandbox} ${src_image_transformations_sandbox})
+common_target_setup(${target_image_transformations_sandbox})
 
 add_executable(${target_test} ${src_test})
 common_target_setup(${target_test})
