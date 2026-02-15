@@ -273,6 +273,8 @@ void fillTriangle(
 
 namespace {
 
+// FIXME: Replace with core functions.
+
 constexpr inline core::vec3i orthogonalProjection(core::vec3f normVec, i32 width, i32 height) {
     i32 x = i32((normVec.x() + 1.0f) * (f32(width - 1)/2.0f));
     i32 y = i32((normVec.y() + 1.0f) * (f32(height - 1)/2.0f));

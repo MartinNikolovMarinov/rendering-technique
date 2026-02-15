@@ -187,13 +187,13 @@ i32 main() {
         const char* filesToRender[] = {
             // ASSETS_DIRECTORY "/test_assets/obj/single_file_models/diablo3_pose.obj",
 
-            // ASSETS_DIRECTORY "/test_assets/obj/single_file_models/african_head.obj",
+            ASSETS_DIRECTORY "/test_assets/obj/single_file_models/african_head.obj",
 
             // ASSETS_DIRECTORY "/test_assets/obj/multipart/body.obj",
             // ASSETS_DIRECTORY "/test_assets/obj/multipart/head.obj",
             // ASSETS_DIRECTORY "/test_assets/obj/multipart/eyes.obj",
 
-            ASSETS_DIRECTORY "/test_assets/obj/simple/rectangle_with_arrow.obj",
+            // ASSETS_DIRECTORY "/test_assets/obj/simple/rectangle_with_arrow.obj",
         };
 
         const char* output = OUT_DIRECTORY "/output.tga";
