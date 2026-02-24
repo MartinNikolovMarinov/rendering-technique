@@ -38,13 +38,10 @@ i32 facesAreEqual(const WavefrontObj::Face& f1, const WavefrontObj::Face& f2) {
 i32 runWavefrontVerticesTest(TestRunParams& params) {
     const char* filePath = reinterpret_cast<const char*>(params.userData);
 
-    auto obj = core::Unpack(
-        Wavefront::loadFile(filePath, WavefrontVersion::VERSION_3_0, *params.actx),
-        "Failed to load file: \"{}\"", filePath
-    );
+    auto obj = Unpack(Wavefront::loadFile(filePath, WavefrontVersion::VERSION_3_0, *params.actx));
     defer { obj.free(); };
 
-    CT_CHECK(obj.verticesCount == 8);
+    CT_CHECK(obj.vertices.at == 8);
 
     constexpr VertexTestCase cases[] = {
         { 0, core::v(-1.0f, -1.0f, -1.0f, 0.0f), false },
@@ -58,7 +55,7 @@ i32 runWavefrontVerticesTest(TestRunParams& params) {
     };
 
     i32 ret = core::testing::executeTestTable("simpleVerticesTest failed at: ", cases, [&](const auto& tc, const char* cErr) {
-        CT_CHECK(tc.index < addr_size(obj.verticesCount), cErr);
+        CT_CHECK(tc.index < addr_size(obj.vertices.at), cErr);
 
         const core::vec4f& v = obj.vertices[tc.index];
         CT_CHECK(v.x() == tc.expected.x(), cErr);
@@ -78,13 +75,10 @@ i32 runWavefrontVerticesTest(TestRunParams& params) {
 i32 runWavefrontFacesTest(TestRunParams& params) {
     const char* filePath = reinterpret_cast<const char*>(params.userData);
 
-    auto obj = core::Unpack(
-        Wavefront::loadFile(filePath, Wavefront::WavefrontVersion::VERSION_3_0, *params.actx),
-        "Failed to load file: \"{}\"", filePath
-    );
+    auto obj = Unpack(Wavefront::loadFile(filePath, Wavefront::WavefrontVersion::VERSION_3_0, *params.actx));
     defer { obj.free(); };
 
-    CT_CHECK(obj.facesCount == 11);
+    CT_CHECK(obj.faces.at == 11);
 
     FacesTestCase cases[] = {
         { 0,  { .data={ {1,2,3},                   {-99,-99,-99}, {-99,-99,-99} }, .setFieldsMask=0b000000111 } },
@@ -101,7 +95,7 @@ i32 runWavefrontFacesTest(TestRunParams& params) {
     };
 
     i32 ret = core::testing::executeTestTable("simpleFacesTest failed at: ", cases, [&](const auto& tc, const char* cErr) {
-        CT_CHECK(tc.index < addr_size(obj.facesCount), cErr);
+        CT_CHECK(tc.index < addr_size(obj.faces.at), cErr);
 
         auto& got = obj.faces[tc.index];
         auto& exp = tc.expected;

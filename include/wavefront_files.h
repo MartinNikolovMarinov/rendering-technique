@@ -114,10 +114,8 @@ struct WavefrontObj {
         i32 setFieldsMask;
     };
 
-    core::Memory<core::vec4f> vertices;
-    i32 verticesCount;
-    core::Memory<Face> faces;
-    i32 facesCount;
+    core::BufferedMemory<core::vec4f> vertices;
+    core::BufferedMemory<Face> faces;
 
     constexpr inline void setAllocator(core::AllocatorContext& _actx) { actx = &_actx; }
 

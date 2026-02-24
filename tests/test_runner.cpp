@@ -152,7 +152,7 @@ void TestGroup::endTest(
             : " !!UNEXPECTED DYNAMIC MEMORY USAGE!!") << std::endl;
 
         AssertFmt(false,
-            "Test {} failed; reason: Test Expected Zero Allocations In Default Allocator But Allocated {}",
+            "Test {} failed; reason: Test core::expected Zero Allocations In Default Allocator But Allocated {}",
             testName,
             core::testing::memoryUsedToStr(buff, deltaGlobalAllocatedMemory)
         );

@@ -49,19 +49,12 @@ void logInfoVector(core::vec<Dim, T> v) {
     char* p = buff;
 
     // prefix: { "vec<Dim><suffix>": {
-    p += core::Unpack(
-        core::format(p, bufferLen, "{{ \"vec{}{}\": {{", v.dimensions(), vecTypeSuffix<T>()),
-        "BUG: likely buffer overflow"
-    );
+    p += Unpack(core::format(p, bufferLen, "{{ \"vec{}{}\": {{", v.dimensions(), vecTypeSuffix<T>()));
 
     constexpr char symbols[] = { 'x', 'y', 'z', 'w' };
     for (addr_size i = 0; i < v.dimensions(); i++) {
         const bool last = (i + 1 == v.dimensions());
-        p += core::Unpack(
-            core::format(p, bufferLen, last ? elemFmtLast<T>() : elemFmtMid<T>(),
-                         symbols[i], v.data[i]),
-            "BUG: likely buffer overflow"
-        );
+        p += Unpack(core::format(p, bufferLen, last ? elemFmtLast<T>() : elemFmtMid<T>(), symbols[i], v.data[i]));
     }
 
     p += core::memcopy(p, "} }", 3);

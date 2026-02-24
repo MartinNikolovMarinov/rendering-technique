@@ -80,9 +80,9 @@ void renderObjFilesToTga(
 
     core::ArrStatic<Model3D, 10> models;
     for (i32 i = 0; i < objFilesLen; i++) {
-        Wavefront::WavefrontObj obj = core::Unpack(Wavefront::loadFile(objFiles[i], Wavefront::WavefrontVersion::VERSION_3_0));
+        Wavefront::WavefrontObj obj = Unpack(Wavefront::loadFile(objFiles[i], Wavefront::WavefrontVersion::VERSION_3_0));
         defer { obj.free(); };
-        logInfo("verts={}, faces={}", obj.verticesCount, obj.facesCount);
+        logInfo("verts={}, faces={}", obj.vertices.at, obj.faces.at);
 
         Model3D model = Wavefront::createModelFromWavefrontObj(obj);
         models.push(std::move(model));
@@ -154,7 +154,7 @@ void renderObjFilesToTga(
             .imageType = 2,
             .fileType = TGA::FileType::New,
         };
-        core::Expect(TGA::createFileFromSurface(params));
+        Expect(TGA::createFileFromSurface(params));
         logInfo("Created output file in \"{}\"", outputPath);
     }
     {
@@ -164,7 +164,7 @@ void renderObjFilesToTga(
             .imageType = 2,
             .fileType = TGA::FileType::New,
         };
-        core::Expect(TGA::createFileFromSurface(params));
+        Expect(TGA::createFileFromSurface(params));
         logInfo("Created output file in \"{}\"", outputPath);
     }
     {
@@ -174,7 +174,7 @@ void renderObjFilesToTga(
             .imageType = 3,
             .fileType = TGA::FileType::New,
         };
-        core::Expect(TGA::createFileFromSurface(params));
+        Expect(TGA::createFileFromSurface(params));
         logInfo("Created depth output file in \"{}\"", outputDepth);
     }
 }

@@ -3,30 +3,14 @@
 #include "core_init.h"
 
 void compareFilesBytewise(const char* fileA, const char* fileB) {
-    auto fileADesc = core::Unpack(
-        core::fileOpen(fileA, core::OpenMode::Read),
-        "Failed to open file '{}'",
-        fileA
-    );
-    defer { core::Expect(core::fileClose(fileADesc)); };
+    auto fileADesc = Unpack(core::fileOpen(fileA, core::OpenMode::Read));
+    defer { Expect(core::fileClose(fileADesc)); };
 
-    auto fileBDesc = core::Unpack(
-        core::fileOpen(fileB, core::OpenMode::Read),
-        "Failed to open file '{}'",
-        fileB
-    );
-    defer { core::Expect(core::fileClose(fileBDesc)); };
+    auto fileBDesc = Unpack(core::fileOpen(fileB, core::OpenMode::Read));
+    defer { Expect(core::fileClose(fileBDesc)); };
 
-    addr_size sizeA = core::Unpack(
-        core::fileSize(fileADesc),
-        "Failed to get size for file '{}'",
-        fileA
-    );
-    addr_size sizeB = core::Unpack(
-        core::fileSize(fileBDesc),
-        "Failed to get size for file '{}'",
-        fileB
-    );
+    addr_size sizeA = Unpack(core::fileSize(fileADesc));
+    addr_size sizeB = Unpack(core::fileSize(fileBDesc));
 
     AssertFmt(
         sizeA == sizeB,
@@ -42,16 +26,8 @@ void compareFilesBytewise(const char* fileA, const char* fileB) {
 
     while (remaining > 0) {
         addr_size chunk = remaining < kChunkSize ? remaining : kChunkSize;
-        addr_size readA = core::Unpack(
-            core::fileRead(fileADesc, bufferA, chunk),
-            "Failed to read file '{}'",
-            fileA
-        );
-        addr_size readB = core::Unpack(
-            core::fileRead(fileBDesc, bufferB, chunk),
-            "Failed to read file '{}'",
-            fileB
-        );
+        addr_size readA = Unpack(core::fileRead(fileADesc, bufferA, chunk));
+        addr_size readB = Unpack(core::fileRead(fileBDesc, bufferB, chunk));
 
         AssertFmt(
             readA == chunk,

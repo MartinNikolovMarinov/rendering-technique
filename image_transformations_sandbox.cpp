@@ -112,14 +112,14 @@ void playaroundWith2DTransformations(const char* path) {
 
     constexpr const char* rectWithArrowOjbPath = ASSETS_DIRECTORY "/test_assets/obj/simple/rectangle_with_arrow.obj";
 
-    auto objFile = core::Unpack(Wavefront::loadFile(rectWithArrowOjbPath, Wavefront::WavefrontVersion::VERSION_3_0));
+    auto objFile = Unpack(Wavefront::loadFile(rectWithArrowOjbPath, Wavefront::WavefrontVersion::VERSION_3_0));
     defer { objFile.free(); };
 
     //==================================================================================================================
     // Apply transformations to vertices
     //==================================================================================================================
 
-    for (i32 i = 0; i < objFile.verticesCount; i++) {
+    for (addr_size i = 0; i < objFile.vertices.at; i++) {
         auto& v = objFile.vertices[i];
 
         // Initial scale down to have more room to work with
@@ -152,7 +152,7 @@ void playaroundWith2DTransformations(const char* path) {
         return ret;
     };
 
-    for (i32 i = 0; i < objFile.facesCount; i++) {
+    for (addr_size i = 0; i < objFile.faces.at; i++) {
         auto& vf = objFile.faces[i].v();
 
         core::vec4f& v1 = objFile.vertices[vf[0] - 1];
@@ -176,7 +176,7 @@ void playaroundWith2DTransformations(const char* path) {
         .imageType = 2,
         .fileType = TGA::FileType::New,
     };
-    core::Expect(TGA::createFileFromSurface(params));
+    Expect(TGA::createFileFromSurface(params));
 }
 
 i32 main() {

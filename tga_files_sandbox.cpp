@@ -9,18 +9,18 @@
 void testOneTGAFile(const char* path, const char* outputPath, bool debugRender = false) {
     logInfo("Parsing File: {}", path);
 
-    auto tgaFile = core::Unpack(TGA::loadFile(path));
+    auto tgaFile = Unpack(TGA::loadFile(path));
     defer { tgaFile.free(); };
     logInfo_TGAFile(tgaFile);
 
     const TGA::Header* h = nullptr;
-    core::Expect(tgaFile.header(h));
+    Expect(tgaFile.header(h));
 
     bool imageTypeSupported = h->imageType == 2 || h->imageType == 3;
     if (imageTypeSupported) {
         logInfo("Image type is supported {}", h->imageType);
 
-        Surface surface = core::Unpack(createSurfaceFromTgaImage(tgaFile), "Failed to create surface from TGA file.");
+        Surface surface = Unpack(createSurfaceFromTgaImage(tgaFile));
         defer { surface.free(); };
         logInfo_Surface(surface);
 
@@ -31,7 +31,7 @@ void testOneTGAFile(const char* path, const char* outputPath, bool debugRender =
                 .imageType = h->imageType,
                 .fileType = tgaFile.fileType(),
             };
-            core::Expect(TGA::createFileFromSurface(params));
+            Expect(TGA::createFileFromSurface(params));
             logInfo("Wrote imageType({}) to file {}", params.imageType, params.path);
         }
 

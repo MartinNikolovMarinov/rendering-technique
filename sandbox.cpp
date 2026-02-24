@@ -60,7 +60,7 @@ void create5MillionLines(const char* path) {
         .imageType = 2,
         .fileType = TGA::FileType::New,
     };
-    core::Expect(TGA::createFileFromSurface(params));
+    Expect(TGA::createFileFromSurface(params));
 }
 
 i32 main() {

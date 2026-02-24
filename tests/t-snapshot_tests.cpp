@@ -83,7 +83,7 @@ void createTestTGAImageFile(const Surface& surface, const char* path) {
         .imageType = imageType,
         .fileType = TGA::FileType::New,
     };
-    core::Expect(TGA::createFileFromSurface(tgaCreateParams));
+    Expect(TGA::createFileFromSurface(tgaCreateParams));
 }
 
 template <i32 N>
@@ -132,7 +132,7 @@ void updateSnapshot(const Surface& s, const TestSnapshotInfo* sinfo, TestRunPara
         core::StrView snapshotDirPart = snapshotFilePb.dirPartSv();
         core::memcopy(dirCopyBuff, snapshotDirPart.data(), snapshotDirPart.len());
 
-        bool exists = core::Unpack(core::fileExists(dirCopyBuff));
+        bool exists = Unpack(core::fileExists(dirCopyBuff));
         if (!exists) {
             auto createDirRes = core::dirCreate(dirCopyBuff);
             AssertFmt(

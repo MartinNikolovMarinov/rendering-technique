@@ -10,13 +10,13 @@ void beforeAllSnapshotTests(const TestGroupRunParams&) {
     bool exists;
 
     // Create the test output directory if it does not exist.
-    exists = core::Unpack(core::fileExists(TEST_OUTPUT_DIRECTORY));
+    exists = Unpack(core::fileExists(TEST_OUTPUT_DIRECTORY));
     if (!exists) {
-        core::Expect(core::dirCreate(TEST_OUTPUT_DIRECTORY));
+        Expect(core::dirCreate(TEST_OUTPUT_DIRECTORY));
     }
 
     // Verify snapshot direcory exists:
-    exists = core::Unpack(core::fileExists(SNAPSHOT_ROOT_DIRECTORY));
+    exists = Unpack(core::fileExists(SNAPSHOT_ROOT_DIRECTORY));
     AssertFmt(
         exists,
         "BeforeAll failed because '{}' does not exist; provided path = '{}'",
@@ -25,7 +25,7 @@ void beforeAllSnapshotTests(const TestGroupRunParams&) {
 }
 
 void afterAllSnapshotTests(const TestGroupRunParams&) {
-    bool exists = core::Unpack(core::fileExists(TEST_OUTPUT_DIRECTORY));
+    bool exists = Unpack(core::fileExists(TEST_OUTPUT_DIRECTORY));
     AssertFmt(
         exists,
         "{} should exist on after all function call; provided path = '{}'",
@@ -49,12 +49,7 @@ void beforeEachSnapshotTest(TestRunParams& params) {
     core::StaticPathBuilder<512> pathBuilder;
     pathBuilder.setDirPart(core::sv(TEST_OUTPUT_DIRECTORY));
     pathBuilder.setFilePart(core::sv(testName));
-    core::Expect(
-        core::dirCreate(pathBuilder.fullPath()),
-        "BeforeEach for test '{}' failed; reason: failed to create file '{}'",
-        testName,
-        pathBuilder.fullPath()
-    );
+    Expect(core::dirCreate(pathBuilder.fullPath()));
     pathBuilder.reset();
 }
 

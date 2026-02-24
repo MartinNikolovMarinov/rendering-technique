@@ -45,8 +45,8 @@ const char* errorToCstr(WavefrontError err) {
 
 void WavefrontObj::free() {
     if (actx) {
-        core::memoryFree(std::move(vertices), *actx);
-        core::memoryFree(std::move(faces), *actx);
+        vertices.freeWith(*actx);
+        faces.freeWith(*actx);
     }
 
     *this = {};
@@ -66,8 +66,11 @@ core::expected<WavefrontObj, WavefrontError> loadFile(
     WAVEFRONT_PLT_ERR_CHECK(statRes, WavefrontError::FailedToStatFile);
 
     addr_size fsize = fileStat.size;
-    auto fileMemoryRaw = core::memoryZeroAllocate<u8>(fsize, actx);
-    defer { core::memoryFree(std::move(fileMemoryRaw), actx); };
+    core::Memory<u8> fileMemoryRaw = {
+        .ptr = reinterpret_cast<u8*>(actx.zeroAlloc(fsize, sizeof(u8))),
+        .length = fsize
+    };
+    defer { actx.free(fileMemoryRaw.ptr, fileMemoryRaw.len(), sizeof(u8)); };
 
     auto readEntireRes = core::fileReadEntire(path, fileMemoryRaw);
     WAVEFRONT_PLT_ERR_CHECK(readEntireRes, WavefrontError::FailedToReadFile);
@@ -88,8 +91,8 @@ core::expected<WavefrontObj, WavefrontError> loadFile(
             auto res = parseVertexLine(currLine);
             if (res.hasErr()) return core::unexpected(res.err());
 
-            obj.vertices = core::memorySet(obj.vertices, addr_size(obj.verticesCount), std::move(res.value()), *obj.actx);
-            obj.verticesCount++;
+            core::vec4f vertex = std::move(res.value());
+            obj.vertices.append(std::move(vertex), *obj.actx);
         }
         else if (core::startsWith(currLine, "f ")) {
             // faces
@@ -97,8 +100,7 @@ core::expected<WavefrontObj, WavefrontError> loadFile(
             if (res.hasErr()) return core::unexpected(res.err());
 
             WavefrontObj::Face face = std::move(res.value());
-            obj.faces = core::memorySet(obj.faces, addr_size(obj.facesCount), std::move(face), *obj.actx);
-            obj.facesCount++;
+            obj.faces.append(std::move(face), *obj.actx);
         }
     }
 
@@ -109,14 +111,20 @@ Model3D createModelFromWavefrontObj(const WavefrontObj& obj, core::AllocatorCont
     Model3D model;
     model.actx = &modelActx;
 
-    model.vertices = core::memoryZeroAllocate<core::vec4f>(addr_size(obj.verticesCount), modelActx);
-    for (i32 i = 0; i < obj.verticesCount; i++) {
+    model.vertices = {
+        .ptr = reinterpret_cast<Vertex4f*>(modelActx.alloc(obj.vertices.at, sizeof(Vertex4f))),
+        .length = obj.vertices.at
+    };
+    for (addr_size i = 0; i < obj.vertices.at; i++) {
         model.vertices[i] = obj.vertices[i];
     }
-    Assert(i32(model.vertices.len()) == obj.verticesCount);
+    Assert(model.vertices.len() == obj.vertices.at);
 
-    model.faces = core::memoryZeroAllocate<Face3i>(addr_size(obj.facesCount), modelActx);
-    for (i32 i = 0; i < obj.facesCount; i++) {
+    model.faces = {
+        .ptr = reinterpret_cast<Face3i*>(modelActx.alloc(obj.faces.at, sizeof(Face3i))),
+        .length = obj.faces.at
+    };
+    for (addr_size i = 0; i < obj.faces.at; i++) {
         bool faceHasVertexIndices =
             obj.faces[i].isSet(0, 0) &&
             obj.faces[i].isSet(0, 1) &&
@@ -129,7 +137,7 @@ Model3D createModelFromWavefrontObj(const WavefrontObj& obj, core::AllocatorCont
         model.faces[i][1] = v[1] - 1;
         model.faces[i][2] = v[2] - 1;
     }
-    Assert(i32(model.faces.len()) == obj.facesCount);
+    Assert(model.faces.len() == obj.faces.at);
 
 #if 0
     // Sort by minz - experimental code needed only for validations.
