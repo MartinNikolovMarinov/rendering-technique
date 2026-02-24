@@ -117,6 +117,9 @@ struct WavefrontObj {
     core::BufferedMemory<core::vec4f> vertices;
     core::BufferedMemory<Face> faces;
 
+    constexpr addr_size vertexCount() { return vertices.at; }
+    constexpr addr_size facesCount() { return vertices.at; }
+
     constexpr inline void setAllocator(core::AllocatorContext& _actx) { actx = &_actx; }
 
     void free();
