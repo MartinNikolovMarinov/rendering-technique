@@ -5,6 +5,7 @@
 #include "model.h"
 #include "face.h"
 #include "surface.h"
+#include "depth_buffer.h"
 
 namespace {
 
@@ -113,9 +114,14 @@ void strokeRect(Surface& surface, i32 x, i32 y, Color color, i32 width, i32 heig
 
 namespace {
 
+struct ProjectedVertex {
+    core::vec2i p;
+    f32 z;
+};
+
 void fillTriangleBarycentric(
     Surface& surface,
-    const Surface* depthBuffer,
+    const DepthBuffer* depthBuffer,
     const core::vec3i& a, const core::vec3i& b, const core::vec3i& c,
     const Color& colorA, const Color& colorB, const Color& colorC,
     f32 holeInsetRatio
@@ -146,11 +152,10 @@ void fillTriangleBarycentric(
                 continue;
             }
 
-            // Check point agains depth buffer:
+            // Check point against depth buffer:
             if (depthBuffer) {
-                u8 z = u8(alpha * f32(a.z()) + beta * f32(b.z()) + gamma * f32(c.z()));
-                i32 idxInDepthBuffer = y * depthBuffer->pitch + x * depthBuffer->bpp();
-                u8 depth = depthBuffer->data[idxInDepthBuffer];
+                f32 z = alpha * f32(a.z()) + beta * f32(b.z()) + gamma * f32(c.z());
+                f32 depth = depthBuffer->at(x, y);
                 if (z < depth) {
                     continue;
                 }
@@ -180,13 +185,13 @@ void fillTriangleBarycentric(
 }
 
 void fillDepthBuffer(
-    Surface& depthBuffer,
-    const core::vec3i& a, const core::vec3i& b, const core::vec3i& c
+    DepthBuffer& depthBuffer,
+    const ProjectedVertex& a, const ProjectedVertex& b, const ProjectedVertex& c
 ) {
-    core::Bbox2D<i32> bbox = core::calcTriangleBBox(a.xy(), b.xy(), c.xy());
+    core::Bbox2D<i32> bbox = core::calcTriangleBBox(a.p, b.p, c.p);
     bbox.clampTo(0, depthBuffer.width - 1, 0, depthBuffer.height - 1);
 
-    f32 totalArea = core::calcTriangleAreaF32(a.xy(), b.xy(), c.xy());
+    f32 totalArea = core::calcTriangleAreaF32(a.p, b.p, c.p);
     if (core::absGeneric(totalArea) < 1) {
         // Trying to draw triangle with area less than a pixel
         return;
@@ -195,46 +200,74 @@ void fillDepthBuffer(
     // TODO: [PERFORMANCE] Parallelize this loop:
     for (i32 x = bbox.min.x(); x <= bbox.max.x(); x++) {
         for (i32 y = bbox.min.y(); y <= bbox.max.y(); y++) {
-            f32 alpha = core::calcTriangleAreaF32(x, y, b.x(), b.y(), c.x(), c.y()) / totalArea;
-            f32 beta  = core::calcTriangleAreaF32(x, y, c.x(), c.y(), a.x(), a.y()) / totalArea;
-            f32 gamma = core::calcTriangleAreaF32(x, y, a.x(), a.y(), b.x(), b.y()) / totalArea;
+            f32 alpha = core::calcTriangleAreaF32(x, y, b.p.x(), b.p.y(), c.p.x(), c.p.y()) / totalArea;
+            f32 beta  = core::calcTriangleAreaF32(x, y, c.p.x(), c.p.y(), a.p.x(), a.p.y()) / totalArea;
+            f32 gamma = core::calcTriangleAreaF32(x, y, a.p.x(), a.p.y(), b.p.x(), b.p.y()) / totalArea;
 
             if (alpha < 0.0f || beta < 0.0f || gamma < 0.0f) {
                 // negative barycentric coordinate => the pixel is outside the triangle
                 continue;
             }
 
-            u8 z = u8(alpha * f32(a.z()) + beta * f32(b.z()) + gamma * f32(c.z()));
-            i32 idxInDepthBuffer = y * depthBuffer.pitch + x * depthBuffer.bpp();
-            u8 depth = depthBuffer.data[idxInDepthBuffer];
+            f32 z = alpha * a.z + beta * b.z + gamma * c.z;
+            f32 depth = depthBuffer.at(x, y);
             if (z <= depth) {
                 continue;
             }
-
-            Color grayColor = { .rgba { z, z, z, 255 } };
-            fillPixel(depthBuffer, x, y, grayColor);
+            depthBuffer.at(x, y) = z;
         }
     }
 }
 
-void strokeTriangleInset(
-    Surface& surface,
-    const Surface* depthBuffer,
-    const core::vec3i& a, const core::vec3i& b, const core::vec3i& c,
-    const Color& colorA, const Color& colorB, const Color& colorC,
-    f32 boarderRatio
-) {
-    f32 clampedRatio = core::core_max(0.0f, core::core_min(boarderRatio, 1.0f));
-    fillTriangleBarycentric(surface, depthBuffer, a, b, c, colorA, colorB, colorC, clampedRatio);
-}
-
 void fillTriangle(
     Surface& surface,
-    const Surface* depthBuffer,
-    const core::vec3i& a, const core::vec3i& b, const core::vec3i& c,
+    const DepthBuffer* depthBuffer,
+    const ProjectedVertex& a, const ProjectedVertex& b, const ProjectedVertex& c,
     const Color& colorA, const Color& colorB, const Color& colorC
 ) {
-    fillTriangleBarycentric(surface, depthBuffer, a, b, c, colorA, colorB, colorC, 0.0f);
+    if (depthBuffer) {
+        Assert(surface.width == depthBuffer->width);
+        Assert(surface.height == depthBuffer->height);
+    }
+
+    core::Bbox2D<i32> bbox = core::calcTriangleBBox(a.p, b.p, c.p);
+    bbox.clampTo(0, surface.width - 1, 0, surface.height - 1);
+
+    f32 totalArea = core::calcTriangleAreaF32(a.p, b.p, c.p);
+    if (core::absGeneric(totalArea) < 1) {
+        return;
+    }
+
+    for (i32 x = bbox.min.x(); x <= bbox.max.x(); x++) {
+        for (i32 y = bbox.min.y(); y <= bbox.max.y(); y++) {
+            f32 alpha = core::calcTriangleAreaF32(x, y, b.p.x(), b.p.y(), c.p.x(), c.p.y()) / totalArea;
+            f32 beta  = core::calcTriangleAreaF32(x, y, c.p.x(), c.p.y(), a.p.x(), a.p.y()) / totalArea;
+            f32 gamma = core::calcTriangleAreaF32(x, y, a.p.x(), a.p.y(), b.p.x(), b.p.y()) / totalArea;
+
+            if (alpha < 0.0f || beta < 0.0f || gamma < 0.0f) {
+                continue;
+            }
+
+            if (depthBuffer) {
+                f32 z = alpha * a.z + beta * b.z + gamma * c.z;
+                f32 depth = depthBuffer->at(x, y);
+                if (z < depth) {
+                    continue;
+                }
+            }
+
+            Color blendedColor = {
+                .rgba {
+                    .r = u8(alpha * f32(colorA.r()) + beta * f32(colorB.r()) + gamma * f32(colorC.r())),
+                    .g = u8(alpha * f32(colorA.g()) + beta * f32(colorB.g()) + gamma * f32(colorC.g())),
+                    .b = u8(alpha * f32(colorA.b()) + beta * f32(colorB.b()) + gamma * f32(colorC.b())),
+                    .a = u8(alpha * f32(colorA.a()) + beta * f32(colorB.a()) + gamma * f32(colorC.a()))
+                }
+            };
+
+            fillPixel(surface, x, y, blendedColor);
+        }
+    }
 }
 
 } // namespace
@@ -275,11 +308,14 @@ namespace {
 
 // FIXME: Replace with core functions.
 
-constexpr inline core::vec3i orthogonalProjection(core::vec3f normVec, i32 width, i32 height) {
+constexpr inline ProjectedVertex orthogonalProjection(core::vec3f normVec, i32 width, i32 height) {
     i32 x = i32((normVec.x() + 1.0f) * (f32(width - 1)/2.0f));
     i32 y = i32((normVec.y() + 1.0f) * (f32(height - 1)/2.0f));
-    i32 z = i32((normVec.z() + 1.0f) * (255.f/2.0f));
-    auto ret = core::v(x, y, z);
+    f32 z = (normVec.z() + 1.0f) * 0.5f;
+
+    ProjectedVertex ret = {};
+    ret.p = core::v(x, y);
+    ret.z = z;
     return ret;
 }
 
@@ -304,7 +340,7 @@ constexpr inline core::vec3f persp(core::vec3f v) {
 }
 
 struct RenderPassState {
-    Surface* depthBuffer;
+    DepthBuffer* depthBuffer;
     core::Memory<Vertex4f> vertices;
     core::Memory<Face3i> faces;
 };
@@ -364,9 +400,7 @@ void rendererSetIndexBuffer(RendererHandle r, core::Memory<Face3i> indices) {
     r->renderPass.faces = indices;
 }
 
-void rendererCalculateDepthBuffer(RendererHandle r, Surface& depthBuffer) {
-    Assert(depthBuffer.pixelFormat == PixelFormat::GRAY8, "The depth buffer must be in grayscale format!");
-
+void rendererCalculateDepthBuffer(RendererHandle r, DepthBuffer& depthBuffer) {
     r->renderPass.depthBuffer = &depthBuffer;
 
     bool wireframeMode = r->wireframe;
@@ -387,12 +421,12 @@ void rendererCalculateDepthBuffer(RendererHandle r, Surface& depthBuffer) {
             core::vec4f& v3 = vertices[f[2]];
 
             // TODO: This projections is hardcoded for testing:
-            // core::vec3i a = orthogonalProjection(persp(rot(v1.xyz(), core::degToRad(30))), width, height);
-            // core::vec3i b = orthogonalProjection(persp(rot(v2.xyz(), core::degToRad(30))), width, height);
-            // core::vec3i c = orthogonalProjection(persp(rot(v3.xyz(), core::degToRad(30))), width, height);
-            core::vec3i a = orthogonalProjection(v1.xyz(), width, height);
-            core::vec3i b = orthogonalProjection(v2.xyz(), width, height);
-            core::vec3i c = orthogonalProjection(v3.xyz(), width, height);
+            // ProjectedVertex a = orthogonalProjection(persp(rot(v1.xyz(), core::degToRad(30))), width, height);
+            // ProjectedVertex b = orthogonalProjection(persp(rot(v2.xyz(), core::degToRad(30))), width, height);
+            // ProjectedVertex c = orthogonalProjection(persp(rot(v3.xyz(), core::degToRad(30))), width, height);
+            ProjectedVertex a = orthogonalProjection(v1.xyz(), width, height);
+            ProjectedVertex b = orthogonalProjection(v2.xyz(), width, height);
+            ProjectedVertex c = orthogonalProjection(v3.xyz(), width, height);
 
             fillDepthBuffer(depthBuffer, a, b, c);
         }
@@ -404,7 +438,6 @@ void rendererEndFrame(RendererHandle r) {
     bool wireframe = r->wireframe;
     auto& vertices = r->renderPass.vertices;
     auto& faces = r->renderPass.faces;
-    auto& depthBuffer = *r->renderPass.depthBuffer;
 
     Assert(surface.width>= r->frameBufferWidth);
     Assert(surface.height >= r->frameBufferHeight);
@@ -419,20 +452,22 @@ void rendererEndFrame(RendererHandle r) {
         core::vec4f& v3 = vertices[f[2]];
 
         // TODO: This projections is hardcoded for testing:
-        // core::vec3i a = orthogonalProjection(persp(rot(v1.xyz(), core::degToRad(30))), width, height);
-        // core::vec3i b = orthogonalProjection(persp(rot(v2.xyz(), core::degToRad(30))), width, height);
-        // core::vec3i c = orthogonalProjection(persp(rot(v3.xyz(), core::degToRad(30))), width, height);
-        core::vec3i a = orthogonalProjection(v1.xyz(), width, height);
-        core::vec3i b = orthogonalProjection(v2.xyz(), width, height);
-        core::vec3i c = orthogonalProjection(v3.xyz(), width, height);
+        // ProjectedVertex a = orthogonalProjection(persp(rot(v1.xyz(), core::degToRad(30))), width, height);
+        // ProjectedVertex b = orthogonalProjection(persp(rot(v2.xyz(), core::degToRad(30))), width, height);
+        // ProjectedVertex c = orthogonalProjection(persp(rot(v3.xyz(), core::degToRad(30))), width, height);
+        ProjectedVertex a = orthogonalProjection(v1.xyz(), width, height);
+        ProjectedVertex b = orthogonalProjection(v2.xyz(), width, height);
+        ProjectedVertex c = orthogonalProjection(v3.xyz(), width, height);
 
         if (wireframe) {
-            strokeTriangleFast(surface, a.xy(), b.xy(), c.xy(), RED);
-            fillPixelGuarded(surface, a.x(), a.y(), WHITE);
-            fillPixelGuarded(surface, b.x(), b.y(), WHITE);
-            fillPixelGuarded(surface, c.x(), c.y(), WHITE);
+            strokeTriangleFast(surface, a.p, b.p, c.p, RED);
+            fillPixelGuarded(surface, a.p.x(), a.p.y(), WHITE);
+            fillPixelGuarded(surface, b.p.x(), b.p.y(), WHITE);
+            fillPixelGuarded(surface, c.p.x(), c.p.y(), WHITE);
         }
         else {
+            Assert(r->renderPass.depthBuffer != nullptr, "depth buffer is required for filled rendering");
+            auto& depthBuffer = *r->renderPass.depthBuffer;
             Color color1 = randomColor();
             Color color2 = randomColor();
             Color color3 = randomColor();

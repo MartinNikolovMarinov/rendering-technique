@@ -4,6 +4,7 @@
 #include "log_utils.h"
 #include "debug_rendering.h"
 #include "surface_renderer.h"
+#include "depth_buffer.h"
 #include "wavefront_files.h"
 #include "face.h"
 #include "model.h"
@@ -57,22 +58,35 @@ void renderObjFilesToTga(
     }
     defer { wireFrameSurface.free(); };
 
-    Surface depthBuffer;
+    DepthBuffer depthBuffer;
+    {
+        static f32 depthbuf[WIDTH*HEIGHT] = {};
+        depthBuffer = {
+            .actx = nullptr,
+            .width = WIDTH,
+            .height = HEIGHT,
+            .data = depthbuf,
+        };
+        depthBuffer.clear(0.0f);
+    }
+    defer { depthBuffer.free(); };
+
+    Surface depthBufferVisSurface;
     {
         constexpr PixelFormat pixelFormat = PixelFormat::GRAY8;
         constexpr i32 bpp = pixelFormatBytesPerPixel(pixelFormat);
-        static u8 depthbuf[WIDTH*HEIGHT*bpp] = {};
-        depthBuffer = {
+        static u8 depthbufVis[WIDTH*HEIGHT*bpp] = {};
+        depthBufferVisSurface = {
             .actx = nullptr,
             .origin = Origin::BottomLeft,
             .pixelFormat = pixelFormat,
             .width = WIDTH,
             .height = HEIGHT,
             .pitch = WIDTH * bpp,
-            .data = depthbuf,
+            .data = depthbufVis,
         };
     }
-    defer { depthBuffer.free(); };
+    defer { depthBufferVisSurface.free(); };
 
     //==================================================================================================================
     // Read Wavefront Object Files and Create 3D Models
@@ -168,8 +182,10 @@ void renderObjFilesToTga(
         logInfo("Created output file in \"{}\"", outputPath);
     }
     {
+        depthBufferToGrayscaleSurface(depthBuffer, depthBufferVisSurface);
+
         TGA::CreateFileFromSurfaceParams params = {
-            .surface = depthBuffer,
+            .surface = depthBufferVisSurface,
             .path = outputDepth,
             .imageType = 3,
             .fileType = TGA::FileType::New,
@@ -185,9 +201,9 @@ i32 main() {
         defer { coreShutdown(); };
 
         const char* filesToRender[] = {
-            // ASSETS_DIRECTORY "/test_assets/obj/single_file_models/diablo3_pose.obj",
+            ASSETS_DIRECTORY "/test_assets/obj/single_file_models/diablo3_pose.obj",
 
-            ASSETS_DIRECTORY "/test_assets/obj/single_file_models/african_head.obj",
+            // ASSETS_DIRECTORY "/test_assets/obj/single_file_models/african_head.obj",
 
             // ASSETS_DIRECTORY "/test_assets/obj/multipart/body.obj",
             // ASSETS_DIRECTORY "/test_assets/obj/multipart/head.obj",

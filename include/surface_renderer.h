@@ -4,6 +4,7 @@
 
 struct Model3D;
 struct Surface;
+struct DepthBuffer;
 struct Color;
 struct Face3i;
 
@@ -56,6 +57,6 @@ void rendererBeginFrame(RendererHandle r);
 void rendererClear(RendererHandle r, const Color& c);
 void rendererSetVertexBuffer(RendererHandle r, core::Memory<Vertex4f> vertices);
 void rendererSetIndexBuffer(RendererHandle r, core::Memory<Face3i> indices);
-void rendererCalculateDepthBuffer(RendererHandle r, Surface& depthBuffer);
+void rendererCalculateDepthBuffer(RendererHandle r, DepthBuffer& depthBuffer);
 
 void rendererEndFrame(RendererHandle r);

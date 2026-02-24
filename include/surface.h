@@ -1,6 +1,6 @@
 #pragma once
 
-#include "core_init.h"
+#include "core_init.h" // IWYU pragma: keep
 
 enum struct PixelFormat {
     Unknown,

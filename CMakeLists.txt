@@ -61,6 +61,7 @@ log_info("---------------------------------------------")
 set(src_common
     src/color.cpp
     src/core_init.cpp
+    src/depth_buffer.cpp
     src/debug_rendering_glfw.cpp
     src/log_utils.cpp
     src/model.cpp
