@@ -1,5 +1,12 @@
 #pragma once
 
+/** IMPORTANT:
+ * @brief This header declares low-level rasterization APIs that draw directly into a Surface.
+ *
+ * Pixel/viewport bounds are interpreted as half-open ranges [min, max):
+ * min is inclusive, max is exclusive (e.g. full surface is x in [0, width), y in [0, height)).
+ */
+
 #include "core_init.h"
 
 struct Model3D;
@@ -7,8 +14,6 @@ struct Surface;
 struct DepthBuffer;
 struct Color;
 struct Face3i;
-
-using Vertex4f = core::vec4f;
 
 //======================================================================================================================
 // Direct Rendering to a Surface Section
@@ -20,6 +25,7 @@ void fillLine(Surface& surface, i32 ax, i32 ay, i32 bx, i32 by, Color color);
 
 void fillRect(Surface& surface, i32 x, i32 y, Color color, i32 width, i32 height);
 void strokeRect(Surface& surface, i32 x, i32 y, Color color, i32 width, i32 height);
+void strokeBBox(Surface& surface, const core::Bbox2D<i32>& bbox, Color color);
 
 void strokeTriangleFast(
     Surface& surface,

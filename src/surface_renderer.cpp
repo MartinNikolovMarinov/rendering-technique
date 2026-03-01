@@ -39,9 +39,6 @@ void fillPixel(Surface& surface, i32 x, i32 y, Color color) {
 
 void fillLine(Surface& surface, i32 ax, i32 ay, i32 bx, i32 by, Color color) {
     Assert(surface.data != nullptr, "surface data is null");
-    // Assert(ax >= 0 && ay >= 0 && bx >= 0 && by >= 0, "line start/end out of bounds (negative)");
-    // Assert(ax < surface.width && bx < surface.width, "line x out of bounds");
-    // Assert(ay < surface.height && by < surface.height, "line y out of bounds");
     Assert(surface.bpp() > 0, "invalid bytes-per-pixel");
 
     SetPixelFn setPixelFn = pickSetPixelFunction(surface.pixelFormat);
@@ -102,6 +99,17 @@ void fillRect(Surface& surface, i32 x, i32 y, Color color, i32 width, i32 height
 void strokeRect(Surface& surface, i32 x, i32 y, Color color, i32 width, i32 height) {
     i32 endX = x + width - 1;
     i32 endY = y + height - 1;
+    fillLine(surface, x, y, endX, y, color);
+    fillLine(surface, endX, y, endX, endY, color);
+    fillLine(surface, endX, endY, x, endY, color);
+    fillLine(surface, x, endY, x, y, color);
+}
+
+void strokeBBox(Surface& surface, const core::Bbox2D<i32>& bbox, Color color) {
+    i32 x = bbox.min.x();
+    i32 y = bbox.min.y();
+    i32 endX = bbox.max.x();
+    i32 endY = bbox.max.y();
     fillLine(surface, x, y, endX, y, color);
     fillLine(surface, endX, y, endX, endY, color);
     fillLine(surface, endX, endY, x, endY, color);
@@ -557,3 +565,4 @@ void fillPixelGuarded(Surface& surface, i32 x, i32 y, Color color) {
 }
 
 } // namespace
+

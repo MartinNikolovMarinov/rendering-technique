@@ -105,6 +105,7 @@ struct Surface {
 
     constexpr i32 size() const { return height * pitch; }
     constexpr i32 bpp() const { return pixelFormatBytesPerPixel(pixelFormat); }
+    constexpr ViewPort<i32> viewport() const { return ViewPort<i32> (core::v(0, 0), core::v(width, height)); }
     constexpr bool isOwner() const { return actx != nullptr; }
     void free();
 };
