@@ -19,6 +19,5 @@ enum RegisteredAllocators : core::AllocatorId {
 void coreInit(core::LogLevel globalLogLevel);
 void coreShutdown();
 
-template <typename T>
-using ViewPort = core::Bbox2D<T>;
+using ViewPort = core::Bbox2D<i32>;
 using Vertex4f = core::vec4f;

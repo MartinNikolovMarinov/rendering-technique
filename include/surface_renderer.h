@@ -1,12 +1,5 @@
 #pragma once
 
-/** IMPORTANT:
- * @brief This header declares low-level rasterization APIs that draw directly into a Surface.
- *
- * Pixel/viewport bounds are interpreted as half-open ranges [min, max):
- * min is inclusive, max is exclusive (e.g. full surface is x in [0, width), y in [0, height)).
- */
-
 #include "core_init.h"
 
 struct Model3D;
@@ -20,12 +13,16 @@ struct Face3i;
 //======================================================================================================================
 
 void fillPixel(Surface& surface, i32 x, i32 y, Color color);
+void fillPixelLocal(Surface& surface, const ViewPort& viewport, i32 relX, i32 relY, Color color);
 
 void fillLine(Surface& surface, i32 ax, i32 ay, i32 bx, i32 by, Color color);
+void fillLineLocal(Surface& surface, const ViewPort& viewport, i32 arelX, i32 arelY, i32 brelX, i32 brelY, Color color);
 
 void fillRect(Surface& surface, i32 x, i32 y, Color color, i32 width, i32 height);
 void strokeRect(Surface& surface, i32 x, i32 y, Color color, i32 width, i32 height);
-void strokeBBox(Surface& surface, const core::Bbox2D<i32>& bbox, Color color);
+void fillRectLocal(Surface& surface, const ViewPort& viewport, i32 relX, i32 relY, Color color, i32 width, i32 height);
+void strokeRectLocal(Surface& surface, const ViewPort& viewport, i32 relX, i32 relY, Color color, i32 width, i32 height);
+void strokeViewport(Surface& surface, const ViewPort& viewport, Color color);
 
 void strokeTriangleFast(
     Surface& surface,
@@ -34,13 +31,32 @@ void strokeTriangleFast(
 );
 void strokeTriangleInset(
     Surface& surface,
-    const core::vec3i& a, const core::vec3i& b, const core::vec3i& c,
+    const core::vec2i& a, const core::vec2i& b, const core::vec2i& c,
     const Color& colorA, const Color& colorB, const Color& colorC,
     f32 boarderRatio
 );
 void fillTriangle(
     Surface& surface,
-    const core::vec3i& a, const core::vec3i& b, const core::vec3i& c,
+    const core::vec2i& a, const core::vec2i& b, const core::vec2i& c,
+    const Color& colorA, const Color& colorB, const Color& colorC
+);
+void strokeTriangleFastLocal(
+    Surface& surface,
+    const ViewPort& viewport,
+    const core::vec2i& relA, const core::vec2i& relB, const core::vec2i& relC,
+    const Color& color
+);
+void strokeTriangleInsetLocal(
+    Surface& surface,
+    const ViewPort& viewport,
+    const core::vec2i& relA, const core::vec2i& relB, const core::vec2i& relC,
+    const Color& colorA, const Color& colorB, const Color& colorC,
+    f32 boarderRatio
+);
+void fillTriangleLocal(
+    Surface& surface,
+    const ViewPort& viewport,
+    const core::vec2i& relA, const core::vec2i& relB, const core::vec2i& relC,
     const Color& colorA, const Color& colorB, const Color& colorC
 );
 
@@ -54,7 +70,7 @@ using RendererHandle = Renderer*;
 RendererHandle rendererInit(core::AllocatorContext& actx);
 void rendererDestory(RendererHandle r);
 
-void rendererSetFrameBuffer(RendererHandle r, i32 width, i32 height);
+void rendererSetViewport(RendererHandle r, ViewPort viewport);
 void rendererSetWireframe(RendererHandle r, bool wireframe);
 void rendererSetOutput(RendererHandle r, Surface& output);
 
@@ -64,5 +80,8 @@ void rendererClear(RendererHandle r, const Color& c);
 void rendererSetVertexBuffer(RendererHandle r, core::Memory<Vertex4f> vertices);
 void rendererSetIndexBuffer(RendererHandle r, core::Memory<Face3i> indices);
 void rendererCalculateDepthBuffer(RendererHandle r, DepthBuffer& depthBuffer);
+
+void rendererColorPass(RendererHandle r);
+void rendererDepthColorPass(RendererHandle r);
 
 void rendererEndFrame(RendererHandle r);

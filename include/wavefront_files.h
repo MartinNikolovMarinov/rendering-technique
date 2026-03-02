@@ -130,6 +130,8 @@ struct WavefrontObj {
     WavefrontVersion fileVersion,
     core::AllocatorContext& actx = DEF_ALLOC
 );
-Model3D createModelFromWavefrontObj(const WavefrontObj& obj, core::AllocatorContext& modelActx = DEF_ALLOC);
+Model3D createModelFromWavefrontObj(const WavefrontObj& obj,
+    bool flipX = false, bool flipY = false,
+    core::AllocatorContext& modelActx = DEF_ALLOC);
 
 } // Wavefront

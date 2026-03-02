@@ -13,12 +13,19 @@
 
 namespace {
 
-// FIXME: Move something like this in core if notthing there is useful.
-constexpr inline core::vec3i orthogonalProjection(core::vec3f normVec, i32 width, i32 height) {
+struct ProjectedVertex {
+    core::vec2i p;
+    f32 z;
+};
+
+constexpr inline ProjectedVertex orthogonalProjection(core::vec3f normVec, i32 width, i32 height) {
     i32 x = i32((normVec.x() + 1.0f) * (f32(width - 1)/2.0f));
     i32 y = i32((normVec.y() + 1.0f) * (f32(height - 1)/2.0f));
-    i32 z = i32((normVec.z() + 1.0f) * (255.f/2.0f));
-    auto ret = core::v(x, y, z);
+    f32 z = (normVec.z() + 1.0f) * 0.5f;
+
+    ProjectedVertex ret = {};
+    ret.p = core::v(x, y);
+    ret.z = z;
     return ret;
 }
 
@@ -27,7 +34,7 @@ Model3D parseWavefrontFileToModel(const char* path, core::AllocatorContext& actx
     Assert(!result.hasErr(), "Failed to load Wavefront file");
     Wavefront::WavefrontObj obj = result.value();
     defer { obj.free(); };
-    Model3D ret = createModelFromWavefrontObj(obj, actx);
+    Model3D ret = createModelFromWavefrontObj(obj, false, false, actx);
     return ret;
 }
 
@@ -184,12 +191,14 @@ i32 runDirectRasterizationSnapshotTest(TestRunParams& params) {
         auto& v2 = model.vertices[f[1]];
         auto& v3 = model.vertices[f[2]];
 
-        core::vec3i a = orthogonalProjection(v1.xyz(), s.width, s.height);
-        core::vec3i b = orthogonalProjection(v2.xyz(), s.width, s.height);
-        core::vec3i c = orthogonalProjection(v3.xyz(), s.width, s.height);
+        auto a = orthogonalProjection(v1.xyz(), s.width, s.height);
+        auto b = orthogonalProjection(v2.xyz(), s.width, s.height);
+        auto c = orthogonalProjection(v3.xyz(), s.width, s.height);
 
-        fillTriangle(s, a, b, c, RED, GREEN, BLUE);
-        strokeTriangleFast(s, a.xy(), b.xy(), c.xy(), WHITE);
+        // NOTE: no viewport offset calculations here!
+
+        fillTriangle(s, a.p, b.p, c.p, RED, GREEN, BLUE);
+        strokeTriangleFast(s, a.p, b.p, c.p, WHITE);
     }
 
     updateSnapshot(s, sinfo, params);
@@ -209,9 +218,9 @@ i32 runTriangleInsideTriangleDirectDrawingSnapshotTest(TestRunParams& params) {
     i32 ax = 290, ay = 170;
     i32 bx = 500, by = 240;
     i32 cx = 130, cy = 650;
-    auto a = core::v(ax, ay, 1);
-    auto b = core::v(bx, by, 1);
-    auto c = core::v(cx, cy, 1);
+    auto a = core::v(ax, ay);
+    auto b = core::v(bx, by);
+    auto c = core::v(cx, cy);
 
     fillTriangle(s, a, b, c, RED, GREEN, BLUE);
     strokeTriangleInset(s, a, b, c, BLUE, RED, GREEN, scale);

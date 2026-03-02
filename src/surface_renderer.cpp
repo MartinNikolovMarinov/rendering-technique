@@ -37,6 +37,13 @@ void fillPixel(Surface& surface, i32 x, i32 y, Color color) {
     setPixelFn(surface.data, idx, color);
 }
 
+void fillPixelLocal(Surface& surface, const ViewPort& viewport, i32 relX, i32 relY, Color color) {
+    i32 x = viewport.min.x() + relX;
+    i32 y = viewport.min.y() + relY;
+    Assert(viewport.isInside(x, y), "pixel out of viewport bounds");
+    fillPixel(surface, x, y, color);
+}
+
 void fillLine(Surface& surface, i32 ax, i32 ay, i32 bx, i32 by, Color color) {
     Assert(surface.data != nullptr, "surface data is null");
     Assert(surface.bpp() > 0, "invalid bytes-per-pixel");
@@ -67,8 +74,7 @@ void fillLine(Surface& surface, i32 ax, i32 ay, i32 bx, i32 by, Color color) {
             ? x * surface.pitch + y * surface.bpp()
             : y * surface.pitch + x * surface.bpp();
 
-        // TODO: [PERFORMANCE] Is there a branchless way to do this upfront?
-        if (0 < idx && idx <= surface.size()) {
+        if (0 <= idx && idx < surface.size()) {
             setPixelFn(surface.data, idx, color);
         }
 
@@ -78,6 +84,19 @@ void fillLine(Surface& surface, i32 ax, i32 ay, i32 bx, i32 by, Color color) {
             ierror -= dtx2;
         }
     }
+}
+
+// FIXME: Add proper line clipping against viewport bounds (segment clipping), then use it for local/wireframe paths.
+//        Otherwise this code can write lines outside the viewport and i should not be using assertions for this.
+//        In fact a lot of assertions are probably wrong in this file.
+void fillLineLocal(Surface& surface, const ViewPort& viewport, i32 arelX, i32 arelY, i32 brelX, i32 brelY, Color color) {
+    i32 ax = viewport.min.x() + arelX;
+    i32 ay = viewport.min.y() + arelY;
+    i32 bx = viewport.min.x() + brelX;
+    i32 by = viewport.min.y() + brelY;
+    Assert(viewport.isInside(ax, ay), "pixel out of viewport bounds");
+    Assert(viewport.isInside(bx, by), "pixel out of viewport bounds");
+    fillLine(surface, ax, ay, bx, by, color);
 }
 
 void fillRect(Surface& surface, i32 x, i32 y, Color color, i32 width, i32 height) {
@@ -105,11 +124,37 @@ void strokeRect(Surface& surface, i32 x, i32 y, Color color, i32 width, i32 heig
     fillLine(surface, x, endY, x, y, color);
 }
 
-void strokeBBox(Surface& surface, const core::Bbox2D<i32>& bbox, Color color) {
-    i32 x = bbox.min.x();
-    i32 y = bbox.min.y();
-    i32 endX = bbox.max.x();
-    i32 endY = bbox.max.y();
+void fillRectLocal(Surface& surface, const ViewPort& viewport, i32 relX, i32 relY, Color color, i32 width, i32 height) {
+    i32 x = viewport.min.x() + relX;
+    i32 y = viewport.min.y() + relY;
+    i32 endX = x + width;
+    i32 endY = y + height;
+    Assert(width > 0 && height > 0, "rect has non-positive size");
+    Assert(x >= viewport.min.x() && x < viewport.max.x(), "rect origin x out of viewport bounds");
+    Assert(y >= viewport.min.y() && y < viewport.max.y(), "rect origin y out of viewport bounds");
+    Assert(endX <= viewport.max.x(), "rect extends past viewport width");
+    Assert(endY <= viewport.max.y(), "rect extends past viewport height");
+    fillRect(surface, x, y, color, width, height);
+}
+
+void strokeRectLocal(Surface& surface, const ViewPort& viewport, i32 relX, i32 relY, Color color, i32 width, i32 height) {
+    i32 x = viewport.min.x() + relX;
+    i32 y = viewport.min.y() + relY;
+    i32 endX = x + width;
+    i32 endY = y + height;
+    Assert(width > 0 && height > 0, "rect has non-positive size");
+    Assert(x >= viewport.min.x() && x < viewport.max.x(), "rect origin x out of viewport bounds");
+    Assert(y >= viewport.min.y() && y < viewport.max.y(), "rect origin y out of viewport bounds");
+    Assert(endX <= viewport.max.x(), "rect extends past viewport width");
+    Assert(endY <= viewport.max.y(), "rect extends past viewport height");
+    strokeRect(surface, x, y, color, width, height);
+}
+
+void strokeViewport(Surface& surface, const ViewPort& viewport, Color color) {
+    i32 x = viewport.min.x();
+    i32 y = viewport.min.y();
+    i32 endX = viewport.max.x() - 1;
+    i32 endY = viewport.max.y() - 1;
     fillLine(surface, x, y, endX, y, color);
     fillLine(surface, endX, y, endX, endY, color);
     fillLine(surface, endX, endY, x, endY, color);
@@ -122,15 +167,12 @@ void strokeBBox(Surface& surface, const core::Bbox2D<i32>& bbox, Color color) {
 
 namespace {
 
-struct ProjectedVertex {
-    core::vec2i p;
-    f32 z;
-};
-
 void fillTriangleBarycentric(
     Surface& surface,
     const DepthBuffer* depthBuffer,
-    const core::vec3i& a, const core::vec3i& b, const core::vec3i& c,
+    const ViewPort* viewport,
+    core::vec2i a, core::vec2i b, core::vec2i c,
+    f32 az, f32 bz, f32 cz,
     const Color& colorA, const Color& colorB, const Color& colorC,
     f32 holeInsetRatio
 ) {
@@ -139,10 +181,25 @@ void fillTriangleBarycentric(
         Assert(surface.height == depthBuffer->height);
     }
 
-    core::Bbox2D<i32> bbox = core::calcTriangleBBox(a.xy(), b.xy(), c.xy());
-    bbox.clampTo(0, surface.width - 1, 0, surface.height - 1);
+    // Calculate triangle bbox and clap to either the surface or the viewport:
+    core::Bbox2D<i32> bbox;
+    {
+        if (viewport != nullptr) {
+            // Offset triangle points with viewport:
+            a = viewport->min + a;
+            b = viewport->min + b;
+            c = viewport->min + c;
+            // Only after offset calculate the point's bbox:
+            bbox = core::calcTriangleBBox(a, b, c);
+            bbox.clampTo(viewport->min.x(), viewport->max.x() - 1, viewport->min.y(), viewport->max.y() - 1);
+        }
+        else {
+            bbox = core::calcTriangleBBox(a, b, c);
+            bbox.clampTo(0, surface.width - 1, 0, surface.height - 1);
+        }
+    }
 
-    f32 totalArea = core::calcTriangleAreaF32(a.xy(), b.xy(), c.xy());
+    f32 totalArea = core::calcTriangleAreaF32(a, b, c);
     if (core::absGeneric(totalArea) < 1) {
         // Trying to draw triangle with area less than a pixel
         return;
@@ -162,7 +219,7 @@ void fillTriangleBarycentric(
 
             // Check point against depth buffer:
             if (depthBuffer) {
-                f32 z = alpha * f32(a.z()) + beta * f32(b.z()) + gamma * f32(c.z());
+                f32 z = alpha * f32(az) + beta * f32(bz) + gamma * f32(cz);
                 f32 depth = depthBuffer->at(x, y);
                 if (z < depth) {
                     continue;
@@ -194,12 +251,29 @@ void fillTriangleBarycentric(
 
 void fillDepthBuffer(
     DepthBuffer& depthBuffer,
-    const ProjectedVertex& a, const ProjectedVertex& b, const ProjectedVertex& c
+    const ViewPort* viewport,
+    core::vec2i a, core::vec2i b, core::vec2i c,
+    f32 az, f32 bz, f32 cz
 ) {
-    core::Bbox2D<i32> bbox = core::calcTriangleBBox(a.p, b.p, c.p);
-    bbox.clampTo(0, depthBuffer.width - 1, 0, depthBuffer.height - 1);
+    // Calculate triangle bbox and clap to either the surface or the viewport:
+    core::Bbox2D<i32> bbox;
+    {
+        if (viewport != nullptr) {
+            // Offset triangle points with viewport:
+            a = viewport->min + a;
+            b = viewport->min + b;
+            c = viewport->min + c;
+            // Only after offset calculate the point's bbox:
+            bbox = core::calcTriangleBBox(a, b, c);
+            bbox.clampTo(viewport->min.x(), viewport->max.x() - 1, viewport->min.y(), viewport->max.y() - 1);
+        }
+        else {
+            bbox = core::calcTriangleBBox(a, b, c);
+            bbox.clampTo(0, depthBuffer.width - 1, 0, depthBuffer.height - 1);
+        }
+    }
 
-    f32 totalArea = core::calcTriangleAreaF32(a.p, b.p, c.p);
+    f32 totalArea = core::calcTriangleAreaF32(a, b, c);
     if (core::absGeneric(totalArea) < 1) {
         // Trying to draw triangle with area less than a pixel
         return;
@@ -208,72 +282,21 @@ void fillDepthBuffer(
     // TODO: [PERFORMANCE] Parallelize this loop:
     for (i32 x = bbox.min.x(); x <= bbox.max.x(); x++) {
         for (i32 y = bbox.min.y(); y <= bbox.max.y(); y++) {
-            f32 alpha = core::calcTriangleAreaF32(x, y, b.p.x(), b.p.y(), c.p.x(), c.p.y()) / totalArea;
-            f32 beta  = core::calcTriangleAreaF32(x, y, c.p.x(), c.p.y(), a.p.x(), a.p.y()) / totalArea;
-            f32 gamma = core::calcTriangleAreaF32(x, y, a.p.x(), a.p.y(), b.p.x(), b.p.y()) / totalArea;
+            f32 alpha = core::calcTriangleAreaF32(x, y, b.x(), b.y(), c.x(), c.y()) / totalArea;
+            f32 beta  = core::calcTriangleAreaF32(x, y, c.x(), c.y(), a.x(), a.y()) / totalArea;
+            f32 gamma = core::calcTriangleAreaF32(x, y, a.x(), a.y(), b.x(), b.y()) / totalArea;
 
             if (alpha < 0.0f || beta < 0.0f || gamma < 0.0f) {
                 // negative barycentric coordinate => the pixel is outside the triangle
                 continue;
             }
 
-            f32 z = alpha * a.z + beta * b.z + gamma * c.z;
+            f32 z = alpha * az + beta * bz + gamma * cz;
             f32 depth = depthBuffer.at(x, y);
             if (z <= depth) {
                 continue;
             }
             depthBuffer.at(x, y) = z;
-        }
-    }
-}
-
-void fillTriangle(
-    Surface& surface,
-    const DepthBuffer* depthBuffer,
-    const ProjectedVertex& a, const ProjectedVertex& b, const ProjectedVertex& c,
-    const Color& colorA, const Color& colorB, const Color& colorC
-) {
-    if (depthBuffer) {
-        Assert(surface.width == depthBuffer->width);
-        Assert(surface.height == depthBuffer->height);
-    }
-
-    core::Bbox2D<i32> bbox = core::calcTriangleBBox(a.p, b.p, c.p);
-    bbox.clampTo(0, surface.width - 1, 0, surface.height - 1);
-
-    f32 totalArea = core::calcTriangleAreaF32(a.p, b.p, c.p);
-    if (core::absGeneric(totalArea) < 1) {
-        return;
-    }
-
-    for (i32 x = bbox.min.x(); x <= bbox.max.x(); x++) {
-        for (i32 y = bbox.min.y(); y <= bbox.max.y(); y++) {
-            f32 alpha = core::calcTriangleAreaF32(x, y, b.p.x(), b.p.y(), c.p.x(), c.p.y()) / totalArea;
-            f32 beta  = core::calcTriangleAreaF32(x, y, c.p.x(), c.p.y(), a.p.x(), a.p.y()) / totalArea;
-            f32 gamma = core::calcTriangleAreaF32(x, y, a.p.x(), a.p.y(), b.p.x(), b.p.y()) / totalArea;
-
-            if (alpha < 0.0f || beta < 0.0f || gamma < 0.0f) {
-                continue;
-            }
-
-            if (depthBuffer) {
-                f32 z = alpha * a.z + beta * b.z + gamma * c.z;
-                f32 depth = depthBuffer->at(x, y);
-                if (z < depth) {
-                    continue;
-                }
-            }
-
-            Color blendedColor = {
-                .rgba {
-                    .r = u8(alpha * f32(colorA.r()) + beta * f32(colorB.r()) + gamma * f32(colorC.r())),
-                    .g = u8(alpha * f32(colorA.g()) + beta * f32(colorB.g()) + gamma * f32(colorC.g())),
-                    .b = u8(alpha * f32(colorA.b()) + beta * f32(colorB.b()) + gamma * f32(colorC.b())),
-                    .a = u8(alpha * f32(colorA.a()) + beta * f32(colorB.a()) + gamma * f32(colorC.a()))
-                }
-            };
-
-            fillPixel(surface, x, y, blendedColor);
         }
     }
 }
@@ -292,20 +315,67 @@ void strokeTriangleFast(
 
 void strokeTriangleInset(
     Surface& surface,
-    const core::vec3i& a, const core::vec3i& b, const core::vec3i& c,
+    const core::vec2i& a, const core::vec2i& b, const core::vec2i& c,
     const Color& colorA, const Color& colorB, const Color& colorC,
     f32 boarderRatio
 ) {
     f32 clampedRatio = core::core_max(0.0f, core::core_min(boarderRatio, 1.0f));
-    fillTriangleBarycentric(surface, nullptr, a, b, c, colorA, colorB, colorC, clampedRatio);
+    fillTriangleBarycentric(
+        surface, nullptr, nullptr,
+        a, b, c,
+        0, 0, 0,
+        colorA, colorB, colorC,
+        clampedRatio);
 }
 
 void fillTriangle(
     Surface& surface,
-    const core::vec3i& a, const core::vec3i& b, const core::vec3i& c,
+    const core::vec2i& a, const core::vec2i& b, const core::vec2i& c,
     const Color& colorA, const Color& colorB, const Color& colorC
 ) {
-    fillTriangleBarycentric(surface, nullptr, a, b, c, colorA, colorB, colorC, 0.0f);
+    fillTriangleBarycentric(
+        surface, nullptr, nullptr,
+        a, b, c,
+        0, 0, 0,
+        colorA, colorB, colorC,
+        0.0f);
+}
+
+void strokeTriangleFastLocal(
+    Surface& surface,
+    const ViewPort& viewport,
+    const core::vec2i& relA, const core::vec2i& relB, const core::vec2i& relC,
+    const Color& color
+) {
+    core::vec2i a = viewport.min + relA;
+    core::vec2i b = viewport.min + relB;
+    core::vec2i c = viewport.min + relC;
+    strokeTriangleFast(surface, a, b, c, color);
+}
+
+void strokeTriangleInsetLocal(
+    Surface& surface,
+    const ViewPort& viewport,
+    const core::vec2i& relA, const core::vec2i& relB, const core::vec2i& relC,
+    const Color& colorA, const Color& colorB, const Color& colorC,
+    f32 boarderRatio
+) {
+    auto a = viewport.min + relA;
+    auto b = viewport.min + relB;
+    auto c = viewport.min + relC;
+    strokeTriangleInset(surface, a, b, c, colorA, colorB, colorC, boarderRatio);
+}
+
+void fillTriangleLocal(
+    Surface& surface,
+    const ViewPort& viewport,
+    const core::vec2i& relA, const core::vec2i& relB, const core::vec2i& relC,
+    const Color& colorA, const Color& colorB, const Color& colorC
+) {
+    auto a = viewport.min + relA;
+    auto b = viewport.min + relB;
+    auto c = viewport.min + relC;
+    fillTriangle(surface, a, b, c, colorA, colorB, colorC);
 }
 
 //======================================================================================================================
@@ -314,7 +384,10 @@ void fillTriangle(
 
 namespace {
 
-// FIXME: Replace with core functions.
+struct ProjectedVertex {
+    core::vec2i p;
+    f32 z;
+};
 
 constexpr inline ProjectedVertex orthogonalProjection(core::vec3f normVec, i32 width, i32 height) {
     i32 x = i32((normVec.x() + 1.0f) * (f32(width - 1)/2.0f));
@@ -345,9 +418,27 @@ constexpr inline core::vec3f persp(core::vec3f v) {
     return ret;
 }
 
+constexpr inline void assertViewportIsWellFormed(const ViewPort& viewport) {
+    Assert(viewport.min.x() >= 0 && viewport.min.y() >= 0, "viewport min must be non-negative");
+    Assert(viewport.max.x() > viewport.min.x(), "viewport width must be positive");
+    Assert(viewport.max.y() > viewport.min.y(), "viewport height must be positive");
 }
 
-struct RenderPassState {
+constexpr inline void assertViewportFitsSurface(const ViewPort& viewport, const Surface& surface) {
+    assertViewportIsWellFormed(viewport);
+    Assert(viewport.max.x() <= surface.width, "viewport extends past surface width");
+    Assert(viewport.max.y() <= surface.height, "viewport extends past surface height");
+}
+
+constexpr inline void assertViewportFitsDepthBuffer(const ViewPort& viewport, const DepthBuffer& depthBuffer) {
+    assertViewportIsWellFormed(viewport);
+    Assert(viewport.max.x() <= depthBuffer.width, "viewport extends past depth buffer width");
+    Assert(viewport.max.y() <= depthBuffer.height, "viewport extends past depth buffer height");
+}
+
+}
+
+struct FrameState {
     DepthBuffer* depthBuffer;
     core::Memory<Vertex4f> vertices;
     core::Memory<Face3i> faces;
@@ -355,12 +446,11 @@ struct RenderPassState {
 
 struct Renderer {
     core::AllocatorContext* actx;
-    i32 frameBufferWidth;
-    i32 frameBufferHeight;
+    ViewPort viewport;
     bool wireframe;
     Surface* output;
 
-    RenderPassState renderPass;
+    FrameState frameState;
 };
 
 RendererHandle rendererInit(core::AllocatorContext& actx) {
@@ -380,9 +470,10 @@ void rendererDestory(RendererHandle r) {
     }
 }
 
-void rendererSetFrameBuffer(RendererHandle r, i32 width, i32 height) {
-    r->frameBufferWidth = width;
-    r->frameBufferHeight = height;
+void rendererSetViewport(RendererHandle r, ViewPort viewport) {
+    Assert(r != nullptr, "renderer is null");
+    assertViewportIsWellFormed(viewport);
+    r->viewport = viewport;
 }
 
 void rendererSetWireframe(RendererHandle r, bool wireframe) {
@@ -390,6 +481,8 @@ void rendererSetWireframe(RendererHandle r, bool wireframe) {
 }
 
 void rendererSetOutput(RendererHandle r, Surface& output) {
+    Assert(r != nullptr, "renderer is null");
+    Assert(output.data != nullptr, "output surface data is null");
     r->output = &output;
 }
 
@@ -397,29 +490,34 @@ void rendererBeginFrame(RendererHandle) {
 }
 
 void rendererClear(RendererHandle r, const Color& c) {
-    fillRect(*r->output, 0, 0, c, r->frameBufferWidth, r->frameBufferHeight);
+    Assert(r != nullptr, "renderer is null");
+    Assert(r->output != nullptr, "renderer output is not set");
+    assertViewportFitsSurface(r->viewport, *r->output);
+    fillRectLocal(*r->output, r->viewport, 0, 0, c, r->viewport.width(), r->viewport.height());
 }
 
 void rendererSetVertexBuffer(RendererHandle r, core::Memory<Vertex4f> vertices) {
-    r->renderPass.vertices = vertices;
+    r->frameState.vertices = vertices;
 }
 
 void rendererSetIndexBuffer(RendererHandle r, core::Memory<Face3i> indices) {
-    r->renderPass.faces = indices;
+    r->frameState.faces = indices;
 }
 
 void rendererCalculateDepthBuffer(RendererHandle r, DepthBuffer& depthBuffer) {
-    r->renderPass.depthBuffer = &depthBuffer;
+    Assert(r != nullptr, "renderer is null");
+    assertViewportFitsDepthBuffer(r->viewport, depthBuffer);
+    r->frameState.depthBuffer = &depthBuffer;
 
     bool wireframeMode = r->wireframe;
 
     // Calculate depth buffer:
     if (!wireframeMode) {
-        auto& vertices = r->renderPass.vertices;
-        auto& faces = r->renderPass.faces;
+        auto& vertices = r->frameState.vertices;
+        auto& faces = r->frameState.faces;
 
-        i32 width = r->frameBufferWidth;
-        i32 height = r->frameBufferHeight;
+        i32 width = r->viewport.width();
+        i32 height = r->viewport.height();
 
         for (addr_size i = 0; i < faces.len(); i++) {
             auto& f = faces[i];
@@ -436,21 +534,32 @@ void rendererCalculateDepthBuffer(RendererHandle r, DepthBuffer& depthBuffer) {
             ProjectedVertex b = orthogonalProjection(v2.xyz(), width, height);
             ProjectedVertex c = orthogonalProjection(v3.xyz(), width, height);
 
-            fillDepthBuffer(depthBuffer, a, b, c);
+
+            fillDepthBuffer(depthBuffer, &r->viewport, a.p, b.p, c.p, a.z, b.z, c.z);
         }
     }
 }
 
-void rendererEndFrame(RendererHandle r) {
+void rendererColorPass(RendererHandle r) {
+    Assert(r != nullptr, "renderer is null");
+    Assert(r->output != nullptr, "renderer output is not set");
+
     auto& surface = *r->output;
     bool wireframe = r->wireframe;
-    auto& vertices = r->renderPass.vertices;
-    auto& faces = r->renderPass.faces;
+    auto& vertices = r->frameState.vertices;
+    auto& faces = r->frameState.faces;
 
-    Assert(surface.width>= r->frameBufferWidth);
-    Assert(surface.height >= r->frameBufferHeight);
-    i32 width = surface.width;
-    i32 height = surface.height;
+    assertViewportFitsSurface(r->viewport, surface);
+
+    DepthBuffer* depthBuffer = nullptr;
+    if (!wireframe) {
+        Assert(r->frameState.depthBuffer != nullptr, "depth buffer is required for filled rendering");
+        depthBuffer = r->frameState.depthBuffer;
+        assertViewportFitsDepthBuffer(r->viewport, *depthBuffer);
+    }
+
+    i32 width = r->viewport.width();
+    i32 height = r->viewport.height();
 
     for (addr_size i = 0; i < faces.len(); i++) {
         auto& f = faces[i];
@@ -468,20 +577,63 @@ void rendererEndFrame(RendererHandle r) {
         ProjectedVertex c = orthogonalProjection(v3.xyz(), width, height);
 
         if (wireframe) {
-            strokeTriangleFast(surface, a.p, b.p, c.p, RED);
-            fillPixelGuarded(surface, a.p.x(), a.p.y(), WHITE);
-            fillPixelGuarded(surface, b.p.x(), b.p.y(), WHITE);
-            fillPixelGuarded(surface, c.p.x(), c.p.y(), WHITE);
+            strokeTriangleFastLocal(surface, r->viewport, a.p, b.p, c.p, RED);
+            fillPixelLocal(surface, r->viewport, a.p.x(), a.p.y(), WHITE);
+            fillPixelLocal(surface, r->viewport, b.p.x(), b.p.y(), WHITE);
+            fillPixelLocal(surface, r->viewport, c.p.x(), c.p.y(), WHITE);
         }
         else {
-            Assert(r->renderPass.depthBuffer != nullptr, "depth buffer is required for filled rendering");
-            auto& depthBuffer = *r->renderPass.depthBuffer;
             Color color1 = randomColor();
             Color color2 = randomColor();
             Color color3 = randomColor();
-            fillTriangle(surface, &depthBuffer, a, b, c, color1, color2, color3);
+            fillTriangleBarycentric(
+                surface, depthBuffer, &r->viewport,
+                a.p, b.p, c.p,
+                a.z, b.z, c.z,
+                color1, color2, color3,
+                0.0f);
         }
     }
+}
+
+void rendererDepthColorPass(RendererHandle r) {
+    Assert(r != nullptr, "renderer is null");
+    Assert(r->output != nullptr, "renderer output is not set");
+    Assert(r->frameState.depthBuffer != nullptr, "depth buffer is required for depth color pass");
+
+    DepthBuffer& depthBuffer = *r->frameState.depthBuffer;
+    assertViewportFitsDepthBuffer(r->viewport, depthBuffer);
+
+    auto& surface = *r->output;
+    assertViewportFitsSurface(r->viewport, surface);
+
+    i32 width = r->viewport.width();
+    i32 height = r->viewport.height();
+
+    for (i32 relY = 0; relY < height; relY++) {
+        for (i32 relX = 0; relX < width; relX++) {
+            // Offest triangle points with viewport:
+            i32 x = r->viewport.min.x() + relX;
+            i32 y = r->viewport.min.y() + relY;
+            Assert(r->viewport.isInside(x, y));
+
+            f32 d = depthBuffer.at(x, y);
+            f32 t = core::clamp(d, 0.0f, 1.0f);
+            u8 gray = u8(t * 255.0f);
+            i32 idx = y * surface.pitch + x * surface.bpp();
+
+            SetPixelFn setPixelFn = pickSetPixelFunction(surface.pixelFormat);
+            setPixelFn(surface.data, idx, { .rgba = { gray, gray, gray, gray } });
+        }
+    }
+}
+
+void rendererEndFrame(RendererHandle r) {
+    Assert(r != nullptr, "renderer is null");
+    if (r->frameState.depthBuffer) {
+        r->frameState.depthBuffer->clear(0);
+    }
+    r->frameState = {};
 }
 
 namespace {
@@ -565,4 +717,3 @@ void fillPixelGuarded(Surface& surface, i32 x, i32 y, Color color) {
 }
 
 } // namespace
-

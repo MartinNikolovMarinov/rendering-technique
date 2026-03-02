@@ -107,7 +107,11 @@ core::expected<WavefrontObj, WavefrontError> loadFile(
     return obj;
 }
 
-Model3D createModelFromWavefrontObj(const WavefrontObj& obj, core::AllocatorContext& modelActx) {
+Model3D createModelFromWavefrontObj(
+    const WavefrontObj& obj,
+    bool flipX, bool flipY,
+    core::AllocatorContext& modelActx
+) {
     Model3D model;
     model.actx = &modelActx;
 
@@ -117,6 +121,8 @@ Model3D createModelFromWavefrontObj(const WavefrontObj& obj, core::AllocatorCont
     };
     for (addr_size i = 0; i < obj.vertices.at; i++) {
         model.vertices[i] = obj.vertices[i];
+        if (flipX) model.vertices[i].x() = -model.vertices[i].x();
+        if (flipY) model.vertices[i].y() = -model.vertices[i].y();
     }
     Assert(model.vertices.len() == obj.vertices.at);
 

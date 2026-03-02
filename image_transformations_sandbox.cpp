@@ -163,7 +163,7 @@ void playaroundWith2DTransformations(const char* path) {
         core::vec3i b = orthogonalProjection(v2.xyz(), s.width, s.height);
         core::vec3i c = orthogonalProjection(v3.xyz(), s.width, s.height);
 
-        fillTriangle(s, a.xyz(), b.xyz(), c.xyz(), GRAY, GRAY, BLACK);
+        fillTriangle(s, a.xy(), b.xy(), c.xy(), GRAY, GRAY, BLACK);
     }
 
     //==================================================================================================================

@@ -23,6 +23,7 @@ void renderObjFilesToTga(
 
     constexpr addr_size WIDTH = 1024;
     constexpr addr_size HEIGHT = 1024;
+    constexpr ViewPort VIEW_PORT = ViewPort(core::v(0, 0), core::v(i32(WIDTH), i32(HEIGHT)));
 
     Surface outputSurface;
     {
@@ -118,43 +119,44 @@ void renderObjFilesToTga(
 
     // Rasterize
     {
-        rendererSetFrameBuffer(r, WIDTH, HEIGHT);
+        rendererSetViewport(r, VIEW_PORT);
         rendererSetWireframe(r, false);
 
         rendererSetOutput(r, outputSurface);
         rendererClear(r, BLACK);
 
-        for (i32 i = 0; i < objFilesLen; i++) {
-            auto& model = models[addr_size(i)];
-
-            rendererBeginFrame(r);
-            {
+        rendererBeginFrame(r);
+        {
+            for (i32 i = 0; i < objFilesLen; i++) {
+                auto& model = models[addr_size(i)];
                 rendererSetVertexBuffer(r, model.vertices);
                 rendererSetIndexBuffer(r, model.faces);
                 rendererCalculateDepthBuffer(r, depthBuffer);
+                rendererColorPass(r);
             }
-            rendererEndFrame(r);
         }
+        rendererEndFrame(r);
     }
 
     // Wireframe
     {
-        rendererSetFrameBuffer(r, WIDTH, HEIGHT);
+        rendererSetViewport(r, VIEW_PORT);
         rendererSetWireframe(r, true);
 
         rendererSetOutput(r, wireFrameSurface);
         rendererClear(r, BLACK);
 
-        for (i32 i = 0; i < objFilesLen; i++) {
-            auto& model = models[addr_size(i)];
+        rendererBeginFrame(r);
+        {
+            for (i32 i = 0; i < objFilesLen; i++) {
+                auto& model = models[addr_size(i)];
 
-            rendererBeginFrame(r);
-            {
                 rendererSetVertexBuffer(r, model.vertices);
                 rendererSetIndexBuffer(r, model.faces);
+                rendererColorPass(r);
             }
-            rendererEndFrame(r);
         }
+        rendererEndFrame(r);
     }
 
     //==================================================================================================================

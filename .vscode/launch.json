@@ -5,7 +5,7 @@
             "name": "Debug Program with LLDB",
             "type": "lldb",
             "request": "launch",
-            "program": "${workspaceFolder}/build/2d_pipeline_sandbox",
+            "program": "${workspaceFolder}/build/rendering_to_viewports",
             "args": [],
             "cwd": "${workspaceFolder}",
             "stopOnEntry": false,
