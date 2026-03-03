@@ -64,8 +64,6 @@ struct PlottingScene {
     Plot plots[N];
 
     PlottingScene() : plots({}) {}
-
-
 };
 
 void debugDrawLinesToViewport(ViewPort viewport) {

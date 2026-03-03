@@ -4,3 +4,6 @@
 [submodule "assets/test_assets"]
 	path = assets/test_assets
 	url = git@github.com:MartinNikolovMarinov/test_assets.git
+[submodule "lib/freetype"]
+	path = lib/freetype
+	url = https://gitlab.freedesktop.org/freetype/freetype.git

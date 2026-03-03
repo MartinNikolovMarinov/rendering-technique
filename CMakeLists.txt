@@ -21,6 +21,14 @@ option(CORE_LIBRARY_SHARED "Build core as a shared library." OFF)
 option(CORE_ASSERT_ENABLED "Enable Asserts in corelib" OFF)
 add_subdirectory(lib/core)
 
+# Build bundled FreeType as a static library with HarfBuzz enabled.
+set(BUILD_SHARED_LIBS OFF CACHE BOOL "Build shared libraries by default." FORCE)
+set(FT_REQUIRE_HARFBUZZ ON CACHE BOOL "Require HarfBuzz in FreeType." FORCE)
+set(FT_DISABLE_BROTLI ON CACHE BOOL "Disable Brotli/WOFF2 support in FreeType." FORCE)
+set(FT_ENABLE_ERROR_STRINGS ON CACHE BOOL "Enable FreeType error strings." FORCE)
+set(BUILD_TESTING OFF CACHE BOOL "Disable test targets." FORCE)
+add_subdirectory(lib/freetype)
+
 # Include cmake modules from:
 
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
@@ -132,7 +140,7 @@ find_package(glfw3 REQUIRED)
 
 macro(common_target_setup target)
     target_link_libraries(${target} PUBLIC core)
-    target_link_libraries(${target} PRIVATE glfw OpenGL::GL)
+    target_link_libraries(${target} PRIVATE freetype glfw OpenGL::GL)
 
     target_include_directories(${target} PUBLIC
         ${CMAKE_CURRENT_SOURCE_DIR}/include
