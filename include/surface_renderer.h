@@ -29,22 +29,17 @@ void strokeTriangleFast(
     const core::vec2i& a, const core::vec2i& b, const core::vec2i& c,
     const Color& color
 );
-void strokeTriangleInset(
-    Surface& surface,
-    const core::vec2i& a, const core::vec2i& b, const core::vec2i& c,
-    const Color& colorA, const Color& colorB, const Color& colorC,
-    f32 boarderRatio
-);
-void fillTriangle(
-    Surface& surface,
-    const core::vec2i& a, const core::vec2i& b, const core::vec2i& c,
-    const Color& colorA, const Color& colorB, const Color& colorC
-);
 void strokeTriangleFastLocal(
     Surface& surface,
     const ViewPort& viewport,
     const core::vec2i& relA, const core::vec2i& relB, const core::vec2i& relC,
     const Color& color
+);
+void strokeTriangleInset(
+    Surface& surface,
+    const core::vec2i& a, const core::vec2i& b, const core::vec2i& c,
+    const Color& colorA, const Color& colorB, const Color& colorC,
+    f32 boarderRatio
 );
 void strokeTriangleInsetLocal(
     Surface& surface,
@@ -52,6 +47,11 @@ void strokeTriangleInsetLocal(
     const core::vec2i& relA, const core::vec2i& relB, const core::vec2i& relC,
     const Color& colorA, const Color& colorB, const Color& colorC,
     f32 boarderRatio
+);
+void fillTriangle(
+    Surface& surface,
+    const core::vec2i& a, const core::vec2i& b, const core::vec2i& c,
+    const Color& colorA, const Color& colorB, const Color& colorC
 );
 void fillTriangleLocal(
     Surface& surface,

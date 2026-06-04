@@ -7,6 +7,7 @@ set(target_tga_files_sandbox tga_files_sandbox)
 set(target_image_transformations_sandbox image_transformations_sandbox)
 set(target_plotting_sandbox plotting_sandbox)
 set(target_rendering_to_viewports rendering_to_viewports)
+set(target_font_rendering_sandbox font_rendering_sandbox)
 set(target_test tests)
 
 # Standard Requirements:
@@ -117,6 +118,12 @@ set(src_rendering_to_viewports
     rendering_to_viewports.cpp
 )
 
+set(src_font_rendering_sandbox
+    ${src_common}
+
+    font_rendering_sandbox.cpp
+)
+
 set(src_test
     ${src_common}
 
@@ -206,6 +213,9 @@ common_target_setup(${target_plotting_sandbox})
 
 add_executable(${target_rendering_to_viewports} ${src_rendering_to_viewports})
 common_target_setup(${target_rendering_to_viewports})
+
+add_executable(${target_font_rendering_sandbox} ${src_font_rendering_sandbox})
+common_target_setup(${target_font_rendering_sandbox})
 
 add_executable(${target_test} ${src_test})
 common_target_setup(${target_test})

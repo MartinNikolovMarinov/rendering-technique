@@ -22,15 +22,24 @@ constexpr inline void setPixelRaw_GRAYA88(u8* data, i32 idx, Color color);
 constexpr inline SetPixelFn pickSetPixelFunction(PixelFormat pixelFormat);
 
 void fillPixelGuarded(Surface& surface, i32 x, i32 y, Color color);
+void fillLineClipped(Surface& surface, const ViewPort& bounds, i32 ax, i32 ay, i32 bx, i32 by, Color color);
+
+ViewPort calcClippedViewport(
+    i32 surfaceWidth, i32 surfaceHeight,
+    const ViewPort* viewport,
+    core::vec2i& a, core::vec2i& b, core::vec2i& c
+);
 
 } // namespace
 
 void fillPixel(Surface& surface, i32 x, i32 y, Color color) {
+    if (!surface.viewport().isInside(x, y)) {
+        return;
+    }
+
     i32 idx = y * surface.pitch + x * surface.bpp();
 
     Assert(surface.data != nullptr, "surface data is null");
-    Assert(y >= 0 && y < surface.height, "y out of bounds");
-    Assert(x >= 0 && x < surface.width, "x out of bounds");
     Assert(idx + surface.bpp() <= surface.size(), "pixel write past end of surface");
 
     SetPixelFn setPixelFn = pickSetPixelFunction(surface.pixelFormat);
@@ -40,11 +49,26 @@ void fillPixel(Surface& surface, i32 x, i32 y, Color color) {
 void fillPixelLocal(Surface& surface, const ViewPort& viewport, i32 relX, i32 relY, Color color) {
     i32 x = viewport.min.x() + relX;
     i32 y = viewport.min.y() + relY;
-    Assert(viewport.isInside(x, y), "pixel out of viewport bounds");
-    fillPixel(surface, x, y, color);
+    if (viewport.isInside(x, y)) {
+        fillPixel(surface, x, y, color);
+    }
 }
 
 void fillLine(Surface& surface, i32 ax, i32 ay, i32 bx, i32 by, Color color) {
+    fillLineClipped(surface, surface.viewport(), ax, ay, bx, by, color);
+}
+
+void fillLineLocal(Surface& surface, const ViewPort& viewport, i32 arelX, i32 arelY, i32 brelX, i32 brelY, Color color) {
+    i32 ax = viewport.min.x() + arelX;
+    i32 ay = viewport.min.y() + arelY;
+    i32 bx = viewport.min.x() + brelX;
+    i32 by = viewport.min.y() + brelY;
+    fillLineClipped(surface, viewport, ax, ay, bx, by, color);
+}
+
+namespace {
+
+void fillLineClipped(Surface& surface, const ViewPort& bounds, i32 ax, i32 ay, i32 bx, i32 by, Color color) {
     Assert(surface.data != nullptr, "surface data is null");
     Assert(surface.bpp() > 0, "invalid bytes-per-pixel");
 
@@ -64,40 +88,38 @@ void fillLine(Surface& surface, i32 ax, i32 ay, i32 bx, i32 by, Color color) {
         core::swap(ay, by);
     }
 
+    ViewPort bbox = bounds;
+    bbox.clampTo(0, surface.width, 0, surface.height);
+    bx = core::core_min(bx, (transpose ? bbox.max.y() : bbox.max.x()) - 1);
+
     i32 y = ay;
     i32 ierror = 0;
-    i32 dty2 = core::absGeneric(by - ay) * 2;
-    i32 dtx2 = (bx - ax) * 2;
-    i32 ydir = by > ay ? 1 : -1;
-    for (i32 x = ax; x <= bx; x++) {
-        i32 idx = (transpose)
-            ? x * surface.pitch + y * surface.bpp()
-            : y * surface.pitch + x * surface.bpp();
+    const i32 dx = bx - ax;
+    const i32 dty2 = core::absGeneric(by - ay) * 2;
+    const i32 dtx2 = dx * 2;
+    const i32 ydir = by > ay ? 1 : -1;
 
-        if (0 <= idx && idx < surface.size()) {
+    for (i32 x = ax; x <= bx; x++) {
+        i32 writeX = transpose ? y : x;
+        i32 writeY = transpose ? x : y;
+
+        if (writeX >= bbox.min.x() && writeX < bbox.max.x() &&
+            writeY >= bbox.min.y() && writeY < bbox.max.y()
+        ) {
+            i32 idx = writeY * surface.pitch + writeX * surface.bpp();
+            Assert(idx + surface.bpp() <= surface.size(), "pixel write past end of surface");
             setPixelFn(surface.data, idx, color);
         }
 
         ierror += dty2;
-        if (ierror > bx - ax) {
+        if (ierror > dx) {
             y += ydir;
             ierror -= dtx2;
         }
     }
 }
 
-// FIXME: Add proper line clipping against viewport bounds (segment clipping), then use it for local/wireframe paths.
-//        Otherwise this code can write lines outside the viewport and i should not be using assertions for this.
-//        In fact a lot of assertions are probably wrong in this file.
-void fillLineLocal(Surface& surface, const ViewPort& viewport, i32 arelX, i32 arelY, i32 brelX, i32 brelY, Color color) {
-    i32 ax = viewport.min.x() + arelX;
-    i32 ay = viewport.min.y() + arelY;
-    i32 bx = viewport.min.x() + brelX;
-    i32 by = viewport.min.y() + brelY;
-    Assert(viewport.isInside(ax, ay), "pixel out of viewport bounds");
-    Assert(viewport.isInside(bx, by), "pixel out of viewport bounds");
-    fillLine(surface, ax, ay, bx, by, color);
-}
+} // namespace
 
 void fillRect(Surface& surface, i32 x, i32 y, Color color, i32 width, i32 height) {
     Assert(surface.data != nullptr, "surface data is null");
@@ -151,6 +173,7 @@ void strokeRectLocal(Surface& surface, const ViewPort& viewport, i32 relX, i32 r
 }
 
 void strokeViewport(Surface& surface, const ViewPort& viewport, Color color) {
+    // viewport interval is [min,max)
     i32 x = viewport.min.x();
     i32 y = viewport.min.y();
     i32 endX = viewport.max.x() - 1;
@@ -181,23 +204,7 @@ void fillTriangleBarycentric(
         Assert(surface.height == depthBuffer->height);
     }
 
-    // Calculate triangle bbox and clap to either the surface or the viewport:
-    core::Bbox2D<i32> bbox;
-    {
-        if (viewport != nullptr) {
-            // Offset triangle points with viewport:
-            a = viewport->min + a;
-            b = viewport->min + b;
-            c = viewport->min + c;
-            // Only after offset calculate the point's bbox:
-            bbox = core::calcTriangleBBox(a, b, c);
-            bbox.clampTo(viewport->min.x(), viewport->max.x() - 1, viewport->min.y(), viewport->max.y() - 1);
-        }
-        else {
-            bbox = core::calcTriangleBBox(a, b, c);
-            bbox.clampTo(0, surface.width - 1, 0, surface.height - 1);
-        }
-    }
+    ViewPort bbox = calcClippedViewport(surface.width, surface.height, viewport, a, b, c);
 
     f32 totalArea = core::calcTriangleAreaF32(a, b, c);
     if (core::absGeneric(totalArea) < 1) {
@@ -206,8 +213,8 @@ void fillTriangleBarycentric(
     }
 
     // TODO: [PERFORMANCE] Parallelize this loop:
-    for (i32 x = bbox.min.x(); x <= bbox.max.x(); x++) {
-        for (i32 y = bbox.min.y(); y <= bbox.max.y(); y++) {
+    for (i32 x = bbox.min.x(); x < bbox.max.x(); x++) {
+        for (i32 y = bbox.min.y(); y < bbox.max.y(); y++) {
             f32 alpha = core::calcTriangleAreaF32(x, y, b.x(), b.y(), c.x(), c.y()) / totalArea;
             f32 beta  = core::calcTriangleAreaF32(x, y, c.x(), c.y(), a.x(), a.y()) / totalArea;
             f32 gamma = core::calcTriangleAreaF32(x, y, a.x(), a.y(), b.x(), b.y()) / totalArea;
@@ -256,22 +263,7 @@ void fillDepthBuffer(
     f32 az, f32 bz, f32 cz
 ) {
     // Calculate triangle bbox and clap to either the surface or the viewport:
-    core::Bbox2D<i32> bbox;
-    {
-        if (viewport != nullptr) {
-            // Offset triangle points with viewport:
-            a = viewport->min + a;
-            b = viewport->min + b;
-            c = viewport->min + c;
-            // Only after offset calculate the point's bbox:
-            bbox = core::calcTriangleBBox(a, b, c);
-            bbox.clampTo(viewport->min.x(), viewport->max.x() - 1, viewport->min.y(), viewport->max.y() - 1);
-        }
-        else {
-            bbox = core::calcTriangleBBox(a, b, c);
-            bbox.clampTo(0, depthBuffer.width - 1, 0, depthBuffer.height - 1);
-        }
-    }
+    ViewPort bbox = calcClippedViewport(depthBuffer.width, depthBuffer.height, viewport, a, b, c);
 
     f32 totalArea = core::calcTriangleAreaF32(a, b, c);
     if (core::absGeneric(totalArea) < 1) {
@@ -280,8 +272,8 @@ void fillDepthBuffer(
     }
 
     // TODO: [PERFORMANCE] Parallelize this loop:
-    for (i32 x = bbox.min.x(); x <= bbox.max.x(); x++) {
-        for (i32 y = bbox.min.y(); y <= bbox.max.y(); y++) {
+    for (i32 x = bbox.min.x(); x < bbox.max.x(); x++) {
+        for (i32 y = bbox.min.y(); y < bbox.max.y(); y++) {
             f32 alpha = core::calcTriangleAreaF32(x, y, b.x(), b.y(), c.x(), c.y()) / totalArea;
             f32 beta  = core::calcTriangleAreaF32(x, y, c.x(), c.y(), a.x(), a.y()) / totalArea;
             f32 gamma = core::calcTriangleAreaF32(x, y, a.x(), a.y(), b.x(), b.y()) / totalArea;
@@ -313,6 +305,17 @@ void strokeTriangleFast(
     fillLine(surface, c.x(), c.y(), a.x(), a.y(), color);
 }
 
+void strokeTriangleFastLocal(
+    Surface& surface,
+    const ViewPort& viewport,
+    const core::vec2i& relA, const core::vec2i& relB, const core::vec2i& relC,
+    const Color& color
+) {
+    fillLineLocal(surface, viewport, relA.x(), relA.y(), relB.x(), relB.y(), color);
+    fillLineLocal(surface, viewport, relB.x(), relB.y(), relC.x(), relC.y(), color);
+    fillLineLocal(surface, viewport, relC.x(), relC.y(), relA.x(), relA.y(), color);
+}
+
 void strokeTriangleInset(
     Surface& surface,
     const core::vec2i& a, const core::vec2i& b, const core::vec2i& c,
@@ -323,6 +326,22 @@ void strokeTriangleInset(
     fillTriangleBarycentric(
         surface, nullptr, nullptr,
         a, b, c,
+        0, 0, 0,
+        colorA, colorB, colorC,
+        clampedRatio);
+}
+
+void strokeTriangleInsetLocal(
+    Surface& surface,
+    const ViewPort& viewport,
+    const core::vec2i& relA, const core::vec2i& relB, const core::vec2i& relC,
+    const Color& colorA, const Color& colorB, const Color& colorC,
+    f32 boarderRatio
+) {
+    f32 clampedRatio = core::core_max(0.0f, core::core_min(boarderRatio, 1.0f));
+    fillTriangleBarycentric(
+        surface, nullptr, &viewport,
+        relA, relB, relC,
         0, 0, 0,
         colorA, colorB, colorC,
         clampedRatio);
@@ -341,41 +360,18 @@ void fillTriangle(
         0.0f);
 }
 
-void strokeTriangleFastLocal(
-    Surface& surface,
-    const ViewPort& viewport,
-    const core::vec2i& relA, const core::vec2i& relB, const core::vec2i& relC,
-    const Color& color
-) {
-    core::vec2i a = viewport.min + relA;
-    core::vec2i b = viewport.min + relB;
-    core::vec2i c = viewport.min + relC;
-    strokeTriangleFast(surface, a, b, c, color);
-}
-
-void strokeTriangleInsetLocal(
-    Surface& surface,
-    const ViewPort& viewport,
-    const core::vec2i& relA, const core::vec2i& relB, const core::vec2i& relC,
-    const Color& colorA, const Color& colorB, const Color& colorC,
-    f32 boarderRatio
-) {
-    auto a = viewport.min + relA;
-    auto b = viewport.min + relB;
-    auto c = viewport.min + relC;
-    strokeTriangleInset(surface, a, b, c, colorA, colorB, colorC, boarderRatio);
-}
-
 void fillTriangleLocal(
     Surface& surface,
     const ViewPort& viewport,
     const core::vec2i& relA, const core::vec2i& relB, const core::vec2i& relC,
     const Color& colorA, const Color& colorB, const Color& colorC
 ) {
-    auto a = viewport.min + relA;
-    auto b = viewport.min + relB;
-    auto c = viewport.min + relC;
-    fillTriangle(surface, a, b, c, colorA, colorB, colorC);
+    fillTriangleBarycentric(
+        surface, nullptr, &viewport,
+        relA, relB, relC,
+        0, 0, 0,
+        colorA, colorB, colorC,
+        0.0f);
 }
 
 //======================================================================================================================
@@ -714,6 +710,29 @@ void fillPixelGuarded(Surface& surface, i32 x, i32 y, Color color) {
     if (0 > y || y >= surface.height) return; // y ∈ [0, height)
 
     fillPixel(surface, x, y, color);
+}
+
+ViewPort calcClippedViewport(
+    i32 surfaceWidth, i32 surfaceHeight,
+    const ViewPort* viewport,
+    core::vec2i& a, core::vec2i& b, core::vec2i& c
+) {
+    ViewPort bbox;
+    if (viewport != nullptr) {
+        // Offset triangle points with viewport:
+        a = viewport->min + a;
+        b = viewport->min + b;
+        c = viewport->min + c;
+        // Only after offset calculate the point's bbox:
+        bbox = core::calcTriangleBBox(a, b, c);
+        bbox.clampTo(viewport->min.x(), viewport->max.x(), viewport->min.y(), viewport->max.y());
+    }
+    else {
+        bbox = core::calcTriangleBBox(a, b, c);
+        bbox.clampTo(0, surfaceWidth, 0, surfaceHeight);
+    }
+
+    return bbox;
 }
 
 } // namespace

@@ -21,7 +21,7 @@ constexpr i32 pixelFormatBytesPerPixel(PixelFormat pixelFormat) {
         case PixelFormat::BGRA8888: return 4;
         case PixelFormat::BGRX8888: return 4;
         case PixelFormat::BGRA5551: return 2;
-        case PixelFormat::BGRX5551:  return 2;
+        case PixelFormat::BGRX5551: return 2;
         case PixelFormat::BGR888:   return 3;
         case PixelFormat::GRAY8:    return 1;
         case PixelFormat::GRAYA88:  return 2;
@@ -39,7 +39,7 @@ constexpr i32 pixelFormatAlphaBits(PixelFormat pixelFormat) {
         case PixelFormat::BGRA8888: return 8;
         case PixelFormat::BGRX8888: return 0;
         case PixelFormat::BGRA5551: return 1;
-        case PixelFormat::BGRX5551:  return 0;
+        case PixelFormat::BGRX5551: return 0;
         case PixelFormat::BGR888:   return 0;
         case PixelFormat::GRAY8:    return 0;
         case PixelFormat::GRAYA88:  return 8;
