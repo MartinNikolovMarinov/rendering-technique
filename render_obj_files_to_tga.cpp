@@ -72,6 +72,19 @@ void renderObjFilesToTga(
     }
     defer { depthBuffer.free(); };
 
+    DepthBuffer savedDepthBuffer;
+    {
+        static f32 savedDepthbuf[WIDTH*HEIGHT] = {};
+        savedDepthBuffer = {
+            .actx = nullptr,
+            .width = WIDTH,
+            .height = HEIGHT,
+            .data = savedDepthbuf,
+        };
+        savedDepthBuffer.clear(0.0f);
+    }
+    defer { savedDepthBuffer.free(); };
+
     Surface depthBufferVisSurface;
     {
         constexpr PixelFormat pixelFormat = PixelFormat::GRAY8;
@@ -134,6 +147,9 @@ void renderObjFilesToTga(
                 rendererCalculateDepthBuffer(r, depthBuffer);
                 rendererColorPass(r);
             }
+
+            // Save the depth buffer, because renderer end frame will clear it otherwise:
+            core::memcopy(savedDepthBuffer.data, depthBuffer.data, addr_size(depthBuffer.size()));
         }
         rendererEndFrame(r);
     }
@@ -184,7 +200,7 @@ void renderObjFilesToTga(
         logInfo("Created output file in \"{}\"", outputPath);
     }
     {
-        depthBufferToGrayscaleSurface(depthBuffer, depthBufferVisSurface);
+        depthBufferToGrayscaleSurface(savedDepthBuffer, depthBufferVisSurface);
 
         TGA::CreateFileFromSurfaceParams params = {
             .surface = depthBufferVisSurface,
@@ -203,9 +219,9 @@ i32 main() {
         defer { coreShutdown(); };
 
         const char* filesToRender[] = {
-            ASSETS_DIRECTORY "/test_assets/obj/single_file_models/diablo3_pose.obj",
+            // ASSETS_DIRECTORY "/test_assets/obj/single_file_models/diablo3_pose.obj",
 
-            // ASSETS_DIRECTORY "/test_assets/obj/single_file_models/african_head.obj",
+            ASSETS_DIRECTORY "/test_assets/obj/single_file_models/african_head.obj",
 
             // ASSETS_DIRECTORY "/test_assets/obj/multipart/body.obj",
             // ASSETS_DIRECTORY "/test_assets/obj/multipart/head.obj",

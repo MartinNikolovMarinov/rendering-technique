@@ -523,12 +523,12 @@ void rendererCalculateDepthBuffer(RendererHandle r, DepthBuffer& depthBuffer) {
             core::vec4f& v3 = vertices[f[2]];
 
             // TODO: This projections is hardcoded for testing:
-            // ProjectedVertex a = orthogonalProjection(persp(rot(v1.xyz(), core::degToRad(30))), width, height);
-            // ProjectedVertex b = orthogonalProjection(persp(rot(v2.xyz(), core::degToRad(30))), width, height);
-            // ProjectedVertex c = orthogonalProjection(persp(rot(v3.xyz(), core::degToRad(30))), width, height);
-            ProjectedVertex a = orthogonalProjection(v1.xyz(), width, height);
-            ProjectedVertex b = orthogonalProjection(v2.xyz(), width, height);
-            ProjectedVertex c = orthogonalProjection(v3.xyz(), width, height);
+            ProjectedVertex a = orthogonalProjection(persp(rot(v1.xyz(), core::degToRad(30))), width, height);
+            ProjectedVertex b = orthogonalProjection(persp(rot(v2.xyz(), core::degToRad(30))), width, height);
+            ProjectedVertex c = orthogonalProjection(persp(rot(v3.xyz(), core::degToRad(30))), width, height);
+            // ProjectedVertex a = orthogonalProjection(v1.xyz(), width, height);
+            // ProjectedVertex b = orthogonalProjection(v2.xyz(), width, height);
+            // ProjectedVertex c = orthogonalProjection(v3.xyz(), width, height);
 
 
             fillDepthBuffer(depthBuffer, &r->viewport, a.p, b.p, c.p, a.z, b.z, c.z);
@@ -565,12 +565,12 @@ void rendererColorPass(RendererHandle r) {
         core::vec4f& v3 = vertices[f[2]];
 
         // TODO: This projections is hardcoded for testing:
-        // ProjectedVertex a = orthogonalProjection(persp(rot(v1.xyz(), core::degToRad(30))), width, height);
-        // ProjectedVertex b = orthogonalProjection(persp(rot(v2.xyz(), core::degToRad(30))), width, height);
-        // ProjectedVertex c = orthogonalProjection(persp(rot(v3.xyz(), core::degToRad(30))), width, height);
-        ProjectedVertex a = orthogonalProjection(v1.xyz(), width, height);
-        ProjectedVertex b = orthogonalProjection(v2.xyz(), width, height);
-        ProjectedVertex c = orthogonalProjection(v3.xyz(), width, height);
+        ProjectedVertex a = orthogonalProjection(persp(rot(v1.xyz(), core::degToRad(30))), width, height);
+        ProjectedVertex b = orthogonalProjection(persp(rot(v2.xyz(), core::degToRad(30))), width, height);
+        ProjectedVertex c = orthogonalProjection(persp(rot(v3.xyz(), core::degToRad(30))), width, height);
+        // ProjectedVertex a = orthogonalProjection(v1.xyz(), width, height);
+        // ProjectedVertex b = orthogonalProjection(v2.xyz(), width, height);
+        // ProjectedVertex c = orthogonalProjection(v3.xyz(), width, height);
 
         if (wireframe) {
             strokeTriangleFastLocal(surface, r->viewport, a.p, b.p, c.p, RED);
