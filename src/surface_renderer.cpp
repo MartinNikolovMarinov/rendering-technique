@@ -7,6 +7,8 @@
 #include "surface.h"
 #include "depth_buffer.h"
 
+#include "tga_files.h"
+
 namespace {
 
 using SetPixelFn = void (*)(u8* data, i32 idx, Color color);
@@ -29,6 +31,9 @@ ViewPort calcClippedViewport(
     const ViewPort* viewport,
     core::vec2i& a, core::vec2i& b, core::vec2i& c
 );
+
+void debug_saveSurfaceToTrueColorImage(const Surface& s, const char* dir, const char* file);
+void debug_saveDepthBufferToGrayscaleImage(const DepthBuffer& d, Origin o, const char* dir, const char* file);
 
 } // namespace
 
@@ -396,24 +401,6 @@ constexpr inline ProjectedVertex orthogonalProjection(core::vec3f normVec, i32 w
     return ret;
 }
 
-inline core::vec3f rot(core::vec3f v, core::radians angle) {
-    auto a = angle.value;
-    core::mat3x3f Ry = core::mat<3, 3, f32>(
-        core::v(core::cos(a), 0.f, core::sin(a)),
-        core::v(0.f, 1.f, 0.f),
-        core::v(-core::sin(a), 0.f, core::cos(a))
-    );
-    Ry = core::mtranspose(Ry);
-    auto ret = Ry*v;
-    return ret;
-}
-
-constexpr inline core::vec3f persp(core::vec3f v) {
-    constexpr f32 c = 3.f;
-    auto ret = v / (1.0f-v.z() / c);
-    return ret;
-}
-
 constexpr inline void assertViewportIsWellFormed(const ViewPort& viewport) {
     Assert(viewport.min.x() >= 0 && viewport.min.y() >= 0, "viewport min must be non-negative");
     Assert(viewport.max.x() > viewport.min.x(), "viewport width must be positive");
@@ -447,6 +434,8 @@ struct Renderer {
     Surface* output;
 
     FrameState frameState;
+
+    const char* debug_outputDir;
 };
 
 RendererHandle rendererInit(core::AllocatorContext& actx) {
@@ -522,14 +511,9 @@ void rendererCalculateDepthBuffer(RendererHandle r, DepthBuffer& depthBuffer) {
             core::vec4f& v2 = vertices[f[1]];
             core::vec4f& v3 = vertices[f[2]];
 
-            // TODO: This projections is hardcoded for testing:
-            ProjectedVertex a = orthogonalProjection(persp(rot(v1.xyz(), core::degToRad(30))), width, height);
-            ProjectedVertex b = orthogonalProjection(persp(rot(v2.xyz(), core::degToRad(30))), width, height);
-            ProjectedVertex c = orthogonalProjection(persp(rot(v3.xyz(), core::degToRad(30))), width, height);
-            // ProjectedVertex a = orthogonalProjection(v1.xyz(), width, height);
-            // ProjectedVertex b = orthogonalProjection(v2.xyz(), width, height);
-            // ProjectedVertex c = orthogonalProjection(v3.xyz(), width, height);
-
+            ProjectedVertex a = orthogonalProjection(v1.xyz(), width, height);
+            ProjectedVertex b = orthogonalProjection(v2.xyz(), width, height);
+            ProjectedVertex c = orthogonalProjection(v3.xyz(), width, height);
 
             fillDepthBuffer(depthBuffer, &r->viewport, a.p, b.p, c.p, a.z, b.z, c.z);
         }
@@ -564,13 +548,9 @@ void rendererColorPass(RendererHandle r) {
         core::vec4f& v2 = vertices[f[1]];
         core::vec4f& v3 = vertices[f[2]];
 
-        // TODO: This projections is hardcoded for testing:
-        ProjectedVertex a = orthogonalProjection(persp(rot(v1.xyz(), core::degToRad(30))), width, height);
-        ProjectedVertex b = orthogonalProjection(persp(rot(v2.xyz(), core::degToRad(30))), width, height);
-        ProjectedVertex c = orthogonalProjection(persp(rot(v3.xyz(), core::degToRad(30))), width, height);
-        // ProjectedVertex a = orthogonalProjection(v1.xyz(), width, height);
-        // ProjectedVertex b = orthogonalProjection(v2.xyz(), width, height);
-        // ProjectedVertex c = orthogonalProjection(v3.xyz(), width, height);
+        ProjectedVertex a = orthogonalProjection(v1.xyz(), width, height);
+        ProjectedVertex b = orthogonalProjection(v2.xyz(), width, height);
+        ProjectedVertex c = orthogonalProjection(v3.xyz(), width, height);
 
         if (wireframe) {
             strokeTriangleFastLocal(surface, r->viewport, a.p, b.p, c.p, RED);
@@ -626,13 +606,94 @@ void rendererDepthColorPass(RendererHandle r) {
 
 void rendererEndFrame(RendererHandle r) {
     Assert(r != nullptr, "renderer is null");
+
+    if (r->debug_outputDir) {
+        debug_saveSurfaceToTrueColorImage(
+            *r->output,
+            r->debug_outputDir,
+            r->wireframe ? "output-wire.tga" : "output.tga"
+        );
+
+        if (r->frameState.depthBuffer && !r->wireframe) {
+            debug_saveDepthBufferToGrayscaleImage(
+                *r->frameState.depthBuffer,
+                r->output->origin,
+                r->debug_outputDir,
+                "output-depth.tga"
+            );
+        }
+    }
+
     if (r->frameState.depthBuffer) {
         r->frameState.depthBuffer->clear(0);
     }
     r->frameState = {};
 }
 
+void debug_rendererOutputFrameToFile(RendererHandle r, const char* path) {
+    Assert(r != nullptr, "renderer is null");
+    r->debug_outputDir = path;
+}
+
 namespace {
+
+void debug_saveDepthBufferToGrayscaleImage(const DepthBuffer& d, Origin o, const char* dir, const char* file) {
+    auto& actx = core::getAllocator(core::DEFAULT_ALLOCATOR_ID);
+
+    Surface outputSurface = {
+        .actx = &actx,
+        .origin = o,
+        .pixelFormat = PixelFormat::GRAY8,
+        .width = d.width,
+        .height = d.height,
+        .pitch = pixelFormatBytesPerPixel(PixelFormat::GRAY8) * d.width,
+        .data = nullptr,
+    };
+    outputSurface.data = reinterpret_cast<u8*>(
+        actx.zeroAlloc(addr_size(outputSurface.size()), sizeof(u8))
+    );
+    defer { outputSurface.free(); };
+
+    depthBufferToGrayscaleSurface(d, outputSurface);
+
+    core::StaticPathBuilder<1024> pb;
+    pb.setDirPart(core::sv(dir));
+    pb.setFilePart(core::sv(file));
+
+    TGA::CreateFileFromSurfaceParams params = {
+        .surface = outputSurface,
+        .path = pb.fullPath(),
+        .imageType = 3,
+        .fileType = TGA::FileType::New,
+    };
+    Expect(TGA::createFileFromSurface(params));
+    logInfo("Created grayscale file in \"{}\"", pb.fullPath());
+}
+
+void debug_saveSurfaceToTrueColorImage(const Surface& s, const char* dir, const char* file) {
+    const Surface outputSurface = {
+        .actx = nullptr,
+        .origin = s.origin,
+        .pixelFormat = s.pixelFormat,
+        .width = s.width,
+        .height = s.height,
+        .pitch = s.pitch,
+        .data = s.data,
+    };
+
+    core::StaticPathBuilder<1024> pb;
+    pb.setDirPart(core::sv(dir));
+    pb.setFilePart(core::sv(file));
+
+    TGA::CreateFileFromSurfaceParams params = {
+        .surface = outputSurface,
+        .path = pb.fullPath(),
+        .imageType = 2,
+        .fileType = TGA::FileType::New,
+    };
+    Expect(TGA::createFileFromSurface(params));
+    logInfo("Created output file in \"{}\"", pb.fullPath());
+}
 
 constexpr inline void setPixelRaw_BGRA8888(u8* data, i32 idx, Color color) {
     data[idx + 0] = color.b();

@@ -85,3 +85,6 @@ void rendererColorPass(RendererHandle r);
 void rendererDepthColorPass(RendererHandle r);
 
 void rendererEndFrame(RendererHandle r);
+
+// Tells the renderer to save its output to files in a provided directory.
+void debug_rendererOutputFrameToFile(RendererHandle r, const char* outputDir);

@@ -1,10 +1,12 @@
-#include "core_init.h"
-#include "tga_files.h"
-#include "surface.h"
-#include "log_utils.h"
-#include "debug_rendering.h"
-#include "surface_renderer.h"
 #include "color.h"
+#include "core_init.h"
+#include "debug_rendering.h"
+#include "depth_buffer.h"
+#include "log_utils.h"
+#include "model.h"
+#include "surface_renderer.h"
+#include "surface.h"
+#include "tga_files.h"
 #include "wavefront_files.h"
 
 core::vec2f apply2DTransformation(core::vec2f v) {
@@ -179,16 +181,129 @@ void playaroundWith2DTransformations(const char* path) {
     Expect(TGA::createFileFromSurface(params));
 }
 
-i32 main() {
-    [[maybe_unused]] const char* output = OUT_DIRECTORY "/output.tga";
-    [[maybe_unused]] const char* depthPathOutput =  OUT_DIRECTORY "/depth-output.tga";
-    [[maybe_unused]] const char* inputFile = ASSETS_DIRECTORY "/test_assets/tga/fileformat/ubw8.tga";
+void playaroundWith3DTransformations(const char* outputDir) {
+    //==================================================================================================================
+    // Boring initialization code
+    //==================================================================================================================
 
+    constexpr PixelFormat f = PixelFormat::BGR888;
+    constexpr i32 bpp = pixelFormatBytesPerPixel(f);
+
+    constexpr addr_size WIDTH = 1000;
+    constexpr addr_size HIGHT = 1000;
+    constexpr ViewPort VIEW_PORT = ViewPort(core::v(0, 0), core::v(i32(WIDTH), i32(HIGHT)));
+
+    u8 buf[WIDTH*HIGHT*bpp] = {};
+    Surface s = Surface();
+    s.actx = nullptr;
+    s.origin = Origin::BottomLeft;
+    s.pixelFormat = f;
+    s.width = WIDTH;
+    s.height = HIGHT;
+    s.pitch = s.width * bpp;
+    s.data = buf;
+
+    defer { s.free(); };
+
+    DepthBuffer depthBuffer;
+    {
+        static f32 depthbuf[WIDTH*HIGHT] = {};
+        depthBuffer = {
+            .actx = nullptr,
+            .width = WIDTH,
+            .height = HIGHT,
+            .data = depthbuf,
+        };
+        depthBuffer.clear(0.0f);
+    }
+    defer { depthBuffer.free(); };
+
+    Model3D model;
+    {
+        constexpr const char* rectWithArrowOjbPath = ASSETS_DIRECTORY "/test_assets/obj/single_file_models/diablo3_pose.obj";
+
+        Wavefront::WavefrontObj objFile = Unpack(
+            Wavefront::loadFile(
+                rectWithArrowOjbPath,
+                Wavefront::WavefrontVersion::VERSION_3_0
+            )
+        );
+        defer { objFile.free(); };
+
+        model = Wavefront::createModelFromWavefrontObj(objFile);
+    }
+    defer { model.free(); };
+
+    //==================================================================================================================
+    // Apply transformations to vertices
+    //==================================================================================================================
+
+    for (addr_size i = 0; i < model.vertices.len(); i++) {
+        auto& v = model.vertices[i];
+
+        // Initial scale down to have more room to work with
+        {
+            core::vec2f scaledXY = core::scale(v.xy(), core::vec2f::uniform(0.4f));
+            v.x() = scaledXY.x();
+            v.y() = scaledXY.y();
+        }
+
+        // auto res = apply2DTransformation(v.xy());
+        // v.x() = res.x();
+        // v.y() = res.y();
+
+        auto res = apply2DHomogeneousCoordinatesTransformation(v.xy());
+        v.x() = res.x();
+        v.y() = res.y();
+    }
+
+    //==================================================================================================================
+    // Render
+    //==================================================================================================================
+
+    auto& actx = core::getAllocator(core::DEFAULT_ALLOCATOR_ID);
+    RendererHandle r = rendererInit(actx);
+    defer { rendererDestory(r); };
+
+    // Rasterize
+    {
+        rendererSetViewport(r, VIEW_PORT);
+        rendererSetWireframe(r, false);
+
+        rendererSetOutput(r, s);
+        debug_rendererOutputFrameToFile(r, outputDir);
+
+        // Render color
+        rendererClear(r, BLACK);
+        rendererBeginFrame(r);
+        {
+            rendererSetVertexBuffer(r, model.vertices);
+            rendererSetIndexBuffer(r, model.faces);
+            rendererCalculateDepthBuffer(r, depthBuffer);
+            rendererColorPass(r);
+        }
+        rendererEndFrame(r);
+
+        // Render a wireframe
+        rendererSetWireframe(r, true);
+        rendererClear(r, BLACK);
+        rendererBeginFrame(r);
+        {
+            rendererSetVertexBuffer(r, model.vertices);
+            rendererSetIndexBuffer(r, model.faces);
+            rendererColorPass(r);
+        }
+        rendererEndFrame(r);
+    }
+}
+
+i32 main() {
     {
         coreInit(core::LogLevel::L_DEBUG);
         defer { coreShutdown(); };
 
-        playaroundWith2DTransformations(output);
+        // playaroundWith2DTransformations(output);
+        playaroundWith3DTransformations(OUT_DIRECTORY);
 
         logInfo("Done");
     }
